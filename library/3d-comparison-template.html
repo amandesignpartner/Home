@@ -1,0 +1,85 @@
+<!-- 3D Modeling and Rendering Comparison Slider Popup -->
+<template id="popup-3d-comparison">
+    <div class="popup-inner" style="max-width: 1200px; padding: 40px 20px;">
+        <h2
+            style="margin-bottom: 10px; font-family: 'Raleway', sans-serif; font-size: 32px; font-weight: 600; color: var(--primary-orange); letter-spacing: 1px; text-align: center;">
+            3D Modeling and Rendering
+        </h2>
+        <p
+            style="text-align: center; color: var(--text-light); opacity: 0.8; font-size: 16px; margin-bottom: 35px; font-family: 'Raleway', sans-serif; font-weight: 300;">
+            Drag the comparison line to see the transformation from modeling to rendering
+        </p>
+
+        <!-- Comparison Slider Container -->
+        <div class="comparison-slider-container"
+            style="position: relative; width: 100%; max-width: 1000px; margin: 0 auto;">
+
+            <!-- Navigation Arrows -->
+            <button class="comparison-nav-btn prev-comparison"
+                style="position: absolute; left: -50px; top: 50%; transform: translateY(-50%); z-index: 100; background: rgba(210, 105, 30, 0.9); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="3" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+
+            <button class="comparison-nav-btn next-comparison"
+                style="position: absolute; right: -50px; top: 50%; transform: translateY(-50%); z-index: 100; background: rgba(210, 105, 30, 0.9); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="3" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+
+            <!-- Labels Above Image -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding: 0 20px;">
+                <div style="text-align: left; flex: 1;">
+                    <h3
+                        style="font-family: 'Raleway', sans-serif; font-size: 18px; font-weight: 600; color: #888; margin: 0;">
+                        3D Modeling / Sketch Style
+                    </h3>
+                </div>
+                <div style="text-align: right; flex: 1;">
+                    <h3
+                        style="font-family: 'Raleway', sans-serif; font-size: 18px; font-weight: 600; color: var(--primary-orange); margin: 0;">
+                        3D Rendering
+                    </h3>
+                </div>
+            </div>
+
+            <!-- Comparison Image Wrapper -->
+            <div class="comparison-wrapper"
+                style="position: relative; width: 100%; height: 600px; overflow: hidden; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); background: #000;">
+
+                <!-- Base Image (Full Color - Rendering) -->
+                <div class="comparison-base-image"
+                    style="position: absolute; width: 100%; height: 100%; background-size: cover; background-position: center;">
+                </div>
+
+                <!-- Overlay Image (Sketch Style - Modeling) -->
+                <div class="comparison-overlay-image"
+                    style="position: absolute; width: 50%; height: 100%; background-size: cover; background-position: center; filter: grayscale(1) brightness(1.6) contrast(0.7) opacity(0.95); clip-path: inset(0 50% 0 0);">
+                </div>
+
+                <!-- Comparison Line -->
+                <div class="comparison-line"
+                    style="position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, rgba(210, 105, 30, 0.8), rgba(255, 165, 0, 0.8)); cursor: ew-resize; z-index: 10; box-shadow: 0 0 20px rgba(210, 105, 30, 0.6);">
+                    <!-- Drag Handle -->
+                    <div
+                        style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: rgba(210, 105, 30, 0.95); border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="white" stroke-width="2.5" fill="none">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Counter -->
+            <div
+                style="text-align: center; margin-top: 20px; font-family: 'Raleway', sans-serif; color: var(--text-light); font-size: 14px;">
+                <span class="comparison-counter">1</span> / <span class="comparison-total">0</span>
+            </div>
+        </div>
+    </div>
+</template>

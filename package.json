@@ -1,0 +1,9 @@
+{
+  "name": "aman-interactive-web",
+  "version": "1.0.0",
+  "description": "Interactive Portfolio with Serverless Backend",
+  "main": "index.html",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}

@@ -1,0 +1,27 @@
+
+// ===== Reset Feedback Form (Restore Visibility) =====
+function resetFeedbackForm() {
+    const form = document.getElementById('feedback-form');
+    const thankYouDiv = document.getElementById('feedback-thank-you');
+    const reviewLink = document.getElementById('feedback-review-link');
+    const submitBtn = document.getElementById('feedback-submit-btn');
+    
+    if (form) {
+        // Show all form inputs
+        Array from(form.elements).forEach(el => {
+            if (el.type !== 'hidden') {
+                el.style.display = '';
+            }
+        });
+        
+        // Show submit button and review link
+        if (submitBtn) submitBtn.style.display = '';
+        if (reviewLink) reviewLink.style.display = '';
+        
+        // Hide thank you message
+        if (thankYouDiv) thankYouDiv.style.display = 'none';
+    }
+}
+
+// Modified openFeedbackFromTracker - copy this to replace the existing one
+// Add resetFeedbackForm(); call after line 2843 as the first line in setTimeout
