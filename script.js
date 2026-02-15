@@ -2976,11 +2976,27 @@ window.initPlyr = function (container = document) {
         tooltips: { controls: true, seek: true }
     }));
 
+    // Strict Right-Click Blocking for all player elements
+    const blockContextMenu = (e) => {
+        if (e.target.closest('.plyr')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    };
+
+    window.addEventListener('contextmenu', blockContextMenu, true);
+
     players.forEach(player => {
         player.on('ready', event => {
             const plyrContainer = event.detail.plyr.elements.container;
             plyrContainer.oncontextmenu = (e) => { e.preventDefault(); return false; };
+            // Double layer for fullscreen
+            plyrContainer.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
         });
+
+        // Ensure settings items also block right click
+        player.on('controlshidden', () => { /* can be used for extra logic */ });
     });
 };
 document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });

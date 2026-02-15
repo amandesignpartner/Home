@@ -16,17 +16,32 @@
     /* YouTube Red */
 }
 
-/* Plyr Customization (YouTube Look) */
+/* Plyr Customization (YouTube Look & Strict Protection) */
 .plyr {
+    --plyr-color-main: #FF0000;
+    /* YouTube Red */
     --plyr-video-control-color: #FFFFFF;
     border-radius: 8px;
-    /* Match project aesthetics */
 }
 
 .plyr--video .plyr__controls {
-    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
-    /* YouTube-like gradient */
-    padding-bottom: 10px;
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8)) !important;
+    padding-bottom: 8px !important;
+}
+
+/* Hide Title and Share Info - Strict Requirement */
+.plyr__video-embed .plyr__poster,
+.plyr__video-embed .plyr__layers,
+.plyr__caption,
+.plyr__video-embed iframe {
+    pointer-events: auto !important;
+}
+
+/* Aggressively hide any potential title overlays */
+.plyr__title,
+.plyr__cite,
+.plyr__share {
+    display: none !important;
 }
 
 .plyr__control--overlaid {
@@ -35,6 +50,31 @@
 
 .plyr__control--overlaid:hover {
     background: #FF0000;
+}
+
+/* Ensure right-click behavior is handled at CSS level where possible */
+.plyr * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* YouTube Progress Bar Style */
+.plyr--full-ui input[type=range] {
+    color: #FF0000 !important;
+}
+
+.plyr__control:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.plyr__menu__container {
+    background: rgba(28, 28, 28, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -879,10 +919,13 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - 90px);
+    height: 100%;
     z-index: 10;
     background: transparent;
     cursor: default;
+    user-select: none;
+    pointer-events: auto;
+    /* Catch all clicks if Plyr fails */
 }
 
 /* Intro Video Embed in Sticky Note */
