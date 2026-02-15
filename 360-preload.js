@@ -35,50 +35,101 @@
     // Aggressively preload iframe and all its resources immediately
     window.addEventListener('load', () => {
         const iframe360 = document.getElementById('iframe360View');
+        const loader360 = document.getElementById('loader360');
+        const statusText = document.getElementById('loader360-status');
+        const percentText = document.getElementById('loader360-percent');
 
-        if (iframe360) {
-            console.log('360 View Preload: Starting aggressive preload...');
+        if (iframe360 && loader360) {
+            console.log('360 View: Initializing Intelligence-Driven Loading...');
 
-            // Monitor iframe loading
+            let sequenceFinished = false;
+            let progressValue = 0;
+            let isCached = false; // "Guess" flag for cached assets
+
+            // --- Cache Sensing Logics ---
+            // If the iframe fires 'load' before our 3s center phase ends, it's highly likely cached.
+            const cacheSensorTimeout = setTimeout(() => {
+                // If we reach this point and iframe is already ready, it's cached
+                try {
+                    // Check if iframe is ready via basic property or previous event
+                    if (iframe360.contentWindow && iframe360.contentWindow.document.readyState === 'complete') {
+                        isCached = true;
+                        console.log('360 View Intelligence: Cache detected (Early resolution).');
+                    }
+                } catch (e) { /* Cross-origin fallback below */ }
+            }, 2500);
+
             iframe360.addEventListener('load', () => {
-                console.log('360 View Preload: Iframe loaded successfully');
+                // If it loads faster than 3s, it's a "cached" guess
+                if (performance.now() < 3000) {
+                    isCached = true;
+                    console.log('360 View Intelligence: Cache guessed via rapid resolution.');
+                }
 
-                // 1. Immediately send MUTE and PAUSE messages via postMessage (Cross-origin safe)
+                // Background silencing
                 try {
                     if (iframe360.contentWindow) {
                         iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
                         iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
-                        console.log('360 View Preload: Sent initial silence commands');
                     }
-                } catch (e) {
-                    console.log('360 View Preload: Could not send initial silence commands');
-                }
-
-                // 2. Try direct access (only works if same-origin)
-                try {
-                    const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
-
-                    // Preload all videos AND mute them to prevent autoplay
-                    const videos = iframeDoc.querySelectorAll('video');
-                    videos.forEach((video) => {
-                        video.preload = 'auto';
-                        video.muted = true;
-                        video.pause();
-                        video.load();
-                    });
-
-                    // Preload all audio AND mute them to prevent autoplay
-                    const audios = iframeDoc.querySelectorAll('audio');
-                    audios.forEach((audio) => {
-                        audio.preload = 'auto';
-                        audio.muted = true;
-                        audio.pause();
-                        audio.load();
-                    });
-                } catch (e) {
-                    // This will happen on cross-origin, which is expected
-                }
+                } catch (e) { }
             });
+
+            // --- Phase 1: 3 Seconds Center (The optimization phase) ---
+            setTimeout(() => {
+                if (sequenceFinished) return;
+
+                // --- Phase 2: Move to Corner ---
+                loader360.classList.add('in-corner');
+                if (statusText) statusText.textContent = 'Loading Videos...';
+                if (percentText) {
+                    percentText.style.display = 'block';
+                    percentText.textContent = '0%';
+                }
+
+                // Show iframe in background
+                iframe360.style.opacity = '1';
+
+                // --- Phase 3: Dynamic Progress Completion ---
+                // If cached, we finish in 5 seconds. If not, we take the 1-minute path.
+                const duration = isCached ? 5000 : 60000;
+                const interval = 100;
+                const increment = 100 / (duration / interval);
+
+                const progressTimer = setInterval(() => {
+                    progressValue += increment;
+                    if (progressValue >= 100) {
+                        progressValue = 100;
+                        clearInterval(progressTimer);
+                        setTimeout(finishSequence, 500);
+                    }
+                    if (percentText) percentText.textContent = `${Math.floor(progressValue)}%`;
+                }, interval);
+
+                // Intelligence Layer: Listen for "TRUE READY" messages from the source
+                window.addEventListener('message', (event) => {
+                    if (event.data === 'ready' || event.data.type === '360-ready') {
+                        console.log('360 View Intelligence: True ready signal received. Ending sequence.');
+                        progressValue = 100;
+                        if (percentText) percentText.textContent = '100%';
+                        clearInterval(progressTimer);
+                        finishSequence();
+                    }
+                });
+
+            }, 3000); // 3 seconds center delay
+
+            function finishSequence() {
+                if (sequenceFinished) return;
+                sequenceFinished = true;
+
+                loader360.style.opacity = '0';
+                setTimeout(() => {
+                    loader360.style.visibility = 'hidden';
+                }, 800);
+
+                console.log('360 View: Loading sequence finalized.');
+            }
 
             // Force eager loading
             iframe360.loading = 'eager';

@@ -12,15 +12,44 @@
 
     // Optimize background images and slider performance
     function optimizeBackgrounds() {
-        const elements = document.querySelectorAll('.slide');
-        elements.forEach((el, index) => {
-            // Give higher priority and hardware acceleration to the first slide
-            if (index === 0) {
-                el.style.willChange = 'opacity';
-            } else {
-                el.style.willChange = 'auto';
+        const slides = document.querySelectorAll('.slide');
+        if (slides.length === 0) return;
+
+        // Preload all slider images proactively
+        slides.forEach((slide, index) => {
+            const bg = slide.style.backgroundImage;
+            if (bg) {
+                const url = bg.slice(4, -1).replace(/"/g, "").replace(/'/g, "");
+                const img = new Image();
+                img.src = url;
+
+                // Keep hardware acceleration for the active (first) slide
+                if (slide.classList.contains('active') || index === 0) {
+                    slide.style.willChange = 'opacity';
+                }
             }
         });
+
+        // Add observer to manage hardware acceleration during slide changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    const target = mutation.target;
+                    if (target.classList.contains('active')) {
+                        target.style.willChange = 'opacity';
+                    } else {
+                        // Delay clearing to ensure animation completes
+                        setTimeout(() => {
+                            if (!target.classList.contains('active')) {
+                                target.style.willChange = 'auto';
+                            }
+                        }, 2000);
+                    }
+                }
+            });
+        });
+
+        slides.forEach(slide => observer.observe(slide, { attributes: true }));
     }
 
     // Reduce repaints and reflows
@@ -163,9 +192,13 @@
         purgeOldCaches();
     }
 
-    // Clean up will-change after animations complete
+    // Clean up will-change after animations complete (selective)
     setTimeout(() => {
         document.querySelectorAll('[style*="will-change"]').forEach(el => {
+            // Keep will-change for active slides and critical UI
+            if (el.classList.contains('slide') && el.classList.contains('active')) return;
+            if (el.id === 'site-loader') return;
+
             if (!el.classList.contains('animating')) {
                 el.style.willChange = 'auto';
             }

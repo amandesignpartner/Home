@@ -85,6 +85,9 @@
     <link rel="prefetch" href="https://amandesignpartner.github.io/360views/">
     <link rel="prerender" href="https://amandesignpartner.github.io/360views/">
 
+    <!-- Critical Preload for background slider's first image -->
+    <link rel="preload" as="image" href="images/slide1.webp">
+
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.cdnfonts.com/css/adventure" rel="stylesheet" media="print" onload="this.media='all'">
     <link href="https://fonts.cdnfonts.com/css/gopron" rel="stylesheet" media="print" onload="this.media='all'">
@@ -98,57 +101,47 @@
 </head>
 
 <body style="overflow: hidden;">
-    <!-- Premium Cinematic Preloader -->
+    <!-- Premium Cinematic Preloader (High-Transparency Obsidian) -->
     <div id="site-loader"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: all; overflow: hidden;">
-        <!-- Professional Glossy Background (60px Silk-Blur) -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #080808; z-index: 0;">
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.25); backdrop-filter: blur(100px) brightness(0.9); -webkit-backdrop-filter: blur(100px) brightness(0.9); z-index: 1000000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: all; overflow: hidden;">
+
+        <!-- Refined Black Mask (Higher Transparency) -->
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.2); z-index: 1;">
         </div>
 
-        <!-- Dynamic Silk-Blur Color Blobs (60px) -->
+        <!-- Ultra-Fine Sanded Texture -->
         <div
-            style="position: absolute; top: -5%; left: -5%; width: 55%; height: 55%; background: radial-gradient(circle, rgba(210, 105, 30, 0.18) 0%, transparent 75%); filter: blur(60px); animation: gloss-float 12s infinite alternate; z-index: 1;">
-        </div>
-        <div
-            style="position: absolute; bottom: -5%; right: -5%; width: 55%; height: 55%; background: radial-gradient(circle, rgba(139, 90, 43, 0.14) 0%, transparent 75%); filter: blur(60px); animation: gloss-float 15s infinite alternate-reverse; z-index: 1;">
-        </div>
-
-        <!-- Premium Glassmorphism Layer -->
-        <div
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(60px) saturate(160%); z-index: 2;">
-            <!-- Primary Gloss Reflection -->
-            <div
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 35%, rgba(255,255,255,0.03) 45%, transparent 100%); pointer-events: none;">
-            </div>
-
-            <!-- Secondary Mirror Shine -->
-            <div
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(225deg, rgba(255,255,255,0.02) 0%, transparent 20%, rgba(255,255,255,0.01) 80%, transparent 100%); pointer-events: none;">
-            </div>
-
-            <!-- Silk Texture (Minimalist) -->
-            <div
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://replicate.delivery/mgxm/764f5195-257a-42c2-8494-850eb2f462bb/grain.png'); opacity: 0.15; mix-blend-mode: soft-light; pointer-events: none;">
-            </div>
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.95\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E'); opacity: 0.08; mix-blend-mode: overlay; pointer-events: none; z-index: 2;">
         </div>
 
         <style>
-            @keyframes gloss-float {
-                0% {
-                    transform: translate(0, 0) scale(1.02);
-                    opacity: 0.7;
+            @keyframes loader-logo-entrance {
+                from {
+                    opacity: 0;
+                    transform: scale(0.99) translateY(10px);
+                    filter: blur(10px);
                 }
 
-                100% {
-                    transform: translate(40px, 20px) scale(1.10);
+                to {
                     opacity: 1;
+                    transform: scale(1) translateY(0);
+                    filter: blur(0);
+                }
+            }
+
+            @keyframes loader-fade-up {
+                from {
+                    opacity: 0;
+                    transform: translateY(15px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
                 }
             }
         </style>
-        <!-- Glowing Pulse Effect Background -->
-        <div
-            style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(210, 105, 30, 0.12) 0%, transparent 70%); border-radius: 50%; animation: loader-glow 5s infinite alternate; z-index: 2;">
-        </div>
 
         <div
             style="position: relative; text-align: center; width: 100%; max-width: 500px; padding: 0 40px; z-index: 3;">
@@ -157,14 +150,14 @@
                 style="margin-bottom: 30px; opacity: 0; animation: loader-fade-up 0.8s 0.2s forwards; display: flex; flex-direction: column; align-items: center;">
                 <!-- Premium Profile Image -->
                 <div
-                    style="width: 110px; height: 110px; border-radius: 50%; padding: 4px; background: linear-gradient(45deg, rgba(210,105,30,0.4), transparent, rgba(210,105,30,0.6)); margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    style="width: 110px; height: 110px; border-radius: 50%; padding: 4px; background: linear-gradient(45deg, rgba(210,105,30,0.4), transparent, rgba(210,105,30,0.6)); margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
                     <img src="images/Profile.webp" alt="Aman Ullah"
-                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); filter: grayscale(20%) contrast(105%); scale: 1.05;">
+                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.8); filter: contrast(105%); scale: 1.05;">
                 </div>
 
                 <!-- Name & Personal Tagline below Image -->
                 <h2
-                    style="font-family: 'Raleway', sans-serif; font-size: 24px; color: #fff; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; margin: 0 0 5px 0; opacity: 1;">
+                    style="font-family: 'Raleway', sans-serif; font-size: 24px; color: #ffffff; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; margin: 0 0 5px 0; opacity: 1;">
                     Aman Ullah</h2>
                 <span
                     style="display: block; font-family: 'Raleway', sans-serif; font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400; letter-spacing: 2px; font-style: italic;">Your
@@ -185,7 +178,7 @@
                     <!-- Badge: 700+ Projects -->
                     <div style="margin-bottom: 0px; opacity: 0; animation: loader-fade-up 0.8s 0.7s forwards;">
                         <span
-                            style="font-family: 'Raleway', sans-serif; font-size: 10px; color: var(--primary-orange); border: 1px solid rgba(210,105,30,0.5); padding: 5px 15px; border-radius: 30px; text-transform: uppercase; letter-spacing: 2.5px; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); font-weight: 700;">700+
+                            style="font-family: 'Raleway', sans-serif; font-size: 10px; color: #fff; border: 1px solid rgba(210,105,30,0.2); padding: 5px 15px; border-radius: 30px; text-transform: uppercase; letter-spacing: 2.5px; background: #D2691E; font-weight: 700; box-shadow: 0 5px 15px rgba(210,105,30,0.3);">700+
                             Completed Projects</span>
                     </div>
                 </div>
@@ -195,9 +188,9 @@
             <div
                 style="width: 100%; padding: 0 30px; position: relative; opacity: 0; animation: loader-fade-up 0.8s 1s forwards;">
                 <div
-                    style="height: 1px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 15px;">
+                    style="height: 2px; width: 100%; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
                     <div id="loader-bar-fill"
-                        style="height: 100%; width: 0%; background: linear-gradient(90deg, transparent, #D2691E, #ff8c00); transition: width 0.3s ease-out; box-shadow: 0 0 20px rgba(210, 105, 30, 0.8);">
+                        style="height: 100%; width: 0%; background: #D2691E; transition: width 0.3s ease-out;">
                     </div>
                 </div>
 
@@ -4734,12 +4727,21 @@
             </svg>
         </button>
         <div class="popup-360-content" id="popup360Content">
+            <!-- Loading Indicator for 360 View -->
+            <div id="loader360" class="premium-360-loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text-wrapper">
+                    <span id="loader360-status">Optimizing 360° Environments...</span>
+                    <span id="loader360-percent"
+                        style="display: none; font-size: 11px; opacity: 0.8; margin-top: 4px; color: var(--primary-orange); font-weight: 600;">0%</span>
+                </div>
+            </div>
             <!-- Iframe preloads immediately on page load for instant access -->
             <iframe id="iframe360View" src="https://amandesignpartner.github.io/360views/?muted=1" frameborder="0"
                 allowfullscreen loading="eager"
                 allow="fullscreen; accelerometer; gyroscope; picture-in-picture; clipboard-write"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" importance="high"
-                style="will-change: transform; content-visibility: auto;"></iframe>
+                style="will-change: transform; content-visibility: auto; opacity: 0; transition: opacity 0.8s ease;"></iframe>
         </div>
     </div>
 
