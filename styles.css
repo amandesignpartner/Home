@@ -12,6 +12,13 @@
     --border-green: #10B981;
     --shadow-dark: rgba(0, 0, 0, 0.5);
     --glass-bg: rgba(45, 45, 45, 0.85);
+    --plyr-color-main: #D2691E;
+    /* Plyr Theme */
+}
+
+/* Hide custom shield as Plyr provides UI and protection */
+.video-protection-shield {
+    display: none !important;
 }
 
 * {
