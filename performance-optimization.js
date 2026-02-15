@@ -42,15 +42,99 @@
         // sessionStorage.clear(); 
     }
 
+    // === Premium Loader Logic (Dynamic Load Synchronization) ===
+    function initPremiumLoader() {
+        const loader = document.getElementById('site-loader');
+        const bar = document.getElementById('loader-bar-fill');
+        const percentText = document.getElementById('loader-percent');
+        const statusText = document.getElementById('loader-status-text');
+        const narrativeText = document.getElementById('loader-narrative');
+
+        if (!loader || !bar) return;
+
+        const loadingPhases = [
+            { threshold: 30, status: 'Calibrating Workspace', narrative: 'Preparing the digital canvas...' },
+            { threshold: 60, status: 'Synchronizing Assets', narrative: 'Loading Photorealistic modules...' },
+            { threshold: 85, status: 'Rendering Experience', narrative: 'Illuminating textures and dimensions...' },
+            { threshold: 99, status: 'Finalizing Interface', narrative: 'Your trusted design partner is ready.' }
+        ];
+
+        let progress = 0;
+        let isFullyLoaded = false;
+
+        // Artificial progress simulation to 90%
+        const loaderInterval = setInterval(() => {
+            if (!isFullyLoaded) {
+                // Slower progress as it nears 90% to feel more realistic
+                let increment = progress < 70 ? 1.5 : 0.5;
+                progress += increment;
+
+                if (progress >= 90) {
+                    progress = 90;
+                    clearInterval(loaderInterval);
+                }
+                updateUI();
+            }
+        }, 80);
+
+        // When the window is FULLY LOADED - jump to 100%
+        window.addEventListener('load', () => {
+            isFullyLoaded = true;
+            clearInterval(loaderInterval);
+
+            // Fast jump to 100%
+            const fastFinish = setInterval(() => {
+                progress += 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(fastFinish);
+                    updateUI();
+                    finishLoading();
+                }
+                updateUI();
+            }, 30);
+        });
+
+        function updateUI() {
+            bar.style.width = `${progress}%`;
+            percentText.textContent = `${Math.floor(progress)}%`;
+
+            // Update status messages
+            const currentPhase = loadingPhases.find(p => progress <= p.threshold);
+            if (currentPhase) {
+                statusText.textContent = currentPhase.status;
+                if (narrativeText.textContent !== currentPhase.narrative) {
+                    narrativeText.style.opacity = '0';
+                    setTimeout(() => {
+                        narrativeText.textContent = currentPhase.narrative;
+                        narrativeText.style.opacity = '1';
+                    }, 400);
+                }
+            }
+        }
+
+        function finishLoading() {
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                document.body.style.overflow = ''; // Restore scroll
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 1000);
+            }, 800); // 800ms "Hold" at 100% for premium feel
+        }
+    }
+
     // Run optimizations and purge after DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            initPremiumLoader();
             lazyLoadImages();
             optimizeBackgrounds();
             optimizeAnimations();
             purgeOldCaches();
         });
     } else {
+        initPremiumLoader();
         lazyLoadImages();
         optimizeBackgrounds();
         optimizeAnimations();

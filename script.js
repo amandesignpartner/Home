@@ -399,6 +399,14 @@ function init360Popup() {
 
         overlay.classList.add('active');
         document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+        // Signal to unmute and play
+        if (iframe360 && iframe360.contentWindow) {
+            try {
+                iframe360.contentWindow.postMessage({ action: 'unmute' }, '*');
+                iframe360.contentWindow.postMessage({ action: 'resume' }, '*');
+            } catch (err) { console.log('360 View: Error sending unmute'); }
+        }
     });
 
     // Close popup and STOP ALL MEDIA
@@ -406,44 +414,42 @@ function init360Popup() {
         overlay.classList.remove('active');
         document.body.style.overflow = ''; // Restore scrolling
 
-        // Stop all media in the iframe
+        // 1. STOP via postMessage (Cross-origin safe)
         if (iframe360 && iframe360.contentWindow) {
             try {
-                // Try to pause media via postMessage
                 iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
+                iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
             } catch (e) {
-                console.log('360 View: Could not send pause message');
+                console.log('360 View: Could not send stop commands');
             }
+        }
 
-            try {
-                // Try direct access to pause media
-                const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
+        // 2. STOP via direct access (if same-origin)
+        try {
+            const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
 
-                // Pause all videos
-                iframeDoc.querySelectorAll('video').forEach(video => {
-                    video.pause();
-                    video.muted = true; // Mute as extra backup
-                });
+            // Pause all videos
+            iframeDoc.querySelectorAll('video').forEach(video => {
+                video.pause();
+                video.muted = true;
+            });
 
-                // Pause all audio (including background music)
-                iframeDoc.querySelectorAll('audio').forEach(audio => {
-                    audio.pause();
-                    audio.muted = true; // Mute as extra backup
-                });
+            // Pause all audio
+            iframeDoc.querySelectorAll('audio').forEach(audio => {
+                audio.pause();
+                audio.muted = true;
+            });
 
-                console.log('360 View: Successfully stopped all media');
-            } catch (e) {
-                // Cross-origin restriction - can't access iframe content
-                // This is expected for cross-origin iframes
-                // The iframe will remain loaded and ready for instant reopen
-                console.log('360 View: Cross-origin - iframe stays loaded for instant reopen');
-            }
+            console.log('360 View: Successfully stopped all media');
+        } catch (e) {
+            // Cross-origin restriction expected
+            console.log('360 View: Cross-origin (Media stop handled by postMessage)');
         }
     };
 
     closeBtn.addEventListener('click', closePopup);
 
-    // Close on overlay click (but not on content click)
+    // Close on overlay click
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
             closePopup();

@@ -97,7 +97,167 @@
 
 </head>
 
-<body>
+<body style="overflow: hidden;">
+    <!-- Premium Cinematic Preloader -->
+    <div id="site-loader"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #000; z-index: 1000000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: all; overflow: hidden;">
+        <!-- Professional Glossy Background (60px Silk-Blur) -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #080808; z-index: 0;">
+        </div>
+
+        <!-- Dynamic Silk-Blur Color Blobs (60px) -->
+        <div
+            style="position: absolute; top: -5%; left: -5%; width: 55%; height: 55%; background: radial-gradient(circle, rgba(210, 105, 30, 0.18) 0%, transparent 75%); filter: blur(60px); animation: gloss-float 12s infinite alternate; z-index: 1;">
+        </div>
+        <div
+            style="position: absolute; bottom: -5%; right: -5%; width: 55%; height: 55%; background: radial-gradient(circle, rgba(139, 90, 43, 0.14) 0%, transparent 75%); filter: blur(60px); animation: gloss-float 15s infinite alternate-reverse; z-index: 1;">
+        </div>
+
+        <!-- Premium Glassmorphism Layer -->
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(60px) saturate(160%); z-index: 2;">
+            <!-- Primary Gloss Reflection -->
+            <div
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 35%, rgba(255,255,255,0.03) 45%, transparent 100%); pointer-events: none;">
+            </div>
+
+            <!-- Secondary Mirror Shine -->
+            <div
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(225deg, rgba(255,255,255,0.02) 0%, transparent 20%, rgba(255,255,255,0.01) 80%, transparent 100%); pointer-events: none;">
+            </div>
+
+            <!-- Silk Texture (Minimalist) -->
+            <div
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://replicate.delivery/mgxm/764f5195-257a-42c2-8494-850eb2f462bb/grain.png'); opacity: 0.15; mix-blend-mode: soft-light; pointer-events: none;">
+            </div>
+        </div>
+
+        <style>
+            @keyframes gloss-float {
+                0% {
+                    transform: translate(0, 0) scale(1.02);
+                    opacity: 0.7;
+                }
+
+                100% {
+                    transform: translate(40px, 20px) scale(1.10);
+                    opacity: 1;
+                }
+            }
+        </style>
+        <!-- Glowing Pulse Effect Background -->
+        <div
+            style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(210, 105, 30, 0.12) 0%, transparent 70%); border-radius: 50%; animation: loader-glow 5s infinite alternate; z-index: 2;">
+        </div>
+
+        <div
+            style="position: relative; text-align: center; width: 100%; max-width: 500px; padding: 0 40px; z-index: 3;">
+            <!-- Profile Portrait, Name & Tagline Block -->
+            <div
+                style="margin-bottom: 30px; opacity: 0; animation: loader-fade-up 0.8s 0.2s forwards; display: flex; flex-direction: column; align-items: center;">
+                <!-- Premium Profile Image -->
+                <div
+                    style="width: 110px; height: 110px; border-radius: 50%; padding: 4px; background: linear-gradient(45deg, rgba(210,105,30,0.4), transparent, rgba(210,105,30,0.6)); margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <img src="images/Profile.jpg" alt="Aman Ullah"
+                        style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); filter: grayscale(20%) contrast(105%); scale: 1.05;">
+                </div>
+
+                <!-- Name & Personal Tagline below Image -->
+                <h2
+                    style="font-family: 'Raleway', sans-serif; font-size: 24px; color: #fff; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; margin: 0 0 5px 0; opacity: 1;">
+                    Aman Ullah</h2>
+                <span
+                    style="display: block; font-family: 'Raleway', sans-serif; font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 400; letter-spacing: 2px; font-style: italic;">Your
+                    Trusted e-Design Partner!</span>
+            </div>
+
+            <!-- Logo & Brand Section -->
+            <div
+                style="margin-bottom: 50px; transform: scale(0.9); animation: loader-logo-entrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+                <img src="images/logo-aman.png" alt="Aman Ullah"
+                    style="width: 250px; height: auto; display: block; margin: 0 auto; filter: drop-shadow(0 15px 35px rgba(0,0,0,0.9));">
+
+                <div style="margin-top: 25px;">
+                    <span
+                        style="display: block; font-family: 'Raleway', sans-serif; font-size: 14px; color: #D2691E; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; opacity: 0; animation: loader-fade-up 0.8s 0.6s forwards; margin-bottom: 15px;">Design.
+                        Visualize. Realize.</span>
+
+                    <!-- Badge: 700+ Projects -->
+                    <div style="margin-bottom: 0px; opacity: 0; animation: loader-fade-up 0.8s 0.7s forwards;">
+                        <span
+                            style="font-family: 'Raleway', sans-serif; font-size: 10px; color: var(--primary-orange); border: 1px solid rgba(210,105,30,0.5); padding: 5px 15px; border-radius: 30px; text-transform: uppercase; letter-spacing: 2.5px; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); font-weight: 700;">700+
+                            Completed Projects</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div
+                style="width: 100%; padding: 0 30px; position: relative; opacity: 0; animation: loader-fade-up 0.8s 1s forwards;">
+                <div
+                    style="height: 1px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 15px;">
+                    <div id="loader-bar-fill"
+                        style="height: 100%; width: 0%; background: linear-gradient(90deg, transparent, #D2691E, #ff8c00); transition: width 0.3s ease-out; box-shadow: 0 0 20px rgba(210, 105, 30, 0.8);">
+                    </div>
+                </div>
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; font-family: 'Raleway', sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px;">
+                    <span style="color: rgba(255,255,255,0.4);" id="loader-status-text">Synergizing Core Elements</span>
+                    <span style="color: #D2691E;" id="loader-percent">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Bottom Signature -->
+        <div
+            style="position: absolute; bottom: 40px; width: 100%; text-align: center; opacity: 0; animation: loader-fade-up 1s 1.2s forwards; z-index: 4;">
+            <p
+                style="font-family: 'Raleway', sans-serif; font-size: 10px; color: rgba(255,255,255,0.2); letter-spacing: 3px; text-transform: uppercase;">
+                Premium Design Experience</p>
+        </div>
+
+        <!-- CSS for Loader Animations -->
+        <style>
+            @keyframes loader-logo-entrance {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8) translateY(20px);
+                    filter: blur(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                    filter: blur(0);
+                }
+            }
+
+            @keyframes loader-fade-up {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes loader-glow {
+                0% {
+                    transform: scale(0.8);
+                    opacity: 0.3;
+                }
+
+                100% {
+                    transform: scale(1.3);
+                    opacity: 0.6;
+                }
+            }
+        </style>
+    </div>
     <!-- Minimized Tabs Bar -->
     <div class="minimized-bar" id="minimizedBar"></div>
 
@@ -4587,7 +4747,7 @@
         </button>
         <div class="popup-360-content" id="popup360Content">
             <!-- Iframe preloads immediately on page load for instant access -->
-            <iframe id="iframe360View" src="https://amandesignpartner.github.io/360views/" frameborder="0"
+            <iframe id="iframe360View" src="https://amandesignpartner.github.io/360views/?muted=1" frameborder="0"
                 allowfullscreen loading="eager"
                 allow="fullscreen; accelerometer; gyroscope; picture-in-picture; clipboard-write"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" importance="high"

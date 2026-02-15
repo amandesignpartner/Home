@@ -42,45 +42,41 @@
             // Monitor iframe loading
             iframe360.addEventListener('load', () => {
                 console.log('360 View Preload: Iframe loaded successfully');
-                console.log('360 View Preload: All resources are now being cached automatically');
 
-                // Try to force resource loading inside iframe AND mute everything
+                // 1. Immediately send MUTE and PAUSE messages via postMessage (Cross-origin safe)
+                try {
+                    if (iframe360.contentWindow) {
+                        iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
+                        iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
+                        console.log('360 View Preload: Sent initial silence commands');
+                    }
+                } catch (e) {
+                    console.log('360 View Preload: Could not send initial silence commands');
+                }
+
+                // 2. Try direct access (only works if same-origin)
                 try {
                     const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
 
                     // Preload all videos AND mute them to prevent autoplay
                     const videos = iframeDoc.querySelectorAll('video');
-                    videos.forEach((video, index) => {
-                        console.log(`360 View Preload: Preloading video ${index + 1}`);
+                    videos.forEach((video) => {
                         video.preload = 'auto';
-                        video.muted = true; // Mute to prevent autoplay
-                        video.pause(); // Ensure paused
+                        video.muted = true;
+                        video.pause();
                         video.load();
                     });
 
                     // Preload all audio AND mute them to prevent autoplay
                     const audios = iframeDoc.querySelectorAll('audio');
-                    audios.forEach((audio, index) => {
-                        console.log(`360 View Preload: Preloading audio ${index + 1}`);
+                    audios.forEach((audio) => {
                         audio.preload = 'auto';
-                        audio.muted = true; // Mute to prevent autoplay
-                        audio.pause(); // Ensure paused
+                        audio.muted = true;
+                        audio.pause();
                         audio.load();
                     });
-
-                    // Preload all images
-                    const images = iframeDoc.querySelectorAll('img');
-                    images.forEach((img, index) => {
-                        if (!img.complete) {
-                            console.log(`360 View Preload: Preloading image ${index + 1}`);
-                        }
-                    });
-
-                    console.log('360 View Preload: All media muted to prevent autoplay');
                 } catch (e) {
-                    // Cross-origin restriction - this is expected
-                    // Service worker will still cache everything
-                    console.log('360 View Preload: Cross-origin iframe (Service Worker handles caching)');
+                    // This will happen on cross-origin, which is expected
                 }
             });
 
@@ -123,13 +119,15 @@
                     console.log('360 View: Cross-origin - cannot unmute directly');
                 }
 
-                // Resume media playback via postMessage
+                // Unmute and play media via postMessage
                 try {
                     if (iframe360.contentWindow) {
+                        iframe360.contentWindow.postMessage({ action: 'unmute' }, '*');
                         iframe360.contentWindow.postMessage({ action: 'resume' }, '*');
+                        console.log('360 View: Sent unmute/resume commands');
                     }
                 } catch (e) {
-                    console.log('360 View: Could not send resume message');
+                    console.log('360 View: Could not send resume commands');
                 }
             }
         });
@@ -140,11 +138,12 @@
             if (iframe360 && iframe360.contentWindow) {
                 console.log('360 View: Closing popup - stopping all media');
 
-                // Method 1: Try to pause media via postMessage
+                // Method 1: STOP media via postMessage (Cross-origin safe)
                 try {
                     iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
+                    iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
                 } catch (e) {
-                    console.log('360 View: Could not send pause message');
+                    console.log('360 View: Could not send stop commands');
                 }
 
                 // Method 2: Try direct access (if same-origin)
