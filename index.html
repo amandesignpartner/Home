@@ -87,8 +87,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Hammersmith+One&family=Yeseva+One&family=Playfair+Display:wght@400;600&family=Quicksand:wght@600;700&family=Raleway:ital,wght@0,100..900;1,100..900&family=Roboto:wght@300;400;500&display=swap"
         rel="stylesheet" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
+
 
 </head>
 
@@ -192,9 +191,9 @@
         <div class="sticky-content">
             <div class="intro-video-embed">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                <iframe class="js-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
-                    title="Video presentation"
+                <iframe
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3"
+                    title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
                 </iframe>
@@ -1040,9 +1039,9 @@
             <!-- Embedded YouTube Video -->
             <div class="youtube-embed">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                <iframe class="js-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
-                    title="Video presentation"
+                <iframe
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3"
+                    title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
                 </iframe>
@@ -1106,9 +1105,10 @@
             <div class="youtube-playlist-slider">
                 <div class="playlist-container" style="position: relative;">
                     <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                    <iframe class="js-player" width="100%" height="400"
-                        src="https://www.youtube.com/embed/videoseries?list=PLHAIUN4pRaCxtc1tNOMH5-lb3dCqGS1Rq&rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&controls=0&enablejsapi=1&showinfo=0&iv_load_policy=3"
+                    <iframe width="100%" height="400"
+                        src="https://www.youtube.com/embed/videoseries?list=PLHAIUN4pRaCxtc1tNOMH5-lb3dCqGS1Rq&rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&controls=1&enablejsapi=1&showinfo=0&iv_load_policy=3"
                         title="3D Walkthrough Playlist" frameborder="0"
+                        sandbox="allow-scripts allow-same-origin allow-presentation"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 </div>
@@ -3439,9 +3439,10 @@
             <!-- 3. Video -->
             <div class="intro-video-embed" style="margin-bottom: 20px; position: relative;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                <iframe class="js-player" width="100%" height="250"
-                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
+                <iframe width="100%" height="250"
+                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3"
                     title="Premium Walkthrough Example" frameborder="0"
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen style="border-radius: 12px;"></iframe>
             </div>
@@ -4591,7 +4592,7 @@
     <script src="360-preload.js" defer></script>
     <script src="quick-pickup.js" defer></script>
     <script src="performance-optimization.js" defer></script>
-    <!-- Video Controls Updated: 2026-02-15 21:30 (Plyr CDN Updated + Fallback Shield) -->
+    <!-- Video Controls Updated: 2026-02-16 00:30 (Reverted to Native with Partial Shield) -->
 </body>
 
 </html>
