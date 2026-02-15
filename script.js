@@ -2963,6 +2963,11 @@ function restoreAllTrackerData() {
 // === Plyr Initialization ===
 window.initPlyr = function (container = document) {
     if (typeof Plyr === 'undefined') return;
+
+    // Hide classic shield if Plyr works
+    const shields = container.querySelectorAll('.video-protection-shield');
+    shields.forEach(s => s.style.display = 'none');
+
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
         controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
         youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }

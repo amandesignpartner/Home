@@ -16,9 +16,9 @@
     /* Plyr Theme */
 }
 
-/* Hide custom shield as Plyr provides UI and protection */
-.video-protection-shield {
-    display: none !important;
+/* Plyr styles handle UI */
+.plyr {
+    --plyr-color-main: #D2691E;
 }
 
 * {
@@ -863,7 +863,7 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - 90px);
+    height: 100%;
     z-index: 10;
     background: transparent;
     cursor: default;
