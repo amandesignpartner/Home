@@ -1213,6 +1213,9 @@ function openPopup(id, isBack = false, options = {}) {
     } else {
         content.innerHTML = template.innerHTML;
 
+        // Initialize Plyr for dynamic content
+        if (window.initPlyr) { window.initPlyr(content); }
+
 
 
         // Custom logic to hide "Discuss Hourly" button if requested
@@ -2958,3 +2961,26 @@ function restoreAllTrackerData() {
         trkStatusSubtitle.textContent = savedStatusSubtitle;
     }
 }
+
+// === Plyr Initialization (Custom YouTube-like) ===
+window.initPlyr = function (container = document) {
+    if (typeof Plyr === 'undefined') return;
+
+    // Remove shield if Plyr works (Plyr handles click blocking)
+    const shields = container.querySelectorAll('.video-protection-shield');
+    shields.forEach(s => s.style.display = 'none');
+
+    const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
+        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+        youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
+        tooltips: { controls: true, seek: true }
+    }));
+
+    players.forEach(player => {
+        player.on('ready', event => {
+            const plyrContainer = event.detail.plyr.elements.container;
+            plyrContainer.oncontextmenu = (e) => { e.preventDefault(); return false; };
+        });
+    });
+};
+document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });

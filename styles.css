@@ -12,11 +12,30 @@
     --border-green: #10B981;
     --shadow-dark: rgba(0, 0, 0, 0.5);
     --glass-bg: rgba(45, 45, 45, 0.85);
-    --plyr-color-main: #D2691E;
-    /* Plyr Theme */
+    --plyr-color-main: #FF0000;
+    /* YouTube Red */
 }
 
+/* Plyr Customization (YouTube Look) */
+.plyr {
+    --plyr-video-control-color: #FFFFFF;
+    border-radius: 8px;
+    /* Match project aesthetics */
+}
 
+.plyr--video .plyr__controls {
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
+    /* YouTube-like gradient */
+    padding-bottom: 10px;
+}
+
+.plyr__control--overlaid {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.plyr__control--overlaid:hover {
+    background: #FF0000;
+}
 
 * {
     margin: 0;
