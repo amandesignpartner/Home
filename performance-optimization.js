@@ -98,27 +98,43 @@
         // Start from 0 immediately and show progress
         updateUI();
 
-        // High-precision simulation (starts immediately)
+        // Initialize simulation
         const loaderInterval = setInterval(() => {
             if (!isFullyLoaded) {
-                // Realistic variable speed (faster at start, slower as it nears 90%)
                 let increment = progress < 40 ? 0.8 : (progress < 75 ? 0.4 : 0.15);
                 progress += increment;
 
                 if (progress >= 92) {
-                    progress = 92; // Hold here until window actually loads
+                    progress = 92;
                     clearInterval(loaderInterval);
                 }
                 updateUI();
             }
         }, 50);
 
-        // When the browser says everything is truly loaded (images, fonts, etc)
-        window.addEventListener('load', () => {
+        // --- Intelligence Layer: Double-Safety Trigger ---
+
+        // 1. Check if window is already loaded (for instant cache hits)
+        if (document.readyState === 'complete') {
+            triggerFinish();
+        } else {
+            // 2. Listen for the actual signal
+            window.addEventListener('load', triggerFinish);
+
+            // 3. Fail-safe: Force completion after 3 seconds (no user likes waiting for one slow pixel)
+            setTimeout(() => {
+                if (!isFullyLoaded) {
+                    console.log('Loader Intelligence: Fail-safe triggered.');
+                    triggerFinish();
+                }
+            }, 3000);
+        }
+
+        function triggerFinish() {
+            if (isFullyLoaded) return;
             isFullyLoaded = true;
             clearInterval(loaderInterval);
 
-            // Fast but smooth sweep to 100%
             let finishProgress = progress;
             const fastFinish = setInterval(() => {
                 finishProgress += 2;
@@ -131,7 +147,7 @@
                     updateUI(finishProgress);
                 }
             }, 30);
-        });
+        }
 
         function updateUI(customVal) {
             const currentVal = customVal !== undefined ? customVal : progress;
