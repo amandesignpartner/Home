@@ -41,19 +41,22 @@
 
 # Cache-Control headers
 <IfModule mod_headers.c>
-    # Cache images and videos aggressively
-    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|mp4|webm|ogg)$">
+    # Cache videos aggressively (Critical for 360 views)
+    <FilesMatch "\.(mp4|webm|ogg)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
     
-    # Cache CSS and JavaScript
-    <FilesMatch "\.(css|js)$">
-        Header set Cache-Control "public, max-age=2592000"
-    </FilesMatch>
-    
-    # Don't cache HTML
-    <FilesMatch "\.(html|htm)$">
+    # Static Assets (Images) - Short cache
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg)$">
         Header set Cache-Control "public, max-age=3600, must-revalidate"
+    </FilesMatch>
+
+    # CODE FILES - DO NOT CACHE (Instant Live Updates)
+    # This addresses the "remove all other from cache" requirement
+    <FilesMatch "\.(html|htm|js|css|json)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
     </FilesMatch>
     
     # Enable CORS for 360 view resources
@@ -61,7 +64,7 @@
     Header set Access-Control-Allow-Methods "GET, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type"
     
-    # Remove ETags (prefer Cache-Control)
+    # Remove ETags (ensure fresh fetch every time)
     Header unset ETag
 </IfModule>
 

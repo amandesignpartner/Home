@@ -26,17 +26,35 @@
         });
     }
 
-    // Run optimizations after DOM is ready
+    // Proactive Cache Removal (except 360-view-cache)
+    function purgeOldCaches() {
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                for (let name of names) {
+                    if (name !== '360-view-cache-v2') {
+                        console.log('Purging old cache:', name);
+                        caches.delete(name);
+                    }
+                }
+            });
+        }
+        // Clear session storage to reset tracker/chat states if needed
+        // sessionStorage.clear(); 
+    }
+
+    // Run optimizations and purge after DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             lazyLoadImages();
             optimizeBackgrounds();
             optimizeAnimations();
+            purgeOldCaches();
         });
     } else {
         lazyLoadImages();
         optimizeBackgrounds();
         optimizeAnimations();
+        purgeOldCaches();
     }
 
     // Clean up will-change after animations complete
