@@ -82,96 +82,83 @@
         const bar = document.getElementById('loader-bar-fill');
         const percentText = document.getElementById('loader-percent');
         const statusText = document.getElementById('loader-status-text');
-        const narrativeText = document.getElementById('loader-narrative');
 
         if (!loader || !bar) return;
 
         const loadingPhases = [
-            { threshold: 30, status: 'Calibrating Workspace', narrative: 'Preparing the digital canvas...' },
-            { threshold: 60, status: 'Synchronizing Assets', narrative: 'Loading Photorealistic modules...' },
-            { threshold: 85, status: 'Rendering Experience', narrative: 'Illuminating textures and dimensions...' },
-            { threshold: 99, status: 'Finalizing Interface', narrative: 'Your trusted design partner is ready.' }
+            { threshold: 35, status: 'Calibrating Workspace' },
+            { threshold: 65, status: 'Synchronizing Assets' },
+            { threshold: 90, status: 'Illuminating Textures' },
+            { threshold: 100, status: 'Interface Ready' }
         ];
 
         let progress = 0;
         let isFullyLoaded = false;
-        let isManualComplete = false;
 
-        // Expose manual completion trigger to window for script-level synchronization
-        window.triggerManualLoadComplete = function () {
-            if (!isManualComplete) {
-                console.log('Loader: Critical UI settled. Triggering completion...');
-                isManualComplete = true;
-                finishSequence();
-            }
-        };
+        // Start from 0 immediately and show progress
+        updateUI();
 
-        // Artificial progress simulation to 90%
+        // High-precision simulation (starts immediately)
         const loaderInterval = setInterval(() => {
             if (!isFullyLoaded) {
-                // Slower progress as it nears 90% to feel more realistic
-                let increment = progress < 70 ? 1.5 : 0.5;
+                // Realistic variable speed (faster at start, slower as it nears 90%)
+                let increment = progress < 40 ? 0.8 : (progress < 75 ? 0.4 : 0.15);
                 progress += increment;
 
-                if (progress >= 90) {
-                    progress = 90;
+                if (progress >= 92) {
+                    progress = 92; // Hold here until window actually loads
                     clearInterval(loaderInterval);
                 }
                 updateUI();
             }
-        }, 80);
+        }, 50);
 
-        // Fail-safe: If window.load takes too long, or to catch all assets
+        // When the browser says everything is truly loaded (images, fonts, etc)
         window.addEventListener('load', () => {
-            if (!isManualComplete) {
-                finishSequence();
-            }
-        });
-
-        function finishSequence() {
-            if (isFullyLoaded) return;
             isFullyLoaded = true;
             clearInterval(loaderInterval);
 
-            // Fast jump to 100%
+            // Fast but smooth sweep to 100%
+            let finishProgress = progress;
             const fastFinish = setInterval(() => {
-                progress += 10;
-                if (progress >= 100) {
-                    progress = 100;
+                finishProgress += 2;
+                if (finishProgress >= 100) {
+                    finishProgress = 100;
                     clearInterval(fastFinish);
-                    updateUI();
-                    finishLoading();
+                    updateUI(100);
+                    dismissLoader();
+                } else {
+                    updateUI(finishProgress);
                 }
-                updateUI();
-            }, 20);
-        }
+            }, 30);
+        });
 
-        function updateUI() {
-            bar.style.width = `${progress}%`;
-            percentText.textContent = `${Math.floor(progress)}%`;
+        function updateUI(customVal) {
+            const currentVal = customVal !== undefined ? customVal : progress;
+            const floorVal = Math.floor(currentVal);
 
-            // Update status messages
-            const currentPhase = loadingPhases.find(p => progress <= p.threshold);
-            if (currentPhase) {
-                statusText.textContent = currentPhase.status;
-                if (narrativeText.textContent !== currentPhase.narrative) {
-                    narrativeText.style.opacity = '0';
-                    setTimeout(() => {
-                        narrativeText.textContent = currentPhase.narrative;
-                        narrativeText.style.opacity = '1';
-                    }, 400);
-                }
+            bar.style.width = `${floorVal}%`;
+            percentText.textContent = `${floorVal}%`;
+
+            // Dynamic Status Update
+            const phase = loadingPhases.find(p => currentVal <= p.threshold) || loadingPhases[loadingPhases.length - 1];
+            if (statusText.textContent !== phase.status) {
+                statusText.style.opacity = '0';
+                setTimeout(() => {
+                    statusText.textContent = phase.status;
+                    statusText.style.opacity = '1';
+                }, 200);
             }
         }
 
-        function finishLoading() {
+        function dismissLoader() {
             setTimeout(() => {
                 loader.style.opacity = '0';
-                document.body.style.overflow = ''; // Restore scroll
                 setTimeout(() => {
                     loader.style.display = 'none';
+                    document.body.style.overflow = ''; // Restore scroll
                 }, 1000);
-            }, 800); // 800ms "Hold" at 100% for premium feel
+            }, 600); // Premium hold at 100%
         }
     }
 
