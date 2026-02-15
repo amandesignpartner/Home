@@ -85,8 +85,12 @@
     <link rel="prefetch" href="https://amandesignpartner.github.io/360views/">
     <link rel="prerender" href="https://amandesignpartner.github.io/360views/">
 
-    <!-- Critical Preload for background slider's first image -->
-    <link rel="preload" as="image" href="images/slide1.webp">
+    <!-- Aggressive Preload for background slider images (Ensures they load while preloader is active) -->
+    <link rel="preload" as="image" href="images/slide1.webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/slide2.webp">
+    <link rel="preload" as="image" href="images/slide3.webp">
+    <link rel="preload" as="image" href="images/slide4.webp">
+    <link rel="preload" as="image" href="images/slide5.webp">
 
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.cdnfonts.com/css/adventure" rel="stylesheet" media="print" onload="this.media='all'">
