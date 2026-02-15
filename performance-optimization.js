@@ -10,11 +10,16 @@
         });
     }
 
-    // Optimize background images
+    // Optimize background images and slider performance
     function optimizeBackgrounds() {
-        const elements = document.querySelectorAll('[style*="background-image"]');
-        elements.forEach(el => {
-            el.style.willChange = 'auto';
+        const elements = document.querySelectorAll('.slide');
+        elements.forEach((el, index) => {
+            // Give higher priority and hardware acceleration to the first slide
+            if (index === 0) {
+                el.style.willChange = 'opacity';
+            } else {
+                el.style.willChange = 'auto';
+            }
         });
     }
 
@@ -61,6 +66,16 @@
 
         let progress = 0;
         let isFullyLoaded = false;
+        let isManualComplete = false;
+
+        // Expose manual completion trigger to window for script-level synchronization
+        window.triggerManualLoadComplete = function () {
+            if (!isManualComplete) {
+                console.log('Loader: Critical UI settled. Triggering completion...');
+                isManualComplete = true;
+                finishSequence();
+            }
+        };
 
         // Artificial progress simulation to 90%
         const loaderInterval = setInterval(() => {
@@ -77,14 +92,21 @@
             }
         }, 80);
 
-        // When the window is FULLY LOADED - jump to 100%
+        // Fail-safe: If window.load takes too long, or to catch all assets
         window.addEventListener('load', () => {
+            if (!isManualComplete) {
+                finishSequence();
+            }
+        });
+
+        function finishSequence() {
+            if (isFullyLoaded) return;
             isFullyLoaded = true;
             clearInterval(loaderInterval);
 
             // Fast jump to 100%
             const fastFinish = setInterval(() => {
-                progress += 5;
+                progress += 10;
                 if (progress >= 100) {
                     progress = 100;
                     clearInterval(fastFinish);
@@ -92,8 +114,8 @@
                     finishLoading();
                 }
                 updateUI();
-            }, 30);
-        });
+            }, 20);
+        }
 
         function updateUI() {
             bar.style.width = `${progress}%`;
