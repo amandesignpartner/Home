@@ -77,6 +77,98 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Specific Layout matching Screenshot */
+/* 1. Position Pip at Top Left */
+.plyr__control[data-plyr="pip"] {
+    position: absolute !important;
+    top: 20px !important;
+    left: 20px !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-radius: 8px !important;
+    z-index: 100 !important;
+}
+
+.plyr__control[data-plyr="pip"] svg {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+/* 2. Controls Bar Transparency and Blur */
+.plyr--video .plyr__controls {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent) !important;
+    padding: 20px !important;
+}
+
+/* 3. Progress Bar - Full Width and Clean */
+.plyr__progress {
+    margin-bottom: 5px !important;
+}
+
+.plyr__progress__container {
+    padding: 0 10px !important;
+}
+
+/* 4. Controls Flex Layout */
+.plyr__controls {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+}
+
+/* Ensure Time and Controls are separated */
+.plyr__controls>.plyr__time {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #fff !important;
+    padding: 0 5px !important;
+}
+
+/* Add separator between current time and duration if both exist */
+.plyr__time--current+.plyr__time--duration::before {
+    content: "/";
+    margin-right: 8px;
+    margin-left: 2px;
+    opacity: 0.5;
+}
+
+/* Center Rewind, Play, Fast Forward */
+.plyr__controls>[data-plyr="rewind"],
+.plyr__controls>[data-plyr="play"],
+.plyr__controls>[data-plyr="fast-forward"] {
+    margin: 0 10px !important;
+}
+
+/* Right Aligned */
+.plyr__controls>.plyr__volume,
+.plyr__controls>[data-plyr="fullscreen"] {
+    margin-left: 10px !important;
+}
+
+/* Custom Gold/Orange Dot for Progress - Always Visible */
+.plyr--full-ui input[type=range]::-webkit-slider-thumb {
+    background: var(--primary-orange) !important;
+    border: 3px solid #fff !important;
+    width: 16px !important;
+    height: 16px !important;
+    box-shadow: 0 0 15px rgba(210, 105, 30, 0.8) !important;
+    cursor: pointer !important;
+    transform: translateY(-2px) !important;
+}
+
+.plyr--full-ui input[type=range]::-moz-range-thumb {
+    background: var(--primary-orange) !important;
+    border: 3px solid #fff !important;
+    width: 16px !important;
+    height: 16px !important;
+    box-shadow: 0 0 15px rgba(210, 105, 30, 0.8) !important;
+    cursor: pointer !important;
+}
+
+.plyr__progress input[type=range],
+.plyr__progress__buffer {
+    height: 6px !important;
+}
+
 * {
     margin: 0;
     padding: 0;

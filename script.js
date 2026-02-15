@@ -2971,9 +2971,24 @@ window.initPlyr = function (container = document) {
     shields.forEach(s => s.style.display = 'none');
 
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
-        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+        controls: [
+            'play-large',
+            'pip',
+            'progress',
+            'current-time',
+            'duration',
+            'rewind',
+            'play',
+            'fast-forward',
+            'mute',
+            'volume',
+            'fullscreen'
+        ],
+        seekTime: 5, // Match "5" icons in screenshot
         youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
-        tooltips: { controls: true, seek: true }
+        tooltips: { controls: false, seek: true },
+        displayDuration: true, // Ensure Duration shows next to current time
+        invertTime: false
     }));
 
     // Strict Right-Click Blocking for all player elements
