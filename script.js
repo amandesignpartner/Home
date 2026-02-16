@@ -1353,43 +1353,26 @@ function openPopup(id, isBack = false, options = {}) {
     } else {
         content.innerHTML = template.innerHTML;
 
-        // Initialize Plyr for dynamic content with proper timing
-        if (window.initPlyr) {
-            console.log(`openPopup: Initializing Plyr for popup '${id}'`);
+        // Trigger YouTube player initialization for video popups
+        if (id === 'videos' || id.includes('video')) {
+            console.log(`openPopup: Dispatching event to initialize YouTube players for popup '${id}'`);
 
-            // Special handling for video popup - ensure Plyr has time to load
-            if (id === 'videos') {
+            // Dispatch custom event that youtube-controls.js listens for
+            document.dispatchEvent(new CustomEvent('popupOpened', {
+                detail: { popupId: id }
+            }));
+
+            // Also directly call initialization if function exists
+            if (window.initializeAllYouTubePlayers) {
                 setTimeout(() => {
-                    window.initPlyr(content);
-
-                    // Verify that players were initialized
-                    const iframes = content.querySelectorAll('.js-player');
-                    console.log(`openPopup: Found ${iframes.length} video iframes in popup`);
-
-                    let initializedCount = 0;
-                    iframes.forEach((iframe, index) => {
-                        if (iframe.plyr) {
-                            initializedCount++;
-                            console.log(`  Video ${index + 1}: Player initialized ✓`);
-                        } else {
-                            console.warn(`  Video ${index + 1}: Player NOT initialized ✗`);
-                        }
-                    });
-
-                    if (initializedCount < iframes.length) {
-                        console.warn(`openPopup: Only ${initializedCount}/${iframes.length} videos initialized. Retrying...`);
-                        // Retry initialization after a short delay
-                        setTimeout(() => {
-                            window.initPlyr(content);
-                        }, 500);
-                    } else {
-                        console.log(`openPopup: All ${initializedCount} videos initialized successfully!`);
-                    }
-                }, 100);
-            } else {
-                // For other popups, initialize immediately
-                window.initPlyr(content);
+                    window.initializeAllYouTubePlayers();
+                }, 500);
             }
+        }
+
+        // Keep Plyr for other video content if needed
+        if (window.initPlyr && id !== 'videos') {
+            window.initPlyr(content);
         }
 
 
