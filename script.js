@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initProjectTracker(); // Initialize project status tracker
     initLogoLock(); // Initialize logo lock logic
     init360Popup(); // Initialize 360 view popup
+    window.initPlyr(); // Initialize all video players
 
     // Check for form success flag in URL
     checkFormSuccess();
@@ -3024,11 +3025,17 @@ window.initPlyr = function (container = document) {
 
         const player = new Plyr(p, config);
         p.plyr = player; // Store instance on element for external access
+        // Global export for Intro Player
+        if (isIntro) {
+            window.introPlayer = player;
+        }
+
         return player;
     });
 
     players.forEach(player => {
         const plyrContainer = player.elements.container;
+        if (!plyrContainer) return;
 
         // Find the associated protection shield
         const shield = plyrContainer.parentElement.querySelector('.video-protection-shield');
@@ -3050,16 +3057,15 @@ window.initPlyr = function (container = document) {
             };
         }
 
-        // Global export for Intro Player
-        if (isIntro) {
-            window.introPlayer = player;
-        }
-
         player.on('ready', event => {
             const container = event.detail.plyr.elements.container;
+            if (!container) return;
             container.oncontextmenu = (e) => { e.preventDefault(); return false; };
             container.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
         });
     });
 };
-document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });
+
+// Consistently initialized in main DOMContentLoaded in header
+// document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });
+
