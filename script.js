@@ -1121,67 +1121,63 @@ function initPopups() {
 
         // 2. Handle Detached Video (Picture-in-Picture)
         if (btn.classList.contains('btn-detach-video')) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
-
-            if (player) {
-                // IMPORTANT: Trigger play and pip immediately to maintain User Gesture Trust
-                player.play();
-                player.muted = false;
-
-                // Attempt PiP - use direct property or method if available
-                try {
-                    player.pip = true;
-                } catch (err) {
-                    console.error('PiP failed:', err);
-                    // Fallback to regular popup if PiP is blocked
-                    openPopup('intro');
-                }
-
-                // Sync UI for sound button if it exists
-                const sBtn = document.getElementById('intro-sound-btn');
-                if (sBtn) {
-                    sBtn.querySelector('.sound-on').style.display = 'block';
-                    sBtn.querySelector('.sound-off').style.display = 'none';
-                    sBtn.classList.add('pulse-orange');
-                    setTimeout(() => sBtn.classList.remove('pulse-orange'), 400);
-                }
-
-                // If this was clicked inside a popup, close the overlay to focus on the detached video
-                if (btn.closest('.popup-modal')) {
-                    closePopup();
-                }
-            }
+            window.handleIntroAction('detach', e);
             return;
         }
 
         // 3. Handle Sound Toggle
         if (btn.classList.contains('btn-toggle-sound')) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
-
-            if (player) {
-                player.muted = !player.muted;
-                // Force volume up if unmuting
-                if (!player.muted && player.volume === 0) player.volume = 1;
-
-                // Sync UI
-                btn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
-                btn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
-
-                // Add feedback animation
-                btn.classList.add('pulse-orange');
-                setTimeout(() => btn.classList.remove('pulse-orange'), 400);
-            }
+            window.handleIntroAction('sound', e);
             return;
         }
     });
 
     if (closeBtn) closeBtn.addEventListener('click', closePopup);
+}
+
+// === Global Intro Video Actions (Direct Access for Stability) ===
+window.handleIntroAction = function (action, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
+    if (!player) return;
+
+    if (action === 'detach') {
+        player.play();
+        player.muted = false;
+        try {
+            player.pip = true;
+        } catch (err) {
+            console.error('PiP failed:', err);
+            openPopup('intro');
+        }
+        // Sync Sound UI
+        const sBtn = document.getElementById('intro-sound-btn');
+        if (sBtn) {
+            sBtn.querySelector('.sound-on').style.display = 'block';
+            sBtn.querySelector('.sound-off').style.display = 'none';
+        }
+        // Auto-close if inside popup
+        if (event && event.target.closest('.popup-modal')) {
+            closePopup();
+        }
+    } else if (action === 'sound') {
+        player.muted = !player.muted;
+        if (!player.muted && player.volume === 0) player.volume = 1;
+
+        // Sync UI
+        const sBtn = document.getElementById('intro-sound-btn');
+        if (sBtn) {
+            sBtn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
+            sBtn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
+            // Visual feedback
+            sBtn.classList.add('pulse-orange');
+            setTimeout(() => sBtn.classList.remove('pulse-orange'), 600);
+        }
+    }
 }
 
 function openPopup(id, isBack = false, options = {}) {
