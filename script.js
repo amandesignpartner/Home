@@ -3010,30 +3010,45 @@ window.initPlyr = function (container = document) {
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
         controls: [
             'play-large',
-            'pip',
-            'progress',
-            'current-time',
-            'duration',
-            'rewind',
             'play',
-            'fast-forward',
             'mute',
             'volume',
-            'settings',
-            'fullscreen'
+            'pip'
         ],
-        seekTime: 5, // Match "5" icons in screenshot
+        seekTime: 5,
         youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
-        tooltips: { controls: false, seek: true },
-        displayDuration: true,
+        tooltips: { controls: false, seek: false },
+        displayDuration: false,
         invertTime: false
     }));
 
     players.forEach(player => {
+        const plyrContainer = player.elements.container;
+
+        // Find the associated protection shield
+        const shield = plyrContainer.parentElement.querySelector('.video-protection-shield');
+
+        if (shield) {
+            // Enable Left-Click to toggle Play/Pause
+            shield.style.cursor = 'pointer';
+            shield.addEventListener('click', (e) => {
+                if (e.button === 0) { // Left click only
+                    player.togglePlay();
+                }
+            });
+
+            // Re-enforce Right-Click block on the shield specifically
+            shield.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            };
+        }
+
         player.on('ready', event => {
-            const plyrContainer = event.detail.plyr.elements.container;
-            plyrContainer.oncontextmenu = (e) => { e.preventDefault(); return false; };
-            plyrContainer.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
+            const container = event.detail.plyr.elements.container;
+            container.oncontextmenu = (e) => { e.preventDefault(); return false; };
+            container.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
         });
     });
 };
