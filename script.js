@@ -2974,13 +2974,38 @@ function restoreAllTrackerData() {
     }
 }
 
+// === Global Right-Click Protection (High Priority) ===
+(function () {
+    const blockContextMenu = (e) => {
+        // Find if any parent has our protection classes or if it's a direct iframe/video touch
+        const path = e.composedPath ? e.composedPath() : [];
+        const isProtected = path.some(el =>
+            el.classList && (
+                el.classList.contains('plyr') ||
+                el.classList.contains('video-protection-shield') ||
+                el.classList.contains('intro-video-embed') ||
+                el.classList.contains('youtube-embed') ||
+                el.classList.contains('playlist-container')
+            )
+        ) || e.target.tagName === 'IFRAME' || e.target.tagName === 'VIDEO';
+
+        if (isProtected) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    };
+    // Capture phase (true) intercepts event before it can reach the internal iframe context
+    window.addEventListener('contextmenu', blockContextMenu, true);
+})();
+
 // === Plyr Initialization (Custom YouTube-like) ===
 window.initPlyr = function (container = document) {
     if (typeof Plyr === 'undefined') return;
 
-    // Remove shield if Plyr works (Plyr handles click blocking)
-    const shields = container.querySelectorAll('.video-protection-shield');
-    shields.forEach(s => s.style.display = 'none');
+    // We no longer remove shields; they are part of the strict protection layer
+    // const shields = container.querySelectorAll('.video-protection-shield');
+    // shields.forEach(s => s.style.display = 'none');
 
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
         controls: [
@@ -3000,30 +3025,16 @@ window.initPlyr = function (container = document) {
         seekTime: 5, // Match "5" icons in screenshot
         youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
         tooltips: { controls: false, seek: true },
-        displayDuration: true, // Ensure Duration shows next to current time
+        displayDuration: true,
         invertTime: false
     }));
-
-    // Right-click blocking removed to allow native YouTube menu and player functionality
-    /*
-    const blockContextMenu = (e) => {
-        if (e.target.closest('.plyr')) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    };
-
-    window.addEventListener('contextmenu', blockContextMenu, true);
 
     players.forEach(player => {
         player.on('ready', event => {
             const plyrContainer = event.detail.plyr.elements.container;
             plyrContainer.oncontextmenu = (e) => { e.preventDefault(); return false; };
-            // Double layer for fullscreen
             plyrContainer.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
         });
     });
-    */
 };
 document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });
