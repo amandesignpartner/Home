@@ -1131,37 +1131,88 @@ window.handleVideoAction = function (action, event, btnElement) {
 
     // Direct element reference is most reliable
     const btn = btnElement || (event ? event.currentTarget : null);
-    if (!btn) return;
+    if (!btn) {
+        console.error('handleVideoAction: No button element found');
+        return;
+    }
 
     // 1. Find the associated player instance
     const container = btn.closest('.video-gallery-item, .intro-video-embed, .youtube-embed, .playlist-container');
-    if (!container) return;
+    if (!container) {
+        console.error('handleVideoAction: No video container found');
+        return;
+    }
 
-    let player = null;
+    // Find iframe first
     const iframe = container.querySelector('.js-player');
-    if (iframe) player = iframe.plyr || iframe._plyr;
+    if (!iframe) {
+        console.error('handleVideoAction: No iframe found in container');
+        return;
+    }
 
-    // Fallback: search all elements in container for a .plyr property
+    // Check if player exists
+    let player = iframe.plyr || iframe._plyr;
+
+    // If no player, try to initialize
     if (!player) {
-        const allInContainer = container.querySelectorAll('*');
-        for (let el of allInContainer) {
-            if (el.plyr) {
-                player = el.plyr;
-                break;
-            }
+        console.log('handleVideoAction: Player not found, initializing...');
+
+        // Check if Plyr library is loaded
+        if (typeof Plyr === 'undefined') {
+            console.error('handleVideoAction: Plyr library not loaded!');
+            showToast('⚠️ Video player library not loaded. Please refresh the page.');
+            return;
+        }
+
+        // Initialize Plyr for this specific iframe
+        try {
+            const config = {
+                controls: ['play-large', 'play', 'mute', 'volume', 'pip'],
+                seekTime: 5,
+                youtube: {
+                    noCookie: false,
+                    rel: 0,
+                    showinfo: 0,
+                    iv_load_policy: 3,
+                    modestbranding: 1
+                },
+                tooltips: { controls: false, seek: false },
+                displayDuration: false,
+                invertTime: false,
+                quality: {
+                    default: 1080,
+                    options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240]
+                }
+            };
+
+            player = new Plyr(iframe, config);
+            iframe.plyr = player;
+
+            console.log('handleVideoAction: Plyr initialized successfully');
+
+            // Wait a moment for player to be fully ready before executing action
+            player.on('ready', () => {
+                console.log('handleVideoAction: Player ready, executing action');
+                executeVideoAction(player, action, btn);
+            });
+
+            return; // Exit and let the ready event handle the action
+
+        } catch (e) {
+            console.error('handleVideoAction: Plyr initialization failed:', e);
+            showToast('⚠️ Failed to initialize video player');
+            return;
         }
     }
 
-    if (!player && container.classList.contains('intro-video-embed')) {
-        player = window.introPlayer;
-    }
+    // Player exists, execute action immediately
+    executeVideoAction(player, action, btn);
+};
 
+// Separate function to execute the actual video action
+function executeVideoAction(player, action, btn) {
     if (!player) {
-        if (window.initPlyr) window.initPlyr(container);
-        setTimeout(() => {
-            const retryIframe = container.querySelector('.js-player');
-            if (retryIframe && retryIframe.plyr) window.handleVideoAction(action, event, btn);
-        }, 150);
+        console.error('executeVideoAction: No player provided');
         return;
     }
 
@@ -1170,15 +1221,20 @@ window.handleVideoAction = function (action, event, btnElement) {
     setTimeout(() => btn.classList.remove('pulse-orange'), 600);
 
     try {
-        const row = btn.closest('.video-controls-row') || btn;
+        const row = btn.closest('.video-controls-row') || btn.parentElement;
 
         if (action === 'play') {
+            // Toggle play/pause
             if (player.playing) {
                 player.pause();
             } else {
-                player.play();
+                player.play().catch(err => {
+                    console.error('Play failed:', err);
+                    showToast('⚠️ Unable to play video. Please try again.');
+                });
             }
 
+            // Update button icons
             const playIcons = row.querySelectorAll('.play-icon');
             const pauseIcons = row.querySelectorAll('.pause-icon');
 
@@ -1186,12 +1242,18 @@ window.handleVideoAction = function (action, event, btnElement) {
                 const isPlaying = player.playing;
                 playIcons.forEach(i => i.style.display = isPlaying ? 'none' : 'block');
                 pauseIcons.forEach(i => i.style.display = isPlaying ? 'block' : 'none');
-            }, 80);
+            }, 100);
 
         } else if (action === 'sound') {
+            // Toggle mute/unmute
             player.muted = !player.muted;
-            if (!player.muted && player.volume < 0.1) player.volume = 1;
 
+            // If unmuting and volume is too low, set to full
+            if (!player.muted && player.volume < 0.1) {
+                player.volume = 1;
+            }
+
+            // Update button icons
             const soundOnIcons = row.querySelectorAll('.sound-on');
             const soundOffIcons = row.querySelectorAll('.sound-off');
 
@@ -1199,25 +1261,52 @@ window.handleVideoAction = function (action, event, btnElement) {
             soundOffIcons.forEach(i => i.style.display = player.muted ? 'block' : 'none');
 
         } else if (action === 'detach') {
-            player.play();
-            player.muted = false;
+            // Start playing and unmute before PiP
+            player.play().catch(err => {
+                console.error('Play before PiP failed:', err);
+            });
 
+            player.muted = false;
+            if (player.volume < 0.1) player.volume = 1;
+
+            // Small delay to ensure video is playing
             setTimeout(() => {
                 try {
+                    // Try Plyr's PiP API first
                     if (typeof player.pip !== 'undefined') {
-                        player.pip = !player.pip;
-                    } else if (player.elements && player.elements.container && player.elements.container.requestPictureInPicture) {
-                        player.elements.container.requestPictureInPicture();
+                        player.pip = true;
+                    }
+                    // Fallback to native PiP API
+                    else if (player.elements && player.elements.wrapper) {
+                        const video = player.elements.wrapper.querySelector('video');
+                        if (video && document.pictureInPictureEnabled) {
+                            if (document.pictureInPictureElement) {
+                                document.exitPictureInPicture().catch(err => {
+                                    console.error('Exit PiP failed:', err);
+                                });
+                            } else {
+                                video.requestPictureInPicture().catch(err => {
+                                    console.error('Request PiP failed:', err);
+                                    showToast('⚠️ Picture-in-Picture not supported');
+                                });
+                            }
+                        } else {
+                            showToast('⚠️ Picture-in-Picture not available');
+                        }
+                    } else {
+                        showToast('⚠️ Picture-in-Picture not supported');
                     }
                 } catch (err) {
                     console.error('PiP error:', err);
+                    showToast('⚠️ Picture-in-Picture failed');
                 }
-            }, 150);
+            }, 200);
         }
     } catch (err) {
         console.error('Video action failed:', err);
+        showToast('⚠️ Video control failed');
     }
-};
+}
 
 function openPopup(id, isBack = false, options = {}) {
     const overlay = document.getElementById('popupOverlay');
@@ -1264,8 +1353,44 @@ function openPopup(id, isBack = false, options = {}) {
     } else {
         content.innerHTML = template.innerHTML;
 
-        // Initialize Plyr for dynamic content
-        if (window.initPlyr) { window.initPlyr(content); }
+        // Initialize Plyr for dynamic content with proper timing
+        if (window.initPlyr) {
+            console.log(`openPopup: Initializing Plyr for popup '${id}'`);
+
+            // Special handling for video popup - ensure Plyr has time to load
+            if (id === 'videos') {
+                setTimeout(() => {
+                    window.initPlyr(content);
+
+                    // Verify that players were initialized
+                    const iframes = content.querySelectorAll('.js-player');
+                    console.log(`openPopup: Found ${iframes.length} video iframes in popup`);
+
+                    let initializedCount = 0;
+                    iframes.forEach((iframe, index) => {
+                        if (iframe.plyr) {
+                            initializedCount++;
+                            console.log(`  Video ${index + 1}: Player initialized ✓`);
+                        } else {
+                            console.warn(`  Video ${index + 1}: Player NOT initialized ✗`);
+                        }
+                    });
+
+                    if (initializedCount < iframes.length) {
+                        console.warn(`openPopup: Only ${initializedCount}/${iframes.length} videos initialized. Retrying...`);
+                        // Retry initialization after a short delay
+                        setTimeout(() => {
+                            window.initPlyr(content);
+                        }, 500);
+                    } else {
+                        console.log(`openPopup: All ${initializedCount} videos initialized successfully!`);
+                    }
+                }, 100);
+            } else {
+                // For other popups, initialize immediately
+                window.initPlyr(content);
+            }
+        }
 
 
 
