@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -404,16 +404,54 @@
             <div class="intro-video-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player js-intro-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
                 </iframe>
             </div>
 
+            <!-- Video Controls for Intro Video -->
+            <div class="video-controls-row" style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                    style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                    <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                        style="display: none;">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                    </svg>
+                    Play / Pause
+                </button>
+                <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                    style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                    <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                        stroke-width="2" style="display: none;">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                </button>
+                <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                    style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                    title="Fullscreen">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
             <h3 class="premium-heading" style="margin-top: 10px;">Crafting Dreams in Dimensions. I am here to turn your
                 ideas into WOW Feel! My
-                focus is simple�</h3>
+                focus is simple…</h3>
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px;">
                 <button class="btn-outline" data-popup="intro"
                     style="flex: 1; min-width: 100px; position: relative; z-index: 20;">Learn More</button>
@@ -800,7 +838,7 @@
         </div>
         <div class="sticky-content">
             <p>"Exceptional 3D visualization work! Aman delivered beyond expectations with attention to detail."</p>
-            <p style="font-size: 11px; color: var(--primary-green);">- Happy Client ?????</p>
+            <p style="font-size: 11px; color: var(--primary-green);">- Happy Client ⭐⭐⭐⭐⭐</p>
             <button class="btn-outline" data-popup="client-reviews">View All Reviews</button>
         </div>
     </div>
@@ -812,7 +850,7 @@
     <div class="sticky-note compact draggable" id="note-pricing" data-title="Pricing and Timeline"
         style="left: 350px; top: 350px;">
         <div class="sticky-header">
-            <span class="header-title">?? Pricing & Timeline</span>
+            <span class="header-title">💰 Pricing & Timeline</span>
             <div class="header-controls">
                 <button class="pin-btn" title="pin section on screen">
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"
@@ -844,7 +882,7 @@
         </div>
         <div class="sticky-content" style="text-align: center; padding: 20px 15px;">
             <p class="pricing-range-display">
-                $50 � $5,000
+                $50 — $5,000
             </p>
             <h3 class="premium-heading"
                 style="font-size: 16px; font-weight: 300; letter-spacing: 0.5px; margin-bottom: 20px; color: white; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);">
@@ -877,7 +915,7 @@
 
 
     <!-- 360 View Button -->
-    <div class="btn-360-wrapper draggable" id="btn-360" data-title="360� View">
+    <div class="btn-360-wrapper draggable" id="btn-360" data-title="360° View">
         <div class="btn-360-controls">
             <button class="pin-btn" title="pin section on screen">
                 <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"
@@ -1256,7 +1294,7 @@
             <div class="youtube-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player js-intro-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
@@ -1324,64 +1362,256 @@
                         oncontextmenu="return false;">
                         <div class="video-protection-shield" oncontextmenu="return false;"></div>
                         <iframe class="js-player" width="100%"
-                            src="https://www.youtube.com/embed/Eul0gwjsRWo?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=Eul0gwjsRWo&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
+                            src="https://www.youtube.com/embed/Eul0gwjsRWo?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=Eul0gwjsRWo&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                             title="3D Walkthrough 2" frameborder="0"
                             sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen></iframe>
                     </div>
-
-                    <!-- Video 3 -->
-                    <div class="video-gallery-item">
-                        <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
-                            oncontextmenu="return false;">
-                            <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                            <iframe class="js-player" width="100%"
-                                src="https://www.youtube.com/embed/uk_5J3RUD98?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=uk_5J3RUD98&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
-                                title="3D Walkthrough 3" frameborder="0"
-                                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
-                        </div>
+                    <div class="video-controls-row" style="display: flex; gap: 8px;">
+                        <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                            style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M8 5v14l11-7z"></path>
+                            </svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                                style="display: none;">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                            </svg>
+                            Play / Pause
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                            <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                            title="Fullscreen">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                                </path>
+                            </svg>
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Video 4 -->
-                    <div class="video-gallery-item">
-                        <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
-                            oncontextmenu="return false;">
-                            <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                            <iframe class="js-player" width="100%"
-                                src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
-                                title="3D Walkthrough 4" frameborder="0"
-                                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
-                        </div>
-                        </div>\n<!-- Video 5 -->
-                    <div class="video-gallery-item">
-                        <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
-                            oncontextmenu="return false;">
-                            <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                            <iframe class="js-player" width="100%"
-                                src="https://www.youtube.com/embed/IN7GQOxseGU?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=IN7GQOxseGU&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
-                                title="3D Walkthrough 5" frameborder="0"
-                                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
-                        </div>
-                        </div>\n<!-- Video 6 -->
-                    <div class="video-gallery-item">
-                        <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
-                            oncontextmenu="return false;">
-                            <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                            <iframe class="js-player" width="100%"
-                                src="https://www.youtube.com/embed/JAM6MbdOkUE?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=JAM6MbdOkUE&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
-                                title="3D Walkthrough 6" frameborder="0"
-                                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen></iframe>
-                        </div>
-                        </div>\n</div>
+                <!-- Video 3 -->
+                <div class="video-gallery-item">
+                    <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
+                        oncontextmenu="return false;">
+                        <div class="video-protection-shield" oncontextmenu="return false;"></div>
+                        <iframe class="js-player" width="100%"
+                            src="https://www.youtube.com/embed/uk_5J3RUD98?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=uk_5J3RUD98&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
+                            title="3D Walkthrough 3" frameborder="0"
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                    <div class="video-controls-row" style="display: flex; gap: 8px;">
+                        <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                            style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M8 5v14l11-7z"></path>
+                            </svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                                style="display: none;">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                            </svg>
+                            Play / Pause
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                            <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                            title="Fullscreen">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video 4 -->
+                <div class="video-gallery-item">
+                    <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
+                        oncontextmenu="return false;">
+                        <div class="video-protection-shield" oncontextmenu="return false;"></div>
+                        <iframe class="js-player" width="100%"
+                            src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
+                            title="3D Walkthrough 4" frameborder="0"
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                    <div class="video-controls-row" style="display: flex; gap: 8px;">
+                        <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                            style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M8 5v14l11-7z"></path>
+                            </svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                                style="display: none;">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                            </svg>
+                            Play / Pause
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                            <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                            title="Fullscreen">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video 5 -->
+                <div class="video-gallery-item">
+                    <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
+                        oncontextmenu="return false;">
+                        <div class="video-protection-shield" oncontextmenu="return false;"></div>
+                        <iframe class="js-player" width="100%"
+                            src="https://www.youtube.com/embed/IN7GQOxseGU?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=IN7GQOxseGU&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
+                            title="3D Walkthrough 5" frameborder="0"
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                    <div class="video-controls-row" style="display: flex; gap: 8px;">
+                        <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                            style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M8 5v14l11-7z"></path>
+                            </svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                                style="display: none;">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                            </svg>
+                            Play / Pause
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                            <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                            title="Fullscreen">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video 6 -->
+                <div class="video-gallery-item">
+                    <div class="intro-video-embed" style="position: relative; margin-bottom: 12px;"
+                        oncontextmenu="return false;">
+                        <div class="video-protection-shield" oncontextmenu="return false;"></div>
+                        <iframe class="js-player" width="100%"
+                            src="https://www.youtube.com/embed/JAM6MbdOkUE?rel=0&modestbranding=1&autoplay=0&mute=1&loop=1&playlist=JAM6MbdOkUE&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
+                            title="3D Walkthrough 6" frameborder="0"
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                    <div class="video-controls-row" style="display: flex; gap: 8px;">
+                        <button class="btn-outline" onclick="customVideoControls.play(this); event.stopPropagation();"
+                            style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M8 5v14l11-7z"></path>
+                            </svg>
+                            <svg class="pause-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                                style="display: none;">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                            </svg>
+                            Play / Pause
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.mute(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;">
+                            <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <svg class="sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <line x1="23" y1="9" x2="17" y2="15"></line>
+                                <line x1="17" y1="9" x2="23" y2="15"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-outline" onclick="customVideoControls.detach(this); event.stopPropagation();"
+                            style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center;"
+                            title="Fullscreen">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </template>
 
     <template id="popup-project-gallery">
@@ -2353,9 +2583,9 @@
                                         <div class="qp-text"><strong>Furniture</strong></div>
                                     </label>
                                     <label class="qp-option-item mini">
-                                        <input type="checkbox" name="interior_items[]" value="D�cor">
+                                        <input type="checkbox" name="interior_items[]" value="Décor">
                                         <div class="qp-option-checkbox"></div>
-                                        <div class="qp-text"><strong>D�cor</strong></div>
+                                        <div class="qp-text"><strong>Décor</strong></div>
                                     </label>
                                     <label class="qp-option-item mini">
                                         <input type="checkbox" name="interior_items[]" value="3D People">
@@ -2382,9 +2612,9 @@
                                     Requirements:</span>
                                 <div class="qp-options-list">
                                     <label class="qp-option-item mini">
-                                        <input type="checkbox" name="exterior_items[]" value="Fa�ade & Exterior Finish">
+                                        <input type="checkbox" name="exterior_items[]" value="Façade & Exterior Finish">
                                         <div class="qp-option-checkbox"></div>
-                                        <div class="qp-text"><strong>Fa�ade & Exterior Finish</strong></div>
+                                        <div class="qp-text"><strong>Façade & Exterior Finish</strong></div>
                                     </label>
                                     <label class="qp-option-item mini">
                                         <input type="checkbox" name="exterior_items[]" value="Landscape & Garden">
@@ -2459,10 +2689,10 @@
                                 <div class="qp-text"><strong>Fixed Project Cost</strong></div>
                             </label>
                             <label class="qp-option-item">
-                                <input type="radio" name="billing_type" value="Hourly Billing � $25/hr" required
+                                <input type="radio" name="billing_type" value="Hourly Billing — $25/hr" required
                                     onchange="document.getElementById('fixedPriceGroup').style.display='none'; document.getElementById('hourlyPricingGroup').style.display='block';">
                                 <div class="qp-option-radio"></div>
-                                <div class="qp-text"><strong>Hourly Billing � $25/hr</strong></div>
+                                <div class="qp-text"><strong>Hourly Billing — $25/hr</strong></div>
                             </label>
                         </div>
                     </div>
@@ -2473,11 +2703,11 @@
                         <select name="budget"
                             onchange="this.nextElementSibling.style.display = (this.value === 'custom' ? 'block' : 'none')">
                             <option value="" selected>Select budget (optional)</option>
-                            <option value="$100�$300">$100�$300</option>
-                            <option value="$300�$500">$300�$500</option>
-                            <option value="$500�$1,000">$500�$1,000</option>
-                            <option value="$1,000�$5,000">$1,000�$5,000</option>
-                            <option value="$5,000�$10,000">$5,000�$10,000</option>
+                            <option value="$100–$300">$100–$300</option>
+                            <option value="$300–$500">$300–$500</option>
+                            <option value="$500–$1,000">$500–$1,000</option>
+                            <option value="$1,000–$5,000">$1,000–$5,000</option>
+                            <option value="$5,000–$10,000">$5,000–$10,000</option>
                             <option value="$10,000+">$10,000+</option>
                             <option value="custom">Write your own budget</option>
                         </select>
@@ -2499,10 +2729,10 @@
                             onchange="this.nextElementSibling.style.display = (this.value === 'custom' ? 'block' : 'none')">
                             <option value="" selected>Select timeline (optional)</option>
                             <option value="Less than 1 week">Less than 1 week</option>
-                            <option value="1�2 weeks">1�2 weeks</option>
-                            <option value="2�4 weeks">2�4 weeks</option>
-                            <option value="1�2 months">1�2 months</option>
-                            <option value="2�3 months">2�3 months</option>
+                            <option value="1–2 weeks">1–2 weeks</option>
+                            <option value="2–4 weeks">2–4 weeks</option>
+                            <option value="1–2 months">1–2 months</option>
+                            <option value="2–3 months">2–3 months</option>
                             <option value="custom">Write your own timeline</option>
                         </select>
                         <input type="text" name="timeline_custom" placeholder="Or write your own timeline"
@@ -2566,7 +2796,7 @@
                 <div class="profile-bio">
                     <p
                         style="font-family: 'Raleway', sans-serif; font-weight: 300; line-height: 1.5; margin-bottom: 15px; font-size: 13px; opacity: 0.95;">
-                        I�m Aman Ullah, a skilled Design Engineer, 3D Visualizer, and MBA-trained Strategic Leader, with
+                        I’m Aman Ullah, a skilled Design Engineer, 3D Visualizer, and MBA-trained Strategic Leader, with
                         a strong foundation in Civil Engineering. I combine technical expertise with management,
                         leadership, and business planning skills to deliver exceptional design solutions.</p>
                     <p
@@ -2711,41 +2941,41 @@
                     <p class="feedback-text">"Exceptional 3D visualization work! Aman delivered beyond expectations
                         with incredible attention to detail. The walkthrough video was exactly what we needed for
                         our project presentation. Highly recommended!"</p>
-                    <p class="feedback-author">????? � Sarah M., USA</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — Sarah M., USA</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Professional, responsive, and extremely talented. Aman's 3D renders
                         helped us win our client's approval immediately. The attention to lighting and materials is
                         outstanding."</p>
-                    <p class="feedback-author">????? � Architecture Firm, Australia</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — Architecture Firm, Australia</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Aman is a highly skilled 3D designer who was able to bring our ideas
                         to life with his very professional 3D renderings and virtual walkthrough! I highly recommend
                         his work and I look forward to collaborating with him again on future projects."</p>
-                    <p class="feedback-author">????? � andy_in_paris, France</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — andy_in_paris, France</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Mr. Aman carried out the 3D animation work very professionally and was
                         accommodating to all my requests. I am very satisfied with his ideas and work."</p>
-                    <p class="feedback-author">????? � ZFJS, Zadar, HR</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — ZFJS, Zadar, HR</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Outstanding work on our data center visualization. The level of detail
                         was impressive - every server rack, cable, and lighting fixture was perfect. Aman is a true
                         professional!"</p>
-                    <p class="feedback-author">????? � Tech Company, Germany</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — Tech Company, Germany</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"I needed a 4K walkthrough video for my real estate project. Aman
                         delivered exceptional quality within the deadline. The video helped sell 5 units before
                         construction even started!"</p>
-                    <p class="feedback-author">????? � Real Estate Developer, UAE</p>
+                    <p class="feedback-author">⭐⭐⭐⭐⭐ — Real Estate Developer, UAE</p>
                 </div>
 
                 <div class="feedback-item">
@@ -2753,19 +2983,19 @@
                         detail and professionalism not only exceeded my expectations but also made the entire
                         project seamless. His proactive communication were truly impressive - highly RECOMMEND! ??"
                     </p>
-                    <p class="feedback-author">????? � maroshdcd (Repeat Client), United Kingdom</p>
+                    <p class="feedback-author">????? — maroshdcd (Repeat Client), United Kingdom</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Good job - moving on to next phase!!"</p>
-                    <p class="feedback-author">????? � Ahmed C., Lahore, PK</p>
+                    <p class="feedback-author">????? — Ahmed C., Lahore, PK</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Amazing experience working with Aman! He transformed my rough sketches
                         into beautiful 3D visualizations. Very patient with revisions and always delivered on time."
                     </p>
-                    <p class="feedback-author">????? � Interior Designer, Canada</p>
+                    <p class="feedback-author">????? — Interior Designer, Canada</p>
                 </div>
 
                 <div class="feedback-item">
@@ -2773,18 +3003,18 @@
                         English is also very well placed so there was no language barrier. He also did the
                         customizations and changes that I asked for. Once again, thanks for helping with this
                         project."</p>
-                    <p class="feedback-author">????? � hamidkamali296, Australia</p>
+                    <p class="feedback-author">????? — hamidkamali296, Australia</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"Great work! Easy communication!"</p>
-                    <p class="feedback-author">????? � Kristin M., Newark, OH, US</p>
+                    <p class="feedback-author">????? — Kristin M., Newark, OH, US</p>
                 </div>
 
                 <div class="feedback-item">
                     <p class="feedback-text">"From a simple concept to a stunning reality - Aman made it happen! His
                         landscape and environment design skills are exceptional. Truly a master of his craft."</p>
-                    <p class="feedback-author">????? � Landscape Architect, New Zealand</p>
+                    <p class="feedback-author">????? — Landscape Architect, New Zealand</p>
                 </div>
             </div>
     </template>
@@ -2954,17 +3184,17 @@
                 <!-- Rich Details (Compact) -->
                 <div style="font-size: 13px; line-height: 1.8;">
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: black;"><span style="margin-right: 6px;">??</span>
+                        <span style="color: black;"><span style="margin-right: 6px;">👤</span>
                             Client:</span>
                         <strong id="trk-client" style="color: black;">...</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: black;"><span style="margin-right: 6px;">??</span>
+                        <span style="color: black;"><span style="margin-right: 6px;">📋</span>
                             Project:</span>
                         <strong id="trk-project" style="color: black;">...</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: black;"><span style="margin-right: 6px;">??</span>
+                        <span style="color: black;"><span style="margin-right: 6px;">📅</span>
                             Started:</span>
                         <strong id="trk-start" style="color: black;">...</strong>
                     </div>
@@ -2974,36 +3204,36 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin: 12px 0;">
                     <div id="status-awaiting"
                         style="position: relative; padding: 6px; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; opacity: 1; color: black;">
-                        <div style="font-size: 14px;">?</div>
+                        <div style="font-size: 14px;">⏳</div>
                         <div style="font-size: 8px; font-weight: bold; margin-top: 2px; white-space: nowrap;">
                             AWAITING PAYMENT</div>
                         <div class="print-check"
                             style="display:none; position: absolute; top: 2px; right: 2px; font-size: 10px; background: white; border-radius: 50%; padding: 0 2px;">
-                            ?</div>
+                            ✅</div>
                     </div>
                     <div id="status-progress"
                         style="position: relative; padding: 6px; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; opacity: 1; color: black;">
-                        <div style="font-size: 14px;">???</div>
+                        <div style="font-size: 14px;">🏗️</div>
                         <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">IN PROGRESS</div>
                         <div class="print-check"
                             style="display:none; position: absolute; top: 2px; right: 2px; font-size: 12px; background: white; border-radius: 50%; padding: 0 2px;">
-                            ?</div>
+                            ✅</div>
                     </div>
                     <div id="status-waiting"
                         style="position: relative; padding: 6px; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; opacity: 1; color: black;">
-                        <div style="font-size: 14px;">??</div>
+                        <div style="font-size: 14px;">📤</div>
                         <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">SUBMITTED</div>
                         <div class="print-check"
                             style="display:none; position: absolute; top: 2px; right: 2px; font-size: 12px; background: white; border-radius: 50%; padding: 0 2px;">
-                            ?</div>
+                            ✅</div>
                     </div>
                     <div id="status-completed"
                         style="position: relative; padding: 6px; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; opacity: 1; color: black;">
-                        <div style="font-size: 14px;">??</div>
+                        <div style="font-size: 14px;">🏆</div>
                         <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">COMPLETED</div>
                         <div class="print-check"
                             style="display:none; position: absolute; top: 2px; right: 2px; font-size: 12px; background: white; border-radius: 50%; padding: 0 2px;">
-                            ?</div>
+                            ✅</div>
                     </div>
                 </div>
 
@@ -3037,34 +3267,34 @@
                                 style="color: var(--primary-orange); font-weight: bold;">[ Shortcut ] 4/4 (Final &
                                 Revisions)</option>
                             <option disabled>------ Individual Items ------</option>
-                            <option>?? Preparing Architectural 2D Concept Plan</option>
-                            <option>?? Refining 2D Plan for 3D Modeling</option>
-                            <option>?? Preparing 3D Model</option>
-                            <option>?? Working on Lighting & Furniture</option>
-                            <option>?? Working on Texturing</option>
-                            <option>?? Setting Up the Environment</option>
-                            <option>?? Finalizing the Rendering Setup</option>
-                            <option>?? Rendering Images</option>
-                            <option>?? Rendering Walkthrough Video</option>
-                            <option>?? Working on Add-on</option>
-                            <option>?? Finalizing Video for Review</option>
-                            <option>?? Project Completed</option>
-                            <option>?? Project in Revision</option>
-                            <option>?? Project in 2nd Revision</option>
-                            <option>?? Project in 3rd Revision</option>
-                            <option>?? Project in 4th Revision</option>
-                            <option>?? Project in 5th Revision</option>
-                            <option>?? Project in 6th Revision</option>
-                            <option>?? Project in 7th Revision</option>
-                            <option>?? Project in 8th Revision</option>
-                            <option>?? Project in 9th Revision</option>
-                            <option>?? Project in 10th Revision</option>
+                            <option>🔹 Preparing Architectural 2D Concept Plan</option>
+                            <option>🔹 Refining 2D Plan for 3D Modeling</option>
+                            <option>🔹 Preparing 3D Model</option>
+                            <option>🔹 Working on Lighting & Furniture</option>
+                            <option>🔹 Working on Texturing</option>
+                            <option>🔹 Setting Up the Environment</option>
+                            <option>🔹 Finalizing the Rendering Setup</option>
+                            <option>🔹 Rendering Images</option>
+                            <option>🔹 Rendering Walkthrough Video</option>
+                            <option>🔹 Working on Add-on</option>
+                            <option>🔹 Finalizing Video for Review</option>
+                            <option>🔹 Project Completed</option>
+                            <option>🔹 Project in Revision</option>
+                            <option>🔹 Project in 2nd Revision</option>
+                            <option>🔹 Project in 3rd Revision</option>
+                            <option>🔹 Project in 4th Revision</option>
+                            <option>🔹 Project in 5th Revision</option>
+                            <option>🔹 Project in 6th Revision</option>
+                            <option>🔹 Project in 7th Revision</option>
+                            <option>🔹 Project in 8th Revision</option>
+                            <option>🔹 Project in 9th Revision</option>
+                            <option>🔹 Project in 10th Revision</option>
                         </select>
                     </div>
 
                     <div style="margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <span style="color: #10b981;">?? Last Updated:</span>
+                            <span style="color: #10b981;">🔄 Last Updated:</span>
                             <strong id="trk-updated"
                                 style="text-align: right; white-space: pre-wrap; max-width: 60%; color: #10b981;">...</strong>
                         </div>
@@ -3089,28 +3319,28 @@
                                 style="color: var(--primary-orange); font-weight: bold;">[ Shortcut ] 4/4 (Final &
                                 Revisions)</option>
                             <option disabled>------ Individual Items ------</option>
-                            <option>?? Preparing Architectural 2D Concept Plan</option>
-                            <option>?? Refining 2D Plan for 3D Modeling</option>
-                            <option>?? Preparing 3D Model</option>
-                            <option>?? Working on Lighting & Furniture</option>
-                            <option>?? Working on Texturing</option>
-                            <option>?? Setting Up the Environment</option>
-                            <option>?? Finalizing the Rendering Setup</option>
-                            <option>?? Rendering Images</option>
-                            <option>?? Rendering Walkthrough Video</option>
-                            <option>?? Working on Add-on</option>
-                            <option>?? Finalizing Video for Review</option>
-                            <option>?? Project Completed</option>
-                            <option>?? Project in Revision</option>
-                            <option>?? Project in 2nd Revision</option>
-                            <option>?? Project in 3rd Revision</option>
-                            <option>?? Project in 4th Revision</option>
-                            <option>?? Project in 5th Revision</option>
-                            <option>?? Project in 6th Revision</option>
-                            <option>?? Project in 7th Revision</option>
-                            <option>?? Project in 8th Revision</option>
-                            <option>?? Project in 9th Revision</option>
-                            <option>?? Project in 10th Revision</option>
+                            <option>🔹 Preparing Architectural 2D Concept Plan</option>
+                            <option>🔹 Refining 2D Plan for 3D Modeling</option>
+                            <option>🔹 Preparing 3D Model</option>
+                            <option>🔹 Working on Lighting & Furniture</option>
+                            <option>🔹 Working on Texturing</option>
+                            <option>🔹 Setting Up the Environment</option>
+                            <option>🔹 Finalizing the Rendering Setup</option>
+                            <option>🔹 Rendering Images</option>
+                            <option>🔹 Rendering Walkthrough Video</option>
+                            <option>🔹 Working on Add-on</option>
+                            <option>🔹 Finalizing Video for Review</option>
+                            <option>🔹 Project Completed</option>
+                            <option>🔹 Project in Revision</option>
+                            <option>🔹 Project in 2nd Revision</option>
+                            <option>🔹 Project in 3rd Revision</option>
+                            <option>🔹 Project in 4th Revision</option>
+                            <option>🔹 Project in 5th Revision</option>
+                            <option>🔹 Project in 6th Revision</option>
+                            <option>🔹 Project in 7th Revision</option>
+                            <option>🔹 Project in 8th Revision</option>
+                            <option>🔹 Project in 9th Revision</option>
+                            <option>🔹 Project in 10th Revision</option>
                         </select>
                     </div>
                     <div
@@ -3126,23 +3356,23 @@
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
                 <a id="btn-download" href="#" target="_blank"
                     style="display: flex; align-items: center; justify-content: center; padding: 10px; background: #fff; border-radius: 8px; color: #000; text-decoration: none; font-size: 11px; font-weight: 700;">
-                    <span style="margin-right: 6px;">??</span> Download Latest Project Files
+                    <span style="margin-right: 6px;">📥</span> Download Latest Project Files
                 </a>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button id="btn-print"
                         style="background: rgba(255,255,255,0.1); border: none; padding: 10px; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
-                        ??? Print
+                        🖨️ Print
                     </button>
                     <button onclick="openFeedbackFromTracker()"
                         style="background: rgba(255,255,255,0.1); border: none; padding: 10px; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
-                        ?? Feedback
+                        💬 Feedback
                     </button>
                 </div>
             </div>
 
             <div style="text-align: center; margin-top: 10px;">
                 <p style="margin: 0; font-size: 10px; color: black;">
-                    Secure Access � <a href="https://wa.me/923010003011" target="_blank"
+                    Secure Access • <a href="https://wa.me/923010003011" target="_blank"
                         style="color: black; text-decoration: underline;">Contact Support</a>
                 </p>
             </div>
@@ -3151,7 +3381,7 @@
 
     <template id="popup-client-reviews">
         <div class="popup-inner">
-            <h2 style="text-align: center; margin-bottom: 10px;">?? Client Reviews</h2>
+            <h2 style="text-align: center; margin-bottom: 10px;">💬 Client Reviews</h2>
             <p style="text-align: center; color: var(--text-muted); margin-bottom: 30px; font-size: 13px;">
                 See what my clients say about their experience working with me
             </p>
@@ -3167,7 +3397,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">John Davidson</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3187,7 +3417,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Sarah Mitchell</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3207,7 +3437,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Michael Chen</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3227,7 +3457,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Emily Rodriguez</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3247,7 +3477,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">David Thompson</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3267,7 +3497,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Lisa Anderson</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3288,7 +3518,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Robert Williams</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3309,7 +3539,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Nina Patel</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3330,7 +3560,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Carlos Martinez</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3352,7 +3582,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">Amanda Scott</div>
-                            <div style="color: var(--primary-green); font-size: 12px;">?????</div>
+                            <div style="color: var(--primary-green); font-size: 12px;">⭐⭐⭐⭐⭐</div>
                         </div>
                     </div>
                     <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
@@ -3367,7 +3597,7 @@
             <div
                 style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, rgba(210, 105, 30, 0.1), rgba(210, 105, 30, 0.05)); border-radius: 16px; border: 2px dashed rgba(210, 105, 30, 0.3); margin-top: 30px;">
                 <div style="margin-bottom: 15px;">
-                    <span style="font-size: 48px; display: block; margin-bottom: 10px;">??</span>
+                    <span style="font-size: 48px; display: block; margin-bottom: 10px;">💭</span>
                     <h3 style="margin: 0 0 10px 0; font-size: 18px; color: var(--primary-orange); font-weight: 600;">
                         Share Your Experience!
                     </h3>
@@ -3426,35 +3656,35 @@
                             <span
                                 style="font-size: 24px; display: block; filter: grayscale(100%); transition: all 0.3s;"
                                 onmouseover="this.style.filter='none'; this.style.transform='scale(1.2)'"
-                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">??</span>
+                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">😍</span>
                         </label>
                         <label style="cursor: pointer; text-align: center;">
                             <input type="radio" name="rating" value="4" style="display: none;">
                             <span
                                 style="font-size: 24px; display: block; filter: grayscale(100%); transition: all 0.3s;"
                                 onmouseover="this.style.filter='none'; this.style.transform='scale(1.2)'"
-                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">??</span>
+                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">🙂</span>
                         </label>
                         <label style="cursor: pointer; text-align: center;">
                             <input type="radio" name="rating" value="3" style="display: none;">
                             <span
                                 style="font-size: 24px; display: block; filter: grayscale(100%); transition: all 0.3s;"
                                 onmouseover="this.style.filter='none'; this.style.transform='scale(1.2)'"
-                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">??</span>
+                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">😐</span>
                         </label>
                         <label style="cursor: pointer; text-align: center;">
                             <input type="radio" name="rating" value="2" style="display: none;">
                             <span
                                 style="font-size: 24px; display: block; filter: grayscale(100%); transition: all 0.3s;"
                                 onmouseover="this.style.filter='none'; this.style.transform='scale(1.2)'"
-                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">??</span>
+                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">🙁</span>
                         </label>
                         <label style="cursor: pointer; text-align: center;">
                             <input type="radio" name="rating" value="1" style="display: none;">
                             <span
                                 style="font-size: 24px; display: block; filter: grayscale(100%); transition: all 0.3s;"
                                 onmouseover="this.style.filter='none'; this.style.transform='scale(1.2)'"
-                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">??</span>
+                                onmouseout="if(!this.previousElementSibling.checked) this.style.filter='grayscale(100%)'; this.style.transform='scale(1)'">😠</span>
                         </label>
                     </div>
                 </div>
@@ -3475,7 +3705,7 @@
 
                 <!-- Thank You Message (hidden initially) -->
                 <div id="feedback-thank-you" style="display: none; text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 72px; margin-bottom: 20px; animation: bounceIn 0.6s ease;">??</div>
+                    <div style="font-size: 72px; margin-bottom: 20px; animation: bounceIn 0.6s ease;">🎉</div>
                     <h2 style="color: var(--primary-orange); font-size: 28px; margin-bottom: 15px; font-weight: 700;">
                         Thank You!
                     </h2>
@@ -3710,7 +3940,7 @@
                 oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player" width="100%" height="250"
-                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=1&showinfo=0&iv_load_policy=3&vq=hd1080"
+                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Premium Walkthrough Example" frameborder="0"
                     sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -4820,10 +5050,10 @@
                 target="_blank" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;"
                 onmouseover="this.style.color='var(--primary-orange)'"
                 onmouseout="this.style.color='var(--text-muted)'">
-                Inspired by this website? Let�s create yours.
+                Inspired by this website? Let’s create yours.
             </a>
         </p>
-        <p>� 2026 Aman Ullah. All Rights Reserved.</p>
+        <p>© 2026 Aman Ullah. All Rights Reserved.</p>
         <p class="copyright-sub">Powered by <strong>Aman Ullah</strong> | Unauthorized reproduction prohibited.</p>
     </footer>
 
@@ -4841,7 +5071,7 @@
             <div id="loader360" class="premium-360-loader">
                 <div class="loader-spinner"></div>
                 <div class="loader-text-wrapper">
-                    <span id="loader360-status">Optimizing 360� Environments...</span>
+                    <span id="loader360-status">Optimizing 360° Environments...</span>
                     <span id="loader360-percent"
                         style="display: none; font-size: 11px; opacity: 0.8; margin-top: 4px; color: var(--primary-orange); font-weight: 600;">0%</span>
                 </div>
@@ -4873,8 +5103,10 @@
                 s0.parentNode.insertBefore(s1, s0);
             }, 2000); // 2-second delay after load
         });
-    </script>    <!-- YouTube Protection: Blocks right-click and logo clicks -->
-    <script src="youtube-protection.js"></script>
+    </script>
+
+    <!-- Custom YouTube Video Controls -->
+    <script src="youtube-controls.js"></script>
 </body>
 
 </html>
