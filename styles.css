@@ -1016,8 +1016,8 @@ body {
     background: transparent;
     cursor: default;
     user-select: none;
-    pointer-events: auto;
-    /* Catch all clicks if Plyr fails */
+    pointer-events: none;
+    /* Allow clicks to pass through to the video controls */
 }
 
 /* Intro Video Embed in Sticky Note */

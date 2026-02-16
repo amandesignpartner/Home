@@ -2994,6 +2994,7 @@ window.initPlyr = function (container = document) {
             'fast-forward',
             'mute',
             'volume',
+            'settings',
             'fullscreen'
         ],
         seekTime: 5, // Match "5" icons in screenshot
@@ -3003,7 +3004,8 @@ window.initPlyr = function (container = document) {
         invertTime: false
     }));
 
-    // Strict Right-Click Blocking for all player elements
+    // Right-click blocking removed to allow native YouTube menu and player functionality
+    /*
     const blockContextMenu = (e) => {
         if (e.target.closest('.plyr')) {
             e.preventDefault();
@@ -3021,9 +3023,7 @@ window.initPlyr = function (container = document) {
             // Double layer for fullscreen
             plyrContainer.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
         });
-
-        // Ensure settings items also block right click
-        player.on('controlshidden', () => { /* can be used for extra logic */ });
     });
+    */
 };
 document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });
