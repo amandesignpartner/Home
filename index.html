@@ -4723,10 +4723,13 @@
         }
     </style>
 
-    <script src="updates.js?v=0.4.0" defer></script>
-    <script src="project-data.js?v=0.4.0" defer></script>
-    <script src="feedback-data.js?v=0.4.0" defer></script>
-    <script src="script.js?v=0.4.0" defer></script>
+    <!-- Plyr (Video Player) - Loaded before main script to ensure availability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
+
+    <script src="updates.js?v=0.5.0" defer></script>
+    <script src="project-data.js?v=0.5.0" defer></script>
+    <script src="feedback-data.js?v=0.5.0" defer></script>
+    <script src="script.js?v=0.5.0" defer></script>
 
 
 
@@ -4772,12 +4775,11 @@
         </div>
     </div>
 
-    <script src="360-preload.js?v=0.4.0" defer></script>
-    <script src="quick-pickup.js?v=0.4.0" defer></script>
-    <script src="performance-optimization.js?v=0.4.0" defer></script>
+    <script src="360-preload.js?v=0.5.0" defer></script>
+    <script src="quick-pickup.js?v=0.5.0" defer></script>
+    <script src="performance-optimization.js?v=0.5.0" defer></script>
 
     <!-- Heavy Third-Party Scripts Loaded Lazily -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js" defer></script>
     <script type="text/javascript">
         // Lazy load Tawk.to after everything is ready
         window.addEventListener('load', function () {

@@ -1142,38 +1142,51 @@ window.handleIntroAction = function (action, event) {
         event.stopPropagation();
     }
 
-    const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
-    if (!player) return;
+    // Comprehensive Player Recovery Logic
+    let player = window.introPlayer;
+    if (!player) {
+        const el = document.querySelector('.js-intro-player');
+        if (el && el.plyr) player = el.plyr;
+    }
+
+    if (!player) {
+        console.warn('Intro Player not found. Re-initializing...');
+        window.initPlyr();
+        // Give it a tiny bit of time if we just initialized
+        setTimeout(() => window.handleIntroAction(action, event), 100);
+        return;
+    }
 
     if (action === 'detach') {
         player.play();
         player.muted = false;
         try {
             player.pip = true;
+            // Sync Sound UI manually if we unmuted
+            const sBtn = document.getElementById('intro-sound-btn');
+            if (sBtn) {
+                sBtn.querySelector('.sound-on').style.display = 'block';
+                sBtn.querySelector('.sound-off').style.display = 'none';
+            }
         } catch (err) {
             console.error('PiP failed:', err);
             openPopup('intro');
         }
-        // Sync Sound UI
-        const sBtn = document.getElementById('intro-sound-btn');
-        if (sBtn) {
-            sBtn.querySelector('.sound-on').style.display = 'block';
-            sBtn.querySelector('.sound-off').style.display = 'none';
-        }
-        // Auto-close if inside popup
-        if (event && event.target.closest('.popup-modal')) {
-            closePopup();
-        }
+
+        // Auto-close overlay if activated from within a popup
+        const closeTrigger = event ? event.target.closest('.popup-modal') : null;
+        if (closeTrigger) closePopup();
+
     } else if (action === 'sound') {
         player.muted = !player.muted;
         if (!player.muted && player.volume === 0) player.volume = 1;
 
-        // Sync UI
+        // Sync UI with animation
         const sBtn = document.getElementById('intro-sound-btn');
         if (sBtn) {
             sBtn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
             sBtn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
-            // Visual feedback
+
             sBtn.classList.add('pulse-orange');
             setTimeout(() => sBtn.classList.remove('pulse-orange'), 600);
         }
@@ -2989,23 +3002,25 @@ function restoreAllTrackerData() {
 })();
 
 // === Plyr Initialization (Custom YouTube-like) ===
-window.initPlyr = function (container = document) {
-    if (typeof Plyr === 'undefined') return;
-
-    // We no longer remove shields; they are part of the strict protection layer
-    // const shields = container.querySelectorAll('.video-protection-shield');
-    // shields.forEach(s => s.style.display = 'none');
+window.initPlyr = function (container = document, retryCount = 0) {
+    if (typeof Plyr === 'undefined') {
+        if (retryCount < 10) {
+            console.warn('Plyr not loaded yet, retrying in 200ms...');
+            setTimeout(() => window.initPlyr(container, retryCount + 1), 200);
+        } else {
+            console.error('Plyr failed to load after multiple attempts.');
+        }
+        return;
+    }
 
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => {
+        // Prevent duplicate initialization
+        if (p.plyr) return p.plyr;
+
         const isIntro = p.classList.contains('js-intro-player');
 
         const config = {
-            controls: [
-                'play-large',
-                'play',
-                'mute',
-                'volume'
-            ],
+            controls: ['play-large', 'play', 'mute', 'volume'],
             seekTime: 5,
             youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
             tooltips: { controls: false, seek: false },
@@ -3014,38 +3029,29 @@ window.initPlyr = function (container = document) {
             quality: { default: 1080, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
         };
 
-        // ONLY allow Picture-in-Picture (detached mode) for the intro video
-        if (isIntro) {
-            config.controls.push('pip');
-        }
+        if (isIntro) config.controls.push('pip');
 
         const player = new Plyr(p, config);
-        p.plyr = player; // Store instance on element for external access
-        // Global export for Intro Player
+        p.plyr = player;
+
         if (isIntro) {
             window.introPlayer = player;
+            console.log('Intro Player initialized and captured.');
         }
 
         return player;
     });
 
     players.forEach(player => {
+        if (!player || !player.elements || !player.elements.container) return;
         const plyrContainer = player.elements.container;
-        if (!plyrContainer) return;
-
-        // Find the associated protection shield
         const shield = plyrContainer.parentElement.querySelector('.video-protection-shield');
 
         if (shield) {
-            // Enable Left-Click to toggle Play/Pause
             shield.style.cursor = 'pointer';
-            shield.addEventListener('click', (e) => {
-                if (e.button === 0) { // Left click only
-                    player.togglePlay();
-                }
-            });
-
-            // Re-enforce Right-Click block on the shield specifically
+            shield.onclick = (e) => {
+                if (e.button === 0) player.togglePlay();
+            };
             shield.oncontextmenu = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
