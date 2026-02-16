@@ -1098,50 +1098,100 @@ function initPopups() {
 
     if (!overlay || !content) return;
 
-    // Use delegated listener for all data-popup elements for maximum reliability
+    // Use a single robust delegated listener for ALL interactive buttons
     document.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-popup]');
+        // Find the interactive element that was clicked
+        const btn = e.target.closest('[data-popup], .btn-detach-video, .btn-toggle-sound');
+
+        // Basic guards
         if (!btn || btn.classList.contains('was-dragged')) return;
 
-        e.stopPropagation();
-        const popupId = btn.getAttribute('data-popup');
-        const options = {
-            hideDiscuss: btn.getAttribute('data-hide-discuss') === 'true'
-        };
-
-        // Check if current popup has a save function (specifically for the brief)
-        if (window._saveBriefData) {
-            window._saveBriefData();
+        // 1. Handle Regular Popups
+        if (btn.hasAttribute('data-popup')) {
+            e.preventDefault();
+            const popupId = btn.getAttribute('data-popup');
+            const options = {
+                hideDiscuss: btn.getAttribute('data-hide-discuss') === 'true'
+            };
+            if (window._saveBriefData) window._saveBriefData();
+            openPopup(popupId, false, options);
+            return;
         }
 
-        openPopup(popupId, false, options);
-    });
+        // 2. Handle Detached Video (Picture-in-Picture)
+        if (btn.classList.contains('btn-detach-video')) {
+            e.preventDefault();
+            e.stopPropagation();
 
-    // Handle Detached Video button click
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-detach-video');
-        if (!btn) return;
+            const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
 
-        e.stopPropagation();
-        const targetType = btn.getAttribute('data-target-player');
-        let playerIframe;
+            if (player) {
+                // IMPORTANT: Trigger play and pip immediately to maintain User Gesture Trust
+                player.play();
+                player.muted = false;
 
-        if (targetType === 'intro') {
-            playerIframe = document.querySelector('#note-intro .js-player');
+                // Attempt PiP - use direct property or method if available
+                try {
+                    player.pip = true;
+                } catch (err) {
+                    console.error('PiP failed:', err);
+                    // Fallback to regular popup if PiP is blocked
+                    openPopup('intro');
+                }
+
+                // Sync UI for sound button if it exists
+                const sBtn = document.getElementById('intro-sound-btn');
+                if (sBtn) {
+                    sBtn.querySelector('.sound-on').style.display = 'block';
+                    sBtn.querySelector('.sound-off').style.display = 'none';
+                    sBtn.classList.add('pulse-orange');
+                    setTimeout(() => sBtn.classList.remove('pulse-orange'), 400);
+                }
+
+                // If this was clicked inside a popup, close the overlay to focus on the detached video
+                if (btn.closest('.popup-modal')) {
+                    closePopup();
+                }
+            }
+            return;
         }
 
-        if (playerIframe && playerIframe.plyr) {
-            playerIframe.plyr.pip = true;
+        // 3. Handle Sound Toggle
+        if (btn.classList.contains('btn-toggle-sound')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const player = window.introPlayer || (document.querySelector('.js-intro-player') ? document.querySelector('.js-intro-player').plyr : null);
+
+            if (player) {
+                player.muted = !player.muted;
+                // Force volume up if unmuting
+                if (!player.muted && player.volume === 0) player.volume = 1;
+
+                // Sync UI
+                btn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
+                btn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
+
+                // Add feedback animation
+                btn.classList.add('pulse-orange');
+                setTimeout(() => btn.classList.remove('pulse-orange'), 400);
+            }
+            return;
         }
     });
 
     if (closeBtn) closeBtn.addEventListener('click', closePopup);
-    // Overlay click and Escape key closing disabled per user request
 }
 
 function openPopup(id, isBack = false, options = {}) {
     const overlay = document.getElementById('popupOverlay');
     const content = document.getElementById('popupContent');
+
+    if (!overlay || !content) return;
+
+    // IMMEDIATE VISIBILITY: Show overlay first to provide instant feedback
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
 
     // CRITICAL: Save brief data BEFORE we overwrite the innerHTML
     if (!isBack && popupStack.length > 0) {
@@ -1164,13 +1214,12 @@ function openPopup(id, isBack = false, options = {}) {
         }
     }
 
-    // Pause background intro video if it exists
-    const backgroundVideo = document.querySelector('.sticky-content .js-player');
-    if (backgroundVideo && window.Plyr) {
-        // Try to find Plyr instance
-        const player = Plyr.setup('.sticky-content .js-player')[0];
-        if (player) player.pause();
-    }
+    // Securely pause background videos
+    document.querySelectorAll('.js-player').forEach(p => {
+        if (p.plyr && !p.closest('.popup-modal')) {
+            p.plyr.pause();
+        }
+    });
 
     const template = document.getElementById('popup-' + id);
 
@@ -1193,8 +1242,7 @@ function openPopup(id, isBack = false, options = {}) {
         }
     }
 
-    overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    // Media loading and setup proceeds while overlay is visible
 
     // Restore scroll position if going back
     if (isBack) {
@@ -1230,27 +1278,7 @@ function openPopup(id, isBack = false, options = {}) {
         closeTrigger.style.display = (id === 'confirm-close') ? 'none' : 'block';
     }
 
-    // Re-bind all data-popup items in the new content
-    // Use a small timeout to ensure DOM is ready and any dynamic rendering is finished
-    setTimeout(() => {
-        content.querySelectorAll('[data-popup]').forEach(item => {
-            // Remove previous listener if any to avoid double binding (though innerHTML usually clears it)
-            const newHandler = (e) => {
-                const popupId = item.getAttribute('data-popup');
-                const options = {
-                    hideDiscuss: item.getAttribute('data-hide-discuss') === 'true'
-                };
 
-                // Check if current popup has a save function (specifically for the brief)
-                if (window._saveBriefData) {
-                    window._saveBriefData();
-                }
-
-                openPopup(popupId, false, options);
-            };
-            item.onclick = newHandler; // Using .onclick for maximum reliability in nested popups
-        });
-    }, 10);
 
     // Handle Payment Popup Logic
     if (id === 'payment') {
@@ -3020,6 +3048,11 @@ window.initPlyr = function (container = document) {
                 e.stopPropagation();
                 return false;
             };
+        }
+
+        // Global export for Intro Player
+        if (isIntro) {
+            window.introPlayer = player;
         }
 
         player.on('ready', event => {
