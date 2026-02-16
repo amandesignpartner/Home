@@ -1098,16 +1098,41 @@ function initPopups() {
 
     if (!overlay || !content) return;
 
-    document.querySelectorAll('[data-popup]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (btn.classList.contains('was-dragged')) return;
-            e.stopPropagation();
-            const popupId = btn.getAttribute('data-popup');
-            const options = {
-                hideDiscuss: btn.getAttribute('data-hide-discuss') === 'true'
-            };
-            openPopup(popupId, false, options);
-        });
+    // Use delegated listener for all data-popup elements for maximum reliability
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-popup]');
+        if (!btn || btn.classList.contains('was-dragged')) return;
+
+        e.stopPropagation();
+        const popupId = btn.getAttribute('data-popup');
+        const options = {
+            hideDiscuss: btn.getAttribute('data-hide-discuss') === 'true'
+        };
+
+        // Check if current popup has a save function (specifically for the brief)
+        if (window._saveBriefData) {
+            window._saveBriefData();
+        }
+
+        openPopup(popupId, false, options);
+    });
+
+    // Handle Detached Video button click
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-detach-video');
+        if (!btn) return;
+
+        e.stopPropagation();
+        const targetType = btn.getAttribute('data-target-player');
+        let playerIframe;
+
+        if (targetType === 'intro') {
+            playerIframe = document.querySelector('#note-intro .js-player');
+        }
+
+        if (playerIframe && playerIframe.plyr) {
+            playerIframe.plyr.pip = true;
+        }
     });
 
     if (closeBtn) closeBtn.addEventListener('click', closePopup);
@@ -2946,21 +2971,33 @@ window.initPlyr = function (container = document) {
     // const shields = container.querySelectorAll('.video-protection-shield');
     // shields.forEach(s => s.style.display = 'none');
 
-    const players = Array.from(container.querySelectorAll('.js-player')).map(p => new Plyr(p, {
-        controls: [
-            'play-large',
-            'play',
-            'mute',
-            'volume',
-            'pip'
-        ],
-        seekTime: 5,
-        youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
-        tooltips: { controls: false, seek: false },
-        displayDuration: false,
-        invertTime: false,
-        quality: { default: 1080, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
-    }));
+    const players = Array.from(container.querySelectorAll('.js-player')).map(p => {
+        const isIntro = p.classList.contains('js-intro-player');
+
+        const config = {
+            controls: [
+                'play-large',
+                'play',
+                'mute',
+                'volume'
+            ],
+            seekTime: 5,
+            youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
+            tooltips: { controls: false, seek: false },
+            displayDuration: false,
+            invertTime: false,
+            quality: { default: 1080, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
+        };
+
+        // ONLY allow Picture-in-Picture (detached mode) for the intro video
+        if (isIntro) {
+            config.controls.push('pip');
+        }
+
+        const player = new Plyr(p, config);
+        p.plyr = player; // Store instance on element for external access
+        return player;
+    });
 
     players.forEach(player => {
         const plyrContainer = player.elements.container;

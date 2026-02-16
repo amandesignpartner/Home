@@ -60,20 +60,16 @@
         });
     }
 
-    // Proactive Cache Removal (except 360-view-cache)
+    // Proactive Cache Removal
     function purgeOldCaches() {
         if ('caches' in window) {
             caches.keys().then(names => {
                 for (let name of names) {
-                    if (name !== '360-view-cache-v2') {
-                        console.log('Purging old cache:', name);
-                        caches.delete(name);
-                    }
+                    console.log('Purging old cache:', name);
+                    caches.delete(name);
                 }
             });
         }
-        // Clear session storage to reset tracker/chat states if needed
-        // sessionStorage.clear(); 
     }
 
     // === Premium Loader Logic (Dynamic Load Synchronization) ===

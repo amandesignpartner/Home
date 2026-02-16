@@ -11,6 +11,30 @@
     const originalSrc = "https://amandesignpartner.github.io/360views/";
 
     if (open360Btn && overlay360 && iframeContainer) {
+        // Explicitly unregister 360 service worker to ensure fresh load
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                    if (registration.active && (registration.active.scriptURL.includes('sw-360-cache.js') || registration.active.scriptURL.includes('sw.js'))) {
+                        registration.unregister();
+                        console.log('360 View: Service Worker unregistered');
+                    }
+                }
+            });
+        }
+
+        // Clear existing 360 caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                for (let name of names) {
+                    if (name.includes('360')) {
+                        caches.delete(name);
+                        console.log('360 View: Cache cleared -', name);
+                    }
+                }
+            });
+        }
+
         const loader360 = document.getElementById('loader360');
         const statusText = document.getElementById('loader360-status');
         const percentText = document.getElementById('loader360-percent');
@@ -57,7 +81,7 @@
 
                 // Only set src if it's currently at the blank state
                 if (iframe.src.includes('about:blank') || iframe.src === '') {
-                    iframe.src = originalSrc + "?autoplay=1&muted=0";
+                    iframe.src = originalSrc + "?autoplay=1&muted=0&vq=hd1080";
                 }
 
                 overlay360.classList.add('active');
@@ -126,24 +150,6 @@
         });
     }
 
-    // Prefetch on hover for extra speed
-    if (open360Btn) {
-        let prefetched = false;
-        open360Btn.addEventListener('mouseenter', () => {
-            if (!prefetched) {
-                console.log('360 View Preload: Prefetching on hover...');
-                prefetched = true;
 
-                const iframe360 = document.getElementById('iframe360View');
-                if (iframe360 && iframe360.contentWindow) {
-                    try {
-                        iframe360.contentWindow.postMessage({ action: 'prefetch' }, '*');
-                    } catch (e) {
-                        console.log('360 View Preload: Could not signal iframe');
-                    }
-                }
-            }
-        }, { once: true });
-    }
 
 })();

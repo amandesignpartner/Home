@@ -77,9 +77,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fonts.cdnfonts.com">
 
-    <!-- Preconnect for faster 360 view loading -->
-    <link rel="preconnect" href="https://amandesignpartner.github.io">
-    <link rel="dns-prefetch" href="https://amandesignpartner.github.io">
+
 
     <!-- Aggressive Preload for background slider images (Ensures they load while preloader is active) -->
     <link rel="preload" as="image" href="images/slide1.webp" fetchpriority="high">
@@ -350,7 +348,7 @@
         <div class="sticky-content">
             <div class="intro-video-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                <iframe class="js-player"
+                <iframe class="js-player js-intro-player"
                     src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -360,7 +358,18 @@
             <h3 class="premium-heading" style="margin-top: 10px;">Crafting Dreams in Dimensions. I am here to turn your
                 ideas into WOW Feel! My
                 focus is simple…</h3>
-            <button class="btn-outline" data-popup="intro">Learn More</button>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-outline" data-popup="intro" style="flex: 1;">Learn More</button>
+                <button class="btn-outline btn-detach-video" data-target-player="intro"
+                    style="flex: 1; background: rgba(255, 255, 255, 0.05); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Detached Video
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1198,7 +1207,7 @@
             <!-- Embedded YouTube Video -->
             <div class="youtube-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
-                <iframe class="js-player"
+                <iframe class="js-player js-intro-player"
                     src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -4696,10 +4705,10 @@
         }
     </style>
 
-    <script src="updates.js?v=0.1.1" defer></script>
-    <script src="project-data.js?v=0.1.1" defer></script>
-    <script src="feedback-data.js?v=0.1.1" defer></script>
-    <script src="script.js?v=0.1.1" defer></script>
+    <script src="updates.js?v=0.1.4" defer></script>
+    <script src="project-data.js?v=0.1.4" defer></script>
+    <script src="feedback-data.js?v=0.1.4" defer></script>
+    <script src="script.js?v=0.1.4" defer></script>
 
 
 
@@ -4741,13 +4750,13 @@
             <iframe id="iframe360View" src="about:blank" frameborder="0" allowfullscreen loading="eager"
                 allow="fullscreen; accelerometer; gyroscope; picture-in-picture; clipboard-write"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" importance="high"
-                style="will-change: transform; content-visibility: auto; opacity: 0; transition: opacity 0.8s ease;"></iframe>
+                style="opacity: 0; transition: opacity 0.8s ease;"></iframe>
         </div>
     </div>
 
-    <script src="360-preload.js?v=0.1.1" defer></script>
-    <script src="quick-pickup.js?v=0.1.1" defer></script>
-    <script src="performance-optimization.js?v=0.1.1" defer></script>
+    <script src="360-preload.js?v=0.1.4" defer></script>
+    <script src="quick-pickup.js?v=0.1.4" defer></script>
+    <script src="performance-optimization.js?v=0.1.4" defer></script>
 
     <!-- Heavy Third-Party Scripts Loaded Lazily -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js" defer></script>
