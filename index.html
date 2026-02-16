@@ -249,6 +249,61 @@
             }
         </style>
     </div>
+    <style>
+        /* Pulse Animation for Interactive Buttons */
+        @keyframes pulse-orange {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(210, 105, 30, 0.4);
+            }
+
+            50% {
+                transform: scale(0.96);
+                box-shadow: 0 0 0 10px rgba(210, 105, 30, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(210, 105, 30, 0);
+            }
+        }
+
+        .pulse-orange {
+            animation: pulse-orange 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            border-color: var(--primary-orange) !important;
+            color: var(--primary-orange) !important;
+        }
+
+        /* Video Gallery Premium Aesthetics */
+        .video-gallery-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .video-gallery-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(210, 105, 30, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .video-controls-row .btn-outline {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .video-controls-row .btn-outline:hover {
+            background: rgba(210, 105, 30, 0.1);
+            border-color: var(--primary-orange);
+            transform: translateY(-1px);
+        }
+
+        .video-controls-row .btn-outline:active {
+            transform: scale(0.95);
+        }
+    </style>
     <!-- Minimized Tabs Bar -->
     <div class="minimized-bar" id="minimizedBar"></div>
 
@@ -1275,7 +1330,7 @@
                             allowfullscreen></iframe>
                     </div>
                     <div class="video-controls-row" style="display: flex; gap: 8px;">
-                        <button class="btn-outline" onclick="handleVideoAction('play', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('play', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; z-index: 20;">
                             <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1287,7 +1342,7 @@
                             </svg>
                             Play / Pause
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('sound', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('sound', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;">
                             <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -1302,7 +1357,7 @@
                                 <line x1="17" y1="9" x2="23" y2="15"></line>
                             </svg>
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('detach', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('detach', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;"
                             title="Detached Video">
@@ -1328,7 +1383,7 @@
                             allowfullscreen></iframe>
                     </div>
                     <div class="video-controls-row" style="display: flex; gap: 8px;">
-                        <button class="btn-outline" onclick="handleVideoAction('play', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('play', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; z-index: 20;">
                             <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1340,7 +1395,7 @@
                             </svg>
                             Play / Pause
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('sound', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('sound', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;">
                             <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -1355,7 +1410,7 @@
                                 <line x1="17" y1="9" x2="23" y2="15"></line>
                             </svg>
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('detach', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('detach', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;"
                             title="Detached Video">
@@ -1381,7 +1436,7 @@
                             allowfullscreen></iframe>
                     </div>
                     <div class="video-controls-row" style="display: flex; gap: 8px;">
-                        <button class="btn-outline" onclick="handleVideoAction('play', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('play', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; z-index: 20;">
                             <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1393,7 +1448,7 @@
                             </svg>
                             Play / Pause
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('sound', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('sound', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;">
                             <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -1408,7 +1463,7 @@
                                 <line x1="17" y1="9" x2="23" y2="15"></line>
                             </svg>
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('detach', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('detach', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;"
                             title="Detached Video">
@@ -1434,7 +1489,7 @@
                             allowfullscreen></iframe>
                     </div>
                     <div class="video-controls-row" style="display: flex; gap: 8px;">
-                        <button class="btn-outline" onclick="handleVideoAction('play', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('play', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; z-index: 20;">
                             <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1446,7 +1501,7 @@
                             </svg>
                             Play / Pause
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('sound', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('sound', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;">
                             <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -1461,7 +1516,7 @@
                                 <line x1="17" y1="9" x2="23" y2="15"></line>
                             </svg>
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('detach', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('detach', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;"
                             title="Detached Video">
@@ -1487,7 +1542,7 @@
                             allowfullscreen></iframe>
                     </div>
                     <div class="video-controls-row" style="display: flex; gap: 8px;">
-                        <button class="btn-outline" onclick="handleVideoAction('play', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('play', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="flex: 1; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; z-index: 20;">
                             <svg class="play-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -1499,7 +1554,7 @@
                             </svg>
                             Play / Pause
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('sound', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('sound', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;">
                             <svg class="sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none"
@@ -1514,7 +1569,7 @@
                                 <line x1="17" y1="9" x2="23" y2="15"></line>
                             </svg>
                         </button>
-                        <button class="btn-outline" onclick="handleVideoAction('detach', event)"
+                        <button class="btn-outline" onclick="handleVideoAction('detach', event, this)"
                             onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
                             style="width: 50px; height: 42px; display: inline-flex; align-items: center; justify-content: center; z-index: 20;"
                             title="Detached Video">

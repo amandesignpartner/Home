@@ -1123,26 +1123,23 @@ function initPopups() {
 }
 
 // === Universal Video Actions (Play, Pause, Sound, PiP) ===
-window.handleVideoAction = function (action, event) {
+window.handleVideoAction = function (action, event, btnElement) {
     if (event) {
-        event.preventDefault();
-        event.stopPropagation();
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        if (typeof event.stopPropagation === 'function') event.stopPropagation();
     }
 
-    const btn = event ? event.currentTarget : null;
+    // Direct element reference is most reliable
+    const btn = btnElement || (event ? event.currentTarget : null);
     if (!btn) return;
 
     // 1. Find the associated player instance
-    // We look in the closest common parent for any element with a .plyr attached
     const container = btn.closest('.video-gallery-item, .intro-video-embed, .youtube-embed, .playlist-container');
-    if (!container) {
-        console.error('No video container found for this action.');
-        return;
-    }
+    if (!container) return;
 
-    // Try finding by the .js-player ref first
+    let player = null;
     const iframe = container.querySelector('.js-player');
-    let player = iframe ? (iframe.plyr || iframe._plyr) : null;
+    if (iframe) player = iframe.plyr || iframe._plyr;
 
     // Fallback: search all elements in container for a .plyr property
     if (!player) {
@@ -1155,28 +1152,26 @@ window.handleVideoAction = function (action, event) {
         }
     }
 
-    // Secondary fallback: global intro player if we are in the intro context
     if (!player && container.classList.contains('intro-video-embed')) {
         player = window.introPlayer;
     }
 
     if (!player) {
-        console.warn('Video player instance not found. Re-initializing...');
         if (window.initPlyr) window.initPlyr(container);
-        // Wait a tiny bit then try again
         setTimeout(() => {
             const retryIframe = container.querySelector('.js-player');
-            if (retryIframe && retryIframe.plyr) window.handleVideoAction(action, event);
-        }, 100);
+            if (retryIframe && retryIframe.plyr) window.handleVideoAction(action, event, btn);
+        }, 150);
         return;
     }
 
-    // Visual feedback for click
+    // Visual feedback
     btn.classList.add('pulse-orange');
     setTimeout(() => btn.classList.remove('pulse-orange'), 600);
 
-    // 2. Execute Action
     try {
+        const row = btn.closest('.video-controls-row') || btn;
+
         if (action === 'play') {
             if (player.playing) {
                 player.pause();
@@ -1184,23 +1179,19 @@ window.handleVideoAction = function (action, event) {
                 player.play();
             }
 
-            // Sync icon states (looking within the clicked button or the entire control row)
-            const row = btn.closest('.video-controls-row') || btn;
             const playIcons = row.querySelectorAll('.play-icon');
             const pauseIcons = row.querySelectorAll('.pause-icon');
 
-            // Note: We use a slight timeout because player.playing might not update instantly
             setTimeout(() => {
                 const isPlaying = player.playing;
                 playIcons.forEach(i => i.style.display = isPlaying ? 'none' : 'block');
                 pauseIcons.forEach(i => i.style.display = isPlaying ? 'block' : 'none');
-            }, 50);
+            }, 80);
 
         } else if (action === 'sound') {
             player.muted = !player.muted;
-            if (!player.muted && player.volume === 0) player.volume = 1;
+            if (!player.muted && player.volume < 0.1) player.volume = 1;
 
-            const row = btn.closest('.video-controls-row') || btn;
             const soundOnIcons = row.querySelectorAll('.sound-on');
             const soundOffIcons = row.querySelectorAll('.sound-off');
 
@@ -1213,11 +1204,9 @@ window.handleVideoAction = function (action, event) {
 
             setTimeout(() => {
                 try {
-                    // Try Plyr's property first
-                    if (player.pip === false || player.pip === true) {
+                    if (typeof player.pip !== 'undefined') {
                         player.pip = !player.pip;
-                    } else if (player.elements.container && player.elements.container.requestPictureInPicture) {
-                        // Native browser PiP fallback
+                    } else if (player.elements && player.elements.container && player.elements.container.requestPictureInPicture) {
                         player.elements.container.requestPictureInPicture();
                     }
                 } catch (err) {
@@ -1226,9 +1215,9 @@ window.handleVideoAction = function (action, event) {
             }, 150);
         }
     } catch (err) {
-        console.error('Video action execution failed:', err);
+        console.error('Video action failed:', err);
     }
-}
+};
 
 function openPopup(id, isBack = false, options = {}) {
     const overlay = document.getElementById('popupOverlay');
@@ -3039,16 +3028,13 @@ function restoreAllTrackerData() {
 })();
 
 // === Plyr Initialization (Custom YouTube-like) ===
-// === Plyr Initialization (Custom YouTube-like) ===
 window.initPlyr = function (container = document) {
     if (typeof Plyr === 'undefined') return;
 
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => {
-        // Prevent duplicate initialization
         if (p.plyr) return p.plyr;
 
         const isIntro = p.classList.contains('js-intro-player');
-
         const config = {
             controls: ['play-large', 'play', 'mute', 'volume'],
             seekTime: 5,
@@ -3061,35 +3047,34 @@ window.initPlyr = function (container = document) {
 
         if (isIntro) config.controls.push('pip');
 
-        const player = new Plyr(p, config);
-        p.plyr = player;
+        try {
+            const player = new Plyr(p, config);
+            p.plyr = player;
 
-        if (isIntro) {
-            window.introPlayer = player;
-            console.log('Intro Player initialized and captured.');
+            if (isIntro) {
+                window.introPlayer = player;
+            }
+
+            return player;
+        } catch (e) {
+            console.error('Plyr init failed:', e);
+            return null;
         }
-
-        return player;
     });
 
     players.forEach(player => {
         if (!player || !player.elements || !player.elements.container) return;
         const plyrContainer = player.elements.container;
 
-        // Find the shield relative to the original element's placement
-        const shield = plyrContainer.closest('.intro-video-embed, .youtube-embed, .playlist-container')?.querySelector('.video-protection-shield');
+        const shield = plyrContainer.closest('.intro-video-embed, .youtube-embed, .playlist-container, .video-gallery-item')?.querySelector('.video-protection-shield');
 
         if (shield) {
             shield.style.cursor = 'pointer';
             shield.onclick = (e) => {
-                if (e.button === 0) {
-                    if (player.playing) player.pause();
-                    else player.play();
-                }
-            };
-            shield.oncontextmenu = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (player.playing) player.pause();
+                else player.play();
                 return false;
             };
         }
@@ -3097,12 +3082,10 @@ window.initPlyr = function (container = document) {
         player.on('ready', event => {
             const container = event.detail.plyr.elements.container;
             if (!container) return;
-            container.oncontextmenu = (e) => { e.preventDefault(); return false; };
-            container.addEventListener('contextmenu', (e) => { e.preventDefault(); }, true);
+            container.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
         });
     });
 };
 
 // Consistently initialized in main DOMContentLoaded in header
-// document.addEventListener('DOMContentLoaded', () => { window.initPlyr(); });
 
