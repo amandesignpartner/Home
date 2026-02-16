@@ -1164,36 +1164,32 @@ window.handleIntroAction = function (action, event) {
     if (action === 'detach') {
         // Force play and unmute to satisfy browser requirements for PiP
         player.play();
+        // Ensure playback started (required for PiP)
+        player.play().catch(e => console.warn('Autoplay block:', e));
         player.muted = false;
 
-        // Give YouTube time to respond to play command before PiP
+        // Use Plyr's internal PiP toggle or property
         setTimeout(() => {
             try {
-                // Try multiple ways to trigger PiP
-                if ('pip' in player) {
+                if (typeof player.pip === 'boolean') {
                     player.pip = true;
-                } else if (typeof player.setPip === 'function') {
-                    player.setPip(true);
+                } else if (player.elements.container && player.elements.container.requestPictureInPicture) {
+                    player.elements.container.requestPictureInPicture();
                 } else {
-                    // Fallback to regular popup if PiP is completely unsupported
-                    if (typeof openPopup === 'function') openPopup('intro');
+                    // Final fallback: open popup
+                    if (window.openPopup) window.openPopup('intro');
                 }
             } catch (err) {
-                console.error('PiP activation failed:', err);
-                if (typeof openPopup === 'function') openPopup('intro');
+                console.error('PiP failed:', err);
+                if (window.openPopup) window.openPopup('intro');
             }
-        }, 100);
+        }, 150);
 
         // Sync Sound UI
         const sBtn = document.getElementById('intro-sound-btn');
         if (sBtn) {
             sBtn.querySelector('.sound-on').style.display = 'block';
             sBtn.querySelector('.sound-off').style.display = 'none';
-        }
-
-        // Auto-close if inside popup
-        if (event && event.target.closest('.popup-modal')) {
-            if (typeof closePopup === 'function') closePopup();
         }
     } else if (action === 'sound') {
         player.muted = !player.muted;
