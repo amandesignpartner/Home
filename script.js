@@ -1129,54 +1129,104 @@ window.handleVideoAction = function (action, event) {
         event.stopPropagation();
     }
 
-    const btn = event ? event.target.closest('.btn-outline') : null;
+    const btn = event ? event.currentTarget : null;
     if (!btn) return;
 
-    // Find the associated player by looking in the parent container
-    const container = btn.closest('.video-gallery-item, .intro-video-embed');
-    const iframe = container ? container.querySelector('.js-player') : null;
-    let player = iframe ? iframe.plyr : window.introPlayer;
-
-    if (!player) {
-        console.error('Video player not found for this action.');
+    // 1. Find the associated player instance
+    // We look in the closest common parent for any element with a .plyr attached
+    const container = btn.closest('.video-gallery-item, .intro-video-embed, .youtube-embed, .playlist-container');
+    if (!container) {
+        console.error('No video container found for this action.');
         return;
     }
 
-    // Visual feedback
+    // Try finding by the .js-player ref first
+    const iframe = container.querySelector('.js-player');
+    let player = iframe ? (iframe.plyr || iframe._plyr) : null;
+
+    // Fallback: search all elements in container for a .plyr property
+    if (!player) {
+        const allInContainer = container.querySelectorAll('*');
+        for (let el of allInContainer) {
+            if (el.plyr) {
+                player = el.plyr;
+                break;
+            }
+        }
+    }
+
+    // Secondary fallback: global intro player if we are in the intro context
+    if (!player && container.classList.contains('intro-video-embed')) {
+        player = window.introPlayer;
+    }
+
+    if (!player) {
+        console.warn('Video player instance not found. Re-initializing...');
+        if (window.initPlyr) window.initPlyr(container);
+        // Wait a tiny bit then try again
+        setTimeout(() => {
+            const retryIframe = container.querySelector('.js-player');
+            if (retryIframe && retryIframe.plyr) window.handleVideoAction(action, event);
+        }, 100);
+        return;
+    }
+
+    // Visual feedback for click
     btn.classList.add('pulse-orange');
     setTimeout(() => btn.classList.remove('pulse-orange'), 600);
 
-    if (action === 'play') {
-        player.togglePlay();
-        // Sync icon if play/pause icon exists
-        const playIcon = btn.querySelector('.play-icon');
-        const pauseIcon = btn.querySelector('.pause-icon');
-        if (playIcon && pauseIcon) {
-            playIcon.style.display = player.playing ? 'none' : 'block';
-            pauseIcon.style.display = player.playing ? 'block' : 'none';
-        }
-    } else if (action === 'sound') {
-        player.muted = !player.muted;
-        const soundOn = btn.querySelector('.sound-on');
-        const soundOff = btn.querySelector('.sound-off');
-        if (soundOn && soundOff) {
-            soundOn.style.display = player.muted ? 'none' : 'block';
-            soundOff.style.display = player.muted ? 'block' : 'none';
-        }
-    } else if (action === 'detach') {
-        player.play();
-        player.muted = false;
-        setTimeout(() => {
-            try {
-                if (typeof player.pip === 'boolean') {
-                    player.pip = true;
-                } else if (player.elements.container && player.elements.container.requestPictureInPicture) {
-                    player.elements.container.requestPictureInPicture();
-                }
-            } catch (err) {
-                console.error('PiP failed:', err);
+    // 2. Execute Action
+    try {
+        if (action === 'play') {
+            if (player.playing) {
+                player.pause();
+            } else {
+                player.play();
             }
-        }, 150);
+
+            // Sync icon states (looking within the clicked button or the entire control row)
+            const row = btn.closest('.video-controls-row') || btn;
+            const playIcons = row.querySelectorAll('.play-icon');
+            const pauseIcons = row.querySelectorAll('.pause-icon');
+
+            // Note: We use a slight timeout because player.playing might not update instantly
+            setTimeout(() => {
+                const isPlaying = player.playing;
+                playIcons.forEach(i => i.style.display = isPlaying ? 'none' : 'block');
+                pauseIcons.forEach(i => i.style.display = isPlaying ? 'block' : 'none');
+            }, 50);
+
+        } else if (action === 'sound') {
+            player.muted = !player.muted;
+            if (!player.muted && player.volume === 0) player.volume = 1;
+
+            const row = btn.closest('.video-controls-row') || btn;
+            const soundOnIcons = row.querySelectorAll('.sound-on');
+            const soundOffIcons = row.querySelectorAll('.sound-off');
+
+            soundOnIcons.forEach(i => i.style.display = player.muted ? 'none' : 'block');
+            soundOffIcons.forEach(i => i.style.display = player.muted ? 'block' : 'none');
+
+        } else if (action === 'detach') {
+            player.play();
+            player.muted = false;
+
+            setTimeout(() => {
+                try {
+                    // Try Plyr's property first
+                    if (player.pip === false || player.pip === true) {
+                        player.pip = !player.pip;
+                    } else if (player.elements.container && player.elements.container.requestPictureInPicture) {
+                        // Native browser PiP fallback
+                        player.elements.container.requestPictureInPicture();
+                    }
+                } catch (err) {
+                    console.error('PiP error:', err);
+                }
+            }, 150);
+        }
+    } catch (err) {
+        console.error('Video action execution failed:', err);
     }
 }
 
@@ -3025,12 +3075,17 @@ window.initPlyr = function (container = document) {
     players.forEach(player => {
         if (!player || !player.elements || !player.elements.container) return;
         const plyrContainer = player.elements.container;
-        const shield = plyrContainer.parentElement.querySelector('.video-protection-shield');
+
+        // Find the shield relative to the original element's placement
+        const shield = plyrContainer.closest('.intro-video-embed, .youtube-embed, .playlist-container')?.querySelector('.video-protection-shield');
 
         if (shield) {
             shield.style.cursor = 'pointer';
             shield.onclick = (e) => {
-                if (e.button === 0) player.togglePlay();
+                if (e.button === 0) {
+                    if (player.playing) player.pause();
+                    else player.play();
+                }
             };
             shield.oncontextmenu = (e) => {
                 e.preventDefault();
