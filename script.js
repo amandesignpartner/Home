@@ -386,88 +386,9 @@ function loadSavedPositions(elements) {
     });
 }
 
-// ===== 360 View Full-Screen Popup =====
+// ===== 360 View Full-Screen Popup (Handled by 360-preload.js) =====
 function init360Popup() {
-    const openBtn = document.getElementById('open360Popup');
-    const closeBtn = document.getElementById('close360Popup');
-    const overlay = document.getElementById('popup360Overlay');
-    const iframe360 = document.getElementById('iframe360View');
-
-    if (!openBtn || !closeBtn || !overlay) return;
-
-    // Open popup
-    openBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Don't open if the button was just dragged
-        if (openBtn.closest('.btn-360-wrapper')?.classList.contains('was-dragged')) return;
-
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-
-        // Signal to unmute and play
-        if (iframe360 && iframe360.contentWindow) {
-            try {
-                iframe360.contentWindow.postMessage({ action: 'unmute' }, '*');
-                iframe360.contentWindow.postMessage({ action: 'resume' }, '*');
-            } catch (err) { console.log('360 View: Error sending unmute'); }
-        }
-    });
-
-    // Close popup and STOP ALL MEDIA
-    const closePopup = () => {
-        overlay.classList.remove('active');
-        document.body.style.overflow = ''; // Restore scrolling
-
-        // 1. STOP via postMessage (Cross-origin safe)
-        if (iframe360 && iframe360.contentWindow) {
-            try {
-                iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
-                iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
-            } catch (e) {
-                console.log('360 View: Could not send stop commands');
-            }
-        }
-
-        // 2. STOP via direct access (if same-origin)
-        try {
-            const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
-
-            // Pause all videos
-            iframeDoc.querySelectorAll('video').forEach(video => {
-                video.pause();
-                video.muted = true;
-            });
-
-            // Pause all audio
-            iframeDoc.querySelectorAll('audio').forEach(audio => {
-                audio.pause();
-                audio.muted = true;
-            });
-
-            console.log('360 View: Successfully stopped all media');
-        } catch (e) {
-            // Cross-origin restriction expected
-            console.log('360 View: Cross-origin (Media stop handled by postMessage)');
-        }
-    };
-
-    closeBtn.addEventListener('click', closePopup);
-
-    // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            closePopup();
-        }
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && overlay.classList.contains('active')) {
-            closePopup();
-        }
-    });
+    // Logic moved to 360-preload.js for absolute audio control
 }
 
 
@@ -1218,6 +1139,14 @@ function openPopup(id, isBack = false, options = {}) {
         }
     }
 
+    // Pause background intro video if it exists
+    const backgroundVideo = document.querySelector('.sticky-content .js-player');
+    if (backgroundVideo && window.Plyr) {
+        // Try to find Plyr instance
+        const player = Plyr.setup('.sticky-content .js-player')[0];
+        if (player) player.pause();
+    }
+
     const template = document.getElementById('popup-' + id);
 
     if (!template) {
@@ -1932,6 +1861,16 @@ function closePopup() {
         if (overlay) {
             overlay.classList.remove('active');
             document.body.style.overflow = '';
+
+            // CRITICAL: Clear content to stop all background media/videos
+            const content = document.getElementById('popupContent');
+            if (content) {
+                // Remove Plyr instances if they exist to prevent memory leaks
+                if (window.Plyr && typeof window.destroyPlyr === 'function') {
+                    window.destroyPlyr(content);
+                }
+                content.innerHTML = '';
+            }
         }
     }
 
@@ -3019,7 +2958,8 @@ window.initPlyr = function (container = document) {
         youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
         tooltips: { controls: false, seek: false },
         displayDuration: false,
-        invertTime: false
+        invertTime: false,
+        quality: { default: 1080, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
     }));
 
     players.forEach(player => {

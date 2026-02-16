@@ -1,243 +1,128 @@
-// 360 View Aggressive Preloading and Caching System
+// 360 View Security and Audio Control System (Simplified)
 (function () {
     'use strict';
 
-    // Register Service Worker for aggressive caching
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw-360-cache.js')
-                .then((registration) => {
-                    console.log('360 View Cache: Service Worker registered successfully');
 
-                    // Force immediate caching of all resources
-                    if (registration.active) {
-                        registration.active.postMessage({ action: 'cacheAll' });
-                    }
-
-                    // Check for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'activated') {
-                                console.log('360 View Cache: New service worker activated');
-                                // Force cache all resources again
-                                newWorker.postMessage({ action: 'cacheAll' });
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.log('360 View Cache: Service Worker registration failed:', error);
-                });
-        });
-    }
-
-    // Aggressively preload iframe and all its resources immediately
-    window.addEventListener('load', () => {
-        const iframe360 = document.getElementById('iframe360View');
-        const loader360 = document.getElementById('loader360');
-        const statusText = document.getElementById('loader360-status');
-        const percentText = document.getElementById('loader360-percent');
-
-        if (iframe360 && loader360) {
-            console.log('360 View: Initializing Intelligence-Driven Loading...');
-
-            let sequenceFinished = false;
-            let progressValue = 0;
-            let isCached = false; // "Guess" flag for cached assets
-
-            // --- Cache Sensing Logics ---
-            // If the iframe fires 'load' before our 3s center phase ends, it's highly likely cached.
-            const cacheSensorTimeout = setTimeout(() => {
-                // If we reach this point and iframe is already ready, it's cached
-                try {
-                    // Check if iframe is ready via basic property or previous event
-                    if (iframe360.contentWindow && iframe360.contentWindow.document.readyState === 'complete') {
-                        isCached = true;
-                        console.log('360 View Intelligence: Cache detected (Early resolution).');
-                    }
-                } catch (e) { /* Cross-origin fallback below */ }
-            }, 2500);
-
-            iframe360.addEventListener('load', () => {
-                // If it loads faster than 3s, it's a "cached" guess
-                if (performance.now() < 3000) {
-                    isCached = true;
-                    console.log('360 View Intelligence: Cache guessed via rapid resolution.');
-                }
-
-                // Background silencing
-                try {
-                    if (iframe360.contentWindow) {
-                        iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
-                        iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
-                    }
-                } catch (e) { }
-            });
-
-            // --- Phase 1: 3 Seconds Center (The optimization phase) ---
-            setTimeout(() => {
-                if (sequenceFinished) return;
-
-                // --- Phase 2: Move to Corner ---
-                loader360.classList.add('in-corner');
-                if (statusText) statusText.textContent = 'Loading Videos...';
-                if (percentText) {
-                    percentText.style.display = 'block';
-                    percentText.textContent = '0%';
-                }
-
-                // Show iframe in background
-                iframe360.style.opacity = '1';
-
-                // --- Phase 3: Dynamic Progress Completion ---
-                // If cached, we finish in 5 seconds. If not, we take the 1-minute path.
-                const duration = isCached ? 5000 : 60000;
-                const interval = 100;
-                const increment = 100 / (duration / interval);
-
-                const progressTimer = setInterval(() => {
-                    progressValue += increment;
-                    if (progressValue >= 100) {
-                        progressValue = 100;
-                        clearInterval(progressTimer);
-                        setTimeout(finishSequence, 500);
-                    }
-                    if (percentText) percentText.textContent = `${Math.floor(progressValue)}%`;
-                }, interval);
-
-                // Intelligence Layer: Listen for "TRUE READY" messages from the source
-                window.addEventListener('message', (event) => {
-                    if (event.data === 'ready' || event.data.type === '360-ready') {
-                        console.log('360 View Intelligence: True ready signal received. Ending sequence.');
-                        progressValue = 100;
-                        if (percentText) percentText.textContent = '100%';
-                        clearInterval(progressTimer);
-                        finishSequence();
-                    }
-                });
-
-            }, 3000); // 3 seconds center delay
-
-            function finishSequence() {
-                if (sequenceFinished) return;
-                sequenceFinished = true;
-
-                loader360.style.opacity = '0';
-                setTimeout(() => {
-                    loader360.style.visibility = 'hidden';
-                }, 800);
-
-                console.log('360 View: Loading sequence finalized.');
-            }
-
-            // Force eager loading
-            iframe360.loading = 'eager';
-        }
-    });
-
-    // Enhanced popup controls with media pause on close
+    // NUCLEAR STOP & EXPLICIT START SYSTEM
     const open360Btn = document.getElementById('open360Popup');
     const close360Btn = document.getElementById('close360Popup');
     const overlay360 = document.getElementById('popup360Overlay');
+    const iframeContainer = document.getElementById('popup360Content');
+    const originalSrc = "https://amandesignpartner.github.io/360views/";
 
-    if (open360Btn && overlay360) {
-        // When opening popup - UNMUTE and allow playback
+    if (open360Btn && overlay360 && iframeContainer) {
+        const loader360 = document.getElementById('loader360');
+        const statusText = document.getElementById('loader360-status');
+        const percentText = document.getElementById('loader360-percent');
+        let progressInterval;
+
+        // 1. OPEN: Explictly set src and show
         open360Btn.addEventListener('click', () => {
-            const iframe360 = document.getElementById('iframe360View');
-            if (iframe360) {
-                console.log('360 View: Opening popup - enabling audio/video playback');
-                iframe360.importance = 'high';
+            const iframe = document.getElementById('iframe360View');
+            if (iframe && !overlay360.classList.contains('active')) {
+                console.log('360 View: Launching environment...');
 
-                // Unmute all media to allow playback
-                try {
-                    const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
-
-                    // Unmute all videos
-                    const videos = iframeDoc.querySelectorAll('video');
-                    videos.forEach((video) => {
-                        video.muted = false; // Unmute
-                    });
-
-                    // Unmute all audio
-                    const audios = iframeDoc.querySelectorAll('audio');
-                    audios.forEach((audio) => {
-                        audio.muted = false; // Unmute
-                    });
-
-                    console.log('360 View: Media unmuted and ready to play');
-                } catch (e) {
-                    console.log('360 View: Cross-origin - cannot unmute directly');
-                }
-
-                // Unmute and play media via postMessage
-                try {
-                    if (iframe360.contentWindow) {
-                        iframe360.contentWindow.postMessage({ action: 'unmute' }, '*');
-                        iframe360.contentWindow.postMessage({ action: 'resume' }, '*');
-                        console.log('360 View: Sent unmute/resume commands');
+                // Reset and Show Loader
+                if (loader360) {
+                    loader360.style.opacity = '1';
+                    loader360.style.visibility = 'visible';
+                    loader360.classList.remove('in-corner'); // Start in center
+                    if (percentText) {
+                        percentText.style.display = 'block';
+                        percentText.textContent = '0%';
                     }
-                } catch (e) {
-                    console.log('360 View: Could not send resume commands');
+                    if (statusText) statusText.textContent = 'Optimizing 360° Environments...';
+
+                    // Start Animation
+                    let progress = 0;
+                    progressInterval = setInterval(() => {
+                        progress += Math.random() * 3.5;
+                        if (progress >= 95) {
+                            progress = 95;
+                            clearInterval(progressInterval);
+                            if (statusText) statusText.textContent = 'Almost Ready...';
+                        }
+                        if (percentText) percentText.textContent = Math.floor(progress) + '%';
+                    }, 100);
                 }
+
+                // Pause background intro video to prevent double audio (Nuclear Pause)
+                const bgVideo = document.querySelector('.sticky-content .js-player');
+                if (bgVideo && window.Plyr) {
+                    try {
+                        const player = Plyr.setup('.sticky-content .js-player')[0];
+                        if (player) player.pause();
+                    } catch (e) { }
+                }
+
+                // Only set src if it's currently at the blank state
+                if (iframe.src.includes('about:blank') || iframe.src === '') {
+                    iframe.src = originalSrc + "?autoplay=1&muted=0";
+                }
+
+                overlay360.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                // Listen for ready signal from 360 View
+                const handleReady = (event) => {
+                    if (event.data === 'ready' || event.data.type === '360-ready') {
+                        finishLoading();
+                        window.removeEventListener('message', handleReady);
+                    }
+                };
+                window.addEventListener('message', handleReady);
+
+                // Fail-safe to hide loader if no message received
+                setTimeout(() => {
+                    if (loader360 && loader360.style.visibility !== 'hidden') {
+                        finishLoading();
+                    }
+                }, 8000);
             }
         });
 
-        // When closing popup - STOP ALL MEDIA
-        const closePopup = () => {
-            const iframe360 = document.getElementById('iframe360View');
-            if (iframe360 && iframe360.contentWindow) {
-                console.log('360 View: Closing popup - stopping all media');
+        const finishLoading = () => {
+            clearInterval(progressInterval);
+            if (percentText) percentText.textContent = '100%';
+            if (statusText) statusText.textContent = 'Optimization Complete';
 
-                // Method 1: STOP media via postMessage (Cross-origin safe)
-                try {
-                    iframe360.contentWindow.postMessage({ action: 'pause' }, '*');
-                    iframe360.contentWindow.postMessage({ action: 'mute' }, '*');
-                } catch (e) {
-                    console.log('360 View: Could not send stop commands');
+            setTimeout(() => {
+                if (loader360) {
+                    loader360.style.opacity = '0';
+                    setTimeout(() => {
+                        loader360.style.visibility = 'hidden';
+                    }, 800);
                 }
-
-                // Method 2: Try direct access (if same-origin)
-                try {
-                    const iframeDoc = iframe360.contentDocument || iframe360.contentWindow.document;
-
-                    // Pause all videos
-                    const videos = iframeDoc.querySelectorAll('video');
-                    videos.forEach((video) => {
-                        video.pause();
-                        video.muted = true; // Mute as backup
-                    });
-
-                    // Pause all audio
-                    const audios = iframeDoc.querySelectorAll('audio');
-                    audios.forEach((audio) => {
-                        audio.pause();
-                        audio.muted = true; // Mute as backup
-                    });
-
-                    console.log('360 View: Successfully stopped all media');
-                } catch (e) {
-                    // Cross-origin restriction - iframe will stay loaded for instant reopen
-                    console.log('360 View: Cross-origin - iframe stays loaded for instant reopen');
-                }
-            }
+                const iframe = document.getElementById('iframe360View');
+                if (iframe) iframe.style.opacity = '1';
+            }, 500);
         };
 
-        // Attach close handlers
-        if (close360Btn) {
-            close360Btn.addEventListener('click', closePopup);
-        }
+        // 2. CLOSE: Nuclear Option (Remove and Recreate)
+        const nuclearStop = () => {
+            const iframe = document.getElementById('iframe360View');
+            clearInterval(progressInterval);
+            if (iframe) {
+                console.log('360 View: Nuclear Stop - Destroying iframe to kill music');
+                iframe.style.opacity = '0';
+                iframe.src = "about:blank";
 
-        overlay360.addEventListener('click', (e) => {
-            if (e.target === overlay360) {
-                closePopup();
+                setTimeout(() => {
+                    const newIframe = iframe.cloneNode(true);
+                    newIframe.src = "about:blank";
+                    iframe.parentNode.replaceChild(newIframe, iframe);
+                    overlay360.classList.remove('active');
+                }, 50);
+            } else {
+                overlay360.classList.remove('active');
             }
-        });
+            document.body.style.overflow = '';
+        };
 
+        if (close360Btn) close360Btn.addEventListener('click', nuclearStop);
+        overlay360.addEventListener('click', (e) => { if (e.target === overlay360) nuclearStop(); });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && overlay360.classList.contains('active')) {
-                closePopup();
-            }
+            if (e.key === 'Escape' && overlay360.classList.contains('active')) nuclearStop();
         });
     }
 

@@ -81,10 +81,6 @@
     <link rel="preconnect" href="https://amandesignpartner.github.io">
     <link rel="dns-prefetch" href="https://amandesignpartner.github.io">
 
-    <!-- Prefetch the 360 view page for instant loading -->
-    <link rel="prefetch" href="https://amandesignpartner.github.io/360views/">
-    <link rel="prerender" href="https://amandesignpartner.github.io/360views/">
-
     <!-- Aggressive Preload for background slider images (Ensures they load while preloader is active) -->
     <link rel="preload" as="image" href="images/slide1.webp" fetchpriority="high">
     <link rel="preload" as="image" href="images/slide2.webp">
@@ -355,7 +351,7 @@
             <div class="intro-video-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
@@ -1203,7 +1199,7 @@
             <div class="youtube-embed" oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player"
-                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
+                    src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
@@ -1269,7 +1265,7 @@
                 <div class="playlist-container" style="position: relative;" oncontextmenu="return false;">
                     <div class="video-protection-shield" oncontextmenu="return false;"></div>
                     <iframe class="js-player" width="100%" height="400"
-                        src="https://www.youtube.com/embed/videoseries?list=PLHAIUN4pRaCxtc1tNOMH5-lb3dCqGS1Rq&rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&controls=0&enablejsapi=1&showinfo=0&iv_load_policy=3"
+                        src="https://www.youtube.com/embed/videoseries?list=PLHAIUN4pRaCxtc1tNOMH5-lb3dCqGS1Rq&rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&controls=0&enablejsapi=1&showinfo=0&iv_load_policy=3&vq=hd1080"
                         title="3D Walkthrough Playlist" frameborder="0"
                         sandbox="allow-scripts allow-same-origin allow-presentation"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -3605,7 +3601,7 @@
                 oncontextmenu="return false;">
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player" width="100%" height="250"
-                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3"
+                    src="https://www.youtube.com/embed/okQOsXLRUks?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=okQOsXLRUks&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
                     title="Premium Walkthrough Example" frameborder="0"
                     sandbox="allow-scripts allow-same-origin allow-presentation"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -4741,9 +4737,8 @@
                         style="display: none; font-size: 11px; opacity: 0.8; margin-top: 4px; color: var(--primary-orange); font-weight: 600;">0%</span>
                 </div>
             </div>
-            <!-- Iframe preloads immediately on page load for instant access -->
-            <iframe id="iframe360View" src="https://amandesignpartner.github.io/360views/?muted=1" frameborder="0"
-                allowfullscreen loading="eager"
+            <!-- Iframe starts Blank and is only loaded on click to prevent background music -->
+            <iframe id="iframe360View" src="about:blank" frameborder="0" allowfullscreen loading="eager"
                 allow="fullscreen; accelerometer; gyroscope; picture-in-picture; clipboard-write"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals" importance="high"
                 style="will-change: transform; content-visibility: auto; opacity: 0; transition: opacity 0.8s ease;"></iframe>
