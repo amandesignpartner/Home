@@ -1136,46 +1136,75 @@ function initPopups() {
 }
 
 // === Global Intro Video Actions (Direct Access for Stability) ===
+// === Global Intro Video Actions (Direct Access for Stability) ===
 window.handleIntroAction = function (action, event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
 
-    // Comprehensive Player Recovery Logic
+    // 1. Try Global Instance
     let player = window.introPlayer;
+
+    // 2. Try DOM Lookup (Synchronous Recovery)
     if (!player) {
+        const el = document.querySelector('.js-intro-player');
+        if (el && el.plyr) {
+            player = el.plyr;
+            window.introPlayer = player; // Cache it
+        }
+    }
+
+    // 3. Last Resort: Force Init (Synchronous)
+    if (!player) {
+        console.warn('Intro Player not ready. Forcing init...');
+        if (window.initPlyr) window.initPlyr();
         const el = document.querySelector('.js-intro-player');
         if (el && el.plyr) player = el.plyr;
     }
 
     if (!player) {
-        console.warn('Intro Player not found. Re-initializing...');
-        window.initPlyr();
-        // Give it a tiny bit of time if we just initialized
-        setTimeout(() => window.handleIntroAction(action, event), 100);
+        console.error('Intro Player completely failed to initialize. Attempting direct iframe fallback.');
+        const iframe = document.querySelector('.js-intro-player');
+        if (iframe && iframe.contentWindow) {
+            if (action === 'detach') {
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+                // Cannot trigger PiP via postMessage alone, but we ensure playback
+            } else if (action === 'sound') {
+                // Toggle mute state blindly as we can't read state easily
+                // We will unmute to be safe
+                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+            }
+        }
         return;
     }
 
     if (action === 'detach') {
         player.play();
         player.muted = false;
+
+        // Native PiP attempt (must be user gesture)
         try {
-            player.pip = true;
-            // Sync Sound UI manually if we unmuted
-            const sBtn = document.getElementById('intro-sound-btn');
-            if (sBtn) {
-                sBtn.querySelector('.sound-on').style.display = 'block';
-                sBtn.querySelector('.sound-off').style.display = 'none';
+            if (player.pip !== true) {
+                player.pip = true;
             }
         } catch (err) {
-            console.error('PiP failed:', err);
-            openPopup('intro');
+            console.error('PiP failed/blocked:', err);
+            // Fallback: Just ensure it's playing and unmuted
+        }
+
+        // Sync Sound UI
+        const sBtn = document.getElementById('intro-sound-btn');
+        if (sBtn) {
+            sBtn.querySelector('.sound-on').style.display = 'block';
+            sBtn.querySelector('.sound-off').style.display = 'none';
         }
 
         // Auto-close overlay if activated from within a popup
+        // Auto-close overlay if activated from within a popup
         const closeTrigger = event ? event.target.closest('.popup-modal') : null;
-        if (closeTrigger) closePopup();
+        if (closeTrigger && window.closePopup) window.closePopup();
 
     } else if (action === 'sound') {
         player.muted = !player.muted;
@@ -1187,6 +1216,9 @@ window.handleIntroAction = function (action, event) {
             sBtn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
             sBtn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
 
+            // Re-trigger animation
+            sBtn.classList.remove('pulse-orange');
+            void sBtn.offsetWidth; // Force reflow
             sBtn.classList.add('pulse-orange');
             setTimeout(() => sBtn.classList.remove('pulse-orange'), 600);
         }
@@ -3002,13 +3034,12 @@ function restoreAllTrackerData() {
 })();
 
 // === Plyr Initialization (Custom YouTube-like) ===
+// === Plyr Initialization (Custom YouTube-like) ===
 window.initPlyr = function (container = document, retryCount = 0) {
     if (typeof Plyr === 'undefined') {
-        if (retryCount < 10) {
+        if (retryCount < 5) {
             console.warn('Plyr not loaded yet, retrying in 200ms...');
             setTimeout(() => window.initPlyr(container, retryCount + 1), 200);
-        } else {
-            console.error('Plyr failed to load after multiple attempts.');
         }
         return;
     }

@@ -1006,11 +1006,10 @@ body {
     width: 100%;
     height: 100%;
     z-index: 10;
-    /* Ensure it's above everything including Plyr if needed */
-    background: rgba(0, 0, 0, 0.01);
-    /* Tiny substance for event capture */
-    pointer-events: auto;
-    /* Block direct interaction with the YouTube iframe */
+    /* Allow clicks to pass through to buttons if they overlap but catch iframe clicks */
+    pointer-events: none;
+    /* Let buttons receive clicks */
+    background: transparent;
 }
 
 /* Intro Video Embed in Sticky Note */
