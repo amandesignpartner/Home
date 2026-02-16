@@ -97,7 +97,7 @@ function initializeAllYouTubePlayers() {
     });
 }
 
-// Get player for a specific video container
+//Get player for a specific video container
 function getPlayerForContainer(container) {
     const iframe = container.querySelector('iframe[src*="youtube.com"]');
     if (!iframe) {
@@ -204,73 +204,143 @@ window.customVideoControls = {
         button.classList.add('pulse-orange');
         setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-        // Try to get the video element from the iframe
-        try {
-            // For YouTube iframes, we need to open the video in a new window for PiP
-            const videoId = extractVideoId(iframe.src);
+        const videoId = extractVideoId(iframe.src);
 
-            if (!videoId) {
-                showToast('⚠️ Unable to detach video');
-                return;
-            }
-
-            // Get current playback time
-            let currentTime = 0;
-            if (player) {
-                try {
-                    currentTime = player.getCurrentTime();
-                } catch (e) {
-                    console.warn('Could not get current time:', e);
-                }
-            }
-
-            // Create a floating window with YouTube embed optimized for PiP
-            const pipWidth = 480;
-            const pipHeight = 270;
-            const screenWidth = window.screen.width;
-            const screenHeight = window.screen.height;
-            const left = screenWidth - pipWidth - 20;
-            const top = screenHeight - pipHeight - 80;
-
-            const pipWindow = window.open(
-                '',
-                'YouTube PiP',
-                `width=${pipWidth},height=${pipHeight},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,scrollbars=no,resizable=yes`
-            );
-
-            if (pipWindow) {
-                // Build the PiP window content
-                pipWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html style="margin:0;padding:0;overflow:hidden;">
-                    <head>
-                        <title>Video - Picture in Picture</title>
-                        <style>
-                            body { margin: 0; padding: 0; overflow: hidden; background: #000; }
-                            iframe { width: 100vw; height: 100vh; border: none; }
-                        </style>
-                    </head>
-                    <body>
-                        <iframe 
-                            src="https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(currentTime)}&controls=1&modestbranding=1&rel=0&enablejsapi=1"
-                            frameborder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen>
-                        </iframe>
-                    </body>
-                    </html>
-                `);
-                pipWindow.document.close();
-
-                showToast('📺 Video detached to floating window');
-                console.log('✅ Video detached successfully');
-            } else {
-                showToast('⚠️ Please allow pop-ups to detach video');
-            }
-        } catch (error) {
-            console.error('Detach failed:', error);
+        if (!videoId) {
             showToast('⚠️ Unable to detach video');
+            return;
         }
+
+        let currentTime = 0;
+        if (player) {
+            try {
+                currentTime = player.getCurrentTime();
+            } catch (e) {
+                console.warn('Could not get current time:', e);
+            }
+        }
+
+        // Create or toggle custom PiP window
+        let pipContainer = document.getElementById('custom-pip-container');
+
+        if (pipContainer) {
+            // Toggle off if already open
+            pipContainer.remove();
+            showToast('📺 Exited Picture-in-Picture');
+            return;
+        }
+
+        pipContainer = document.createElement('div');
+        pipContainer.id = 'custom-pip-container';
+        pipContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 480px;
+            height: 270px;
+            z-index: 999999;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
+            resize: both;
+            min-width: 320px;
+            min-height: 180px;
+            max-width: 800px;
+            max-height: 450px;
+        `;
+
+        // Drag header with close button
+        const dragHeader = document.createElement('div');
+        dragHeader.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+            cursor: move;
+            z-index: 10;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 5px 10px;
+        `;
+
+        // Close button (X)
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.title = 'Close';
+        closeBtn.style.cssText = `
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        `;
+        closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255, 0, 0, 0.8)';
+        closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        closeBtn.onclick = () => {
+            pipContainer.remove();
+            showToast('📺 Exited Picture-in-Picture');
+        };
+
+        dragHeader.appendChild(closeBtn);
+
+        // Dragging functionality
+        let isDragging = false;
+        let initialX, initialY;
+
+        dragHeader.onmousedown = (e) => {
+            if (e.target === closeBtn) return;
+            isDragging = true;
+            initialX = e.clientX - pipContainer.offsetLeft;
+            initialY = e.clientY - pipContainer.offsetTop;
+            pipContainer.style.cursor = 'grabbing';
+        };
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                pipContainer.style.left = (e.clientX - initialX) + 'px';
+                pipContainer.style.top = (e.clientY - initialY) + 'px';
+                pipContainer.style.bottom = 'auto';
+                pipContainer.style.right = 'auto';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                pipContainer.style.cursor = 'default';
+            }
+        });
+
+        // Create video iframe with YouTube controls
+        const pipIframe = document.createElement('iframe');
+        pipIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(currentTime)}&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+        pipIframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+        `;
+        pipIframe.setAttribute('frameborder', '0');
+        pipIframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+        pipIframe.setAttribute('allowfullscreen', '');
+
+        pipContainer.appendChild(dragHeader);
+        pipContainer.appendChild(pipIframe);
+        document.body.appendChild(pipContainer);
+
+        showToast('📺 Video detached to Picture-in-Picture');
+        console.log('✅ Custom PiP window activated');
     },
 
     quality: function (button) {
