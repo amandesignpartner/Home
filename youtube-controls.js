@@ -1,7 +1,6 @@
 /**
  * CUSTOM YOUTUBE VIDEO CONTROLS
- * Direct YouTube IFrame API implementation
- * Works without Plyr - simpler and more reliable
+ * Native HTML5-style player with custom overlay controls
  */
 
 // Store all YouTube player instances
@@ -25,8 +24,6 @@ function loadYouTubeAPI() {
 window.onYouTubeIframeAPIReady = function () {
     console.log('✅ YouTube IFrame API is ready');
     isYouTubeAPIReady = true;
-
-    // Initialize any existing iframes that are waiting
     initializeAllYouTubePlayers();
 };
 
@@ -46,7 +43,6 @@ function initializeAllYouTubePlayers() {
             iframe.id = `youtube-player-${index}-${Date.now()}`;
         }
 
-        // Check if already initialized
         if (window.youtubePlayersMap.has(iframe.id)) {
             console.log(`Player ${iframe.id} already initialized`);
             return;
@@ -59,28 +55,23 @@ function initializeAllYouTubePlayers() {
         }
 
         try {
-            // Update iframe src to ensure enablejsapi is set
             const currentSrc = iframe.src;
             if (!currentSrc.includes('enablejsapi=1')) {
                 iframe.src = currentSrc + (currentSrc.includes('?') ? '&' : '?') + 'enablejsapi=1';
             }
 
-            // Create YT.Player instance
             const player = new YT.Player(iframe.id, {
                 events: {
                     'onReady': (event) => {
                         console.log(`✅ Player ${iframe.id} is ready`);
                         window.youtubePlayersMap.set(iframe.id, event.target);
 
-                        // Set default quality to 1080p HD
                         try {
                             const availableLevels = event.target.getAvailableQualityLevels();
                             if (availableLevels.includes('hd1080')) {
                                 event.target.setPlaybackQuality('hd1080');
-                                console.log(`📺 Set default quality to 1080p HD for ${iframe.id}`);
                             } else if (availableLevels.includes('hd720')) {
                                 event.target.setPlaybackQuality('hd720');
-                                console.log(`📺 Set default quality to 720p HD for ${iframe.id}`);
                             }
                         } catch (err) {
                             console.warn('Could not set default quality:', err);
@@ -97,27 +88,16 @@ function initializeAllYouTubePlayers() {
     });
 }
 
-// Get player for a specific video container
 function getPlayerForContainer(container) {
     const iframe = container.querySelector('iframe[src*="youtube.com"]');
-    if (!iframe) {
-        console.error('No YouTube iframe found in container');
-        return null;
-    }
-
-    if (!iframe.id) {
-        console.error('Iframe has no ID');
-        return null;
-    }
+    if (!iframe) return null;
+    if (!iframe.id) return null;
 
     const player = window.youtubePlayersMap.get(iframe.id);
     if (!player) {
-        console.warn(`Player not found for ${iframe.id}, attempting to initialize...`);
-        // Try to initialize this specific player
         initializeAllYouTubePlayers();
         return null;
     }
-
     return player;
 }
 
@@ -129,30 +109,21 @@ window.customVideoControls = {
 
         if (!player) {
             showToast('⚠️ Video player not ready. Please wait...');
-            setTimeout(() => {
-                initializeAllYouTubePlayers();
-            }, 500);
+            setTimeout(() => initializeAllYouTubePlayers(), 500);
             return;
         }
 
         try {
             const state = player.getPlayerState();
-
-            // Update button visual
             button.classList.add('pulse-orange');
             setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-            // YT.PlayerState: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
             if (state === 1) {
-                // Currently playing, so pause
                 player.pauseVideo();
                 this.updatePlayButtonIcon(container, false);
-                console.log('⏸ Video paused');
             } else {
-                // Not playing, so play
                 player.playVideo();
                 this.updatePlayButtonIcon(container, true);
-                console.log('▶ Video playing');
             }
         } catch (error) {
             console.error('Play/Pause failed:', error);
@@ -174,20 +145,15 @@ window.customVideoControls = {
             setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
             if (player.isMuted()) {
-                // Currently muted, so unmute
                 player.unMute();
                 player.setVolume(100);
                 this.updateMuteButtonIcon(container, false);
-                console.log('🔊 Video unmuted');
             } else {
-                // Not muted, so mute
                 player.mute();
                 this.updateMuteButtonIcon(container, true);
-                console.log('🔇 Video muted');
             }
         } catch (error) {
             console.error('Mute/Unmute failed:', error);
-            showToast('⚠️ Unable to control audio');
         }
     },
 
@@ -205,7 +171,6 @@ window.customVideoControls = {
         setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
         const videoId = extractVideoId(iframe.src);
-
         if (!videoId) {
             showToast('⚠️ Unable to detach video');
             return;
@@ -220,205 +185,322 @@ window.customVideoControls = {
             }
         }
 
-        // Create or toggle custom PiP window
         let pipContainer = document.getElementById('custom-pip-container');
-
         if (pipContainer) {
-            // Toggle off if already open
             pipContainer.remove();
             showToast('📺 Video reattached');
             return;
         }
 
-        this.createPiPWindow(videoId, currentTime);
+        this.createCustomPlayer(videoId, currentTime);
     },
 
-    createPiPWindow: function (videoId, startTime) {
+    createCustomPlayer: function (videoId, startTime) {
         const pipContainer = document.createElement('div');
         pipContainer.id = 'custom-pip-container';
+        pipContainer.className = 'player-container';
         pipContainer.style.cssText = `
             position: fixed;
+            width: 480px;
+            height: 270px;
             bottom: 20px;
             right: 20px;
-            width: 480px;
-            height: 300px;
+            background: black;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: move;
             z-index: 999999;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-            resize: both;
-            min-width: 320px;
-            min-height: 200px;
-            max-width: 800px;
-            max-height: 500px;
-            display: flex;
-            flex-direction: column;
+            user-select: none;
         `;
 
-        // Video container (YouTube iframe without branding)
-        const videoContainer = document.createElement('div');
-        videoContainer.style.cssText = `
-            position: relative;
-            flex: 1;
-            background: #000;
-            overflow: hidden;
-        `;
-
-        const pipIframe = document.createElement('iframe');
-        // Remove YouTube branding and controls - we'll add custom ones
-        pipIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(startTime)}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&enablejsapi=1`;
-        pipIframe.style.cssText = `
+        // YouTube iframe (no controls, hidden branding)
+        const videoFrame = document.createElement('iframe');
+        videoFrame.id = 'pip-youtube-player';
+        videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(startTime)}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&enablejsapi=1`;
+        videoFrame.style.cssText = `
             width: 100%;
             height: 100%;
             border: none;
-            pointer-events: auto;
+            pointer-events: none;
         `;
-        pipIframe.setAttribute('frameborder', '0');
-        pipIframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope');
-        pipIframe.setAttribute('allowfullscreen', '');
+        videoFrame.setAttribute('frameborder', '0');
+        videoFrame.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope');
 
-        // Disable right-click on iframe
-        pipIframe.oncontextmenu = (e) => {
-            e.preventDefault();
-            return false;
-        };
+        pipContainer.appendChild(videoFrame);
 
-        videoContainer.appendChild(pipIframe);
-
-        // Top control bar with reattach and close buttons
-        const topBar = document.createElement('div');
-        topBar.style.cssText = `
+        // Overlay controls
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        overlay.style.cssText = `
             position: absolute;
+            width: 100%;
+            height: 100%;
             top: 0;
             left: 0;
-            right: 0;
-            height: 40px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 10;
-            cursor: move;
+            pointer-events: none;
         `;
 
-        // Reattach button (left)
-        const reattachBtn = document.createElement('button');
-        reattachBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 1.98 2 1.98h18c1.1 0 2-.88 2-1.98V5c0-1.1-.9-2-2-2zm0 16.01H3V4.98h18v14.03z"/>
-            </svg>
-        `;
-        reattachBtn.title = 'Reattach to page';
-        reattachBtn.style.cssText = `
-            background: rgba(0, 0, 0, 0.6);
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            cursor: pointer;
+        // Top controls
+        const topControls = document.createElement('div');
+        topControls.className = 'top-controls';
+        topControls.style.cssText = `
             display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
+            justify-content: space-between;
+            padding: 10px;
+            pointer-events: auto;
         `;
-        reattachBtn.onmouseenter = () => reattachBtn.style.background = 'rgba(255, 255, 255, 0.2)';
-        reattachBtn.onmouseleave = () => reattachBtn.style.background = 'rgba(0, 0, 0, 0.6)';
-        reattachBtn.onclick = (e) => {
-            e.stopPropagation();
+
+        const reattachBtn = this.createIconButton('↩', 'Reattach');
+        reattachBtn.onclick = () => {
             pipContainer.remove();
             showToast('📺 Video reattached');
         };
 
-        // Close button (right)
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '×';
-        closeBtn.title = 'Close';
-        closeBtn.style.cssText = `
-            background: rgba(0, 0, 0, 0.6);
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 24px;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        `;
-        closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255, 0, 0, 0.8)';
-        closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(0, 0, 0, 0.6)';
-        closeBtn.onclick = (e) => {
-            e.stopPropagation();
+        const closeBtn = this.createIconButton('✕', 'Close');
+        closeBtn.onclick = () => {
             pipContainer.remove();
             showToast('📺 Video closed');
         };
 
-        topBar.appendChild(reattachBtn);
-        topBar.appendChild(closeBtn);
-        videoContainer.appendChild(topBar);
+        topControls.appendChild(reattachBtn);
+        topControls.appendChild(closeBtn);
 
-        // Show controls on hover
-        pipContainer.onmouseenter = () => {
-            topBar.style.opacity = '1';
-        };
-        pipContainer.onmouseleave = () => {
-            topBar.style.opacity = '0';
-        };
+        // Center controls
+        const centerControls = document.createElement('div');
+        centerControls.className = 'center-controls';
+        centerControls.style.cssText = `
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            pointer-events: auto;
+        `;
 
-        // Dragging functionality
-        let isDragging = false;
-        let initialX, initialY;
+        const rewindBtn = this.createIconButton('⏪', 'Rewind 10s');
+        const playBtn = this.createIconButton('▶', 'Play', true);
+        playBtn.id = 'pip-play-btn';
+        const forwardBtn = this.createIconButton('⏩', 'Forward 10s');
 
-        topBar.onmousedown = (e) => {
-            if (e.target === closeBtn || e.target === reattachBtn || e.target.closest('button')) return;
-            isDragging = true;
-            initialX = e.clientX - pipContainer.offsetLeft;
-            initialY = e.clientY - pipContainer.offsetTop;
-            pipContainer.style.cursor = 'grabbing';
-        };
+        centerControls.appendChild(rewindBtn);
+        centerControls.appendChild(playBtn);
+        centerControls.appendChild(forwardBtn);
 
-        document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const newLeft = e.clientX - initialX;
-                const newTop = e.clientY - initialY;
+        // Bottom controls
+        const bottomControls = document.createElement('div');
+        bottomControls.className = 'bottom-controls';
+        bottomControls.style.cssText = `
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 8px;
+            pointer-events: auto;
+        `;
 
-                // Keep within viewport
-                const maxLeft = window.innerWidth - pipContainer.offsetWidth;
-                const maxTop = window.innerHeight - pipContainer.offsetHeight;
+        const progress = document.createElement('div');
+        progress.className = 'progress';
+        progress.id = 'pip-progress';
+        progress.style.cssText = `
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 6px;
+        `;
 
-                pipContainer.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
-                pipContainer.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
-                pipContainer.style.bottom = 'auto';
-                pipContainer.style.right = 'auto';
-            }
-        });
+        const progressFilled = document.createElement('div');
+        progressFilled.className = 'progress-filled';
+        progressFilled.id = 'pip-progress-filled';
+        progressFilled.style.cssText = `
+            height: 100%;
+            width: 0%;
+            background: #ff0000;
+            border-radius: 4px;
+            transition: width 0.1s;
+        `;
+        progress.appendChild(progressFilled);
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                pipContainer.style.cursor = 'default';
-            }
-        });
+        const controlRow = document.createElement('div');
+        controlRow.className = 'control-row';
+        controlRow.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        `;
 
-        // Disable right-click on entire container
+        const timeDisplay = document.createElement('span');
+        timeDisplay.id = 'pip-time';
+        timeDisplay.style.cssText = 'font-size: 12px;';
+        timeDisplay.textContent = '0:00 / 0:00';
+
+        const rightControls = document.createElement('div');
+        rightControls.style.cssText = 'display: flex; gap: 8px;';
+
+        const volumeBtn = this.createIconButton('🔊', 'Mute');
+        volumeBtn.id = 'pip-volume-btn';
+        const fullscreenBtn = this.createIconButton('⛶', 'Fullscreen');
+
+        rightControls.appendChild(volumeBtn);
+        rightControls.appendChild(fullscreenBtn);
+
+        controlRow.appendChild(timeDisplay);
+        controlRow.appendChild(rightControls);
+
+        bottomControls.appendChild(progress);
+        bottomControls.appendChild(controlRow);
+
+        overlay.appendChild(topControls);
+        overlay.appendChild(centerControls);
+        overlay.appendChild(bottomControls);
+        pipContainer.appendChild(overlay);
+
+        // Disable right-click
         pipContainer.oncontextmenu = (e) => {
             e.preventDefault();
             return false;
         };
 
-        pipContainer.appendChild(videoContainer);
         document.body.appendChild(pipContainer);
 
+        // Initialize YouTube player for PiP window
+        setTimeout(() => {
+            const pipPlayer = new YT.Player('pip-youtube-player', {
+                events: {
+                    'onReady': (event) => {
+                        const player = event.target;
+
+                        // Play/Pause
+                        playBtn.onclick = () => {
+                            const state = player.getPlayerState();
+                            if (state === 1) {
+                                player.pauseVideo();
+                                playBtn.textContent = '▶';
+                            } else {
+                                player.playVideo();
+                                playBtn.textContent = '❚❚';
+                            }
+                        };
+
+                        // Rewind
+                        rewindBtn.onclick = () => {
+                            player.seekTo(player.getCurrentTime() - 10, true);
+                        };
+
+                        // Forward
+                        forwardBtn.onclick = () => {
+                            player.seekTo(player.getCurrentTime() + 10, true);
+                        };
+
+                        // Volume
+                        volumeBtn.onclick = () => {
+                            if (player.isMuted()) {
+                                player.unMute();
+                                volumeBtn.textContent = '🔊';
+                            } else {
+                                player.mute();
+                                volumeBtn.textContent = '🔇';
+                            }
+                        };
+
+                        // Progress bar
+                        setInterval(() => {
+                            const current = player.getCurrentTime();
+                            const duration = player.getDuration();
+                            if (duration > 0) {
+                                const percent = (current / duration) * 100;
+                                progressFilled.style.width = percent + '%';
+                                timeDisplay.textContent = this.formatTime(current) + ' / ' + this.formatTime(duration);
+                            }
+                        }, 200);
+
+                        // Seek
+                        progress.onclick = (e) => {
+                            const rect = progress.getBoundingClientRect();
+                            const clickX = e.clientX - rect.left;
+                            const width = progress.clientWidth;
+                            const duration = player.getDuration();
+                            const seekTime = (clickX / width) * duration;
+                            player.seekTo(seekTime, true);
+                        };
+
+                        // Fullscreen
+                        fullscreenBtn.onclick = () => {
+                            if (!document.fullscreenElement) {
+                                pipContainer.requestFullscreen();
+                            } else {
+                                document.exitFullscreen();
+                            }
+                        };
+                    }
+                }
+            });
+        }, 500);
+
+        // Dragging
+        this.makeDraggable(pipContainer);
+
         showToast('📺 Video detached');
-        console.log('✅ PiP window activated');
+    },
+
+    createIconButton: function (text, title, isLarge = false) {
+        const btn = document.createElement('button');
+        btn.className = 'icon-btn';
+        btn.textContent = text;
+        btn.title = title;
+        btn.style.cssText = `
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            width: ${isLarge ? '60px' : '34px'};
+            height: ${isLarge ? '60px' : '34px'};
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: ${isLarge ? '22px' : '16px'};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        `;
+        btn.onmouseenter = () => btn.style.background = 'rgba(255,255,255,0.2)';
+        btn.onmouseleave = () => btn.style.background = 'rgba(0,0,0,0.6)';
+        return btn;
+    },
+
+    formatTime: function (seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    },
+
+    makeDraggable: function (element) {
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        element.onmousedown = (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'IFRAME') return;
+            isDragging = true;
+            offsetX = e.clientX - element.offsetLeft;
+            offsetY = e.clientY - element.offsetTop;
+            element.style.cursor = 'grabbing';
+        };
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            element.style.left = e.clientX - offsetX + 'px';
+            element.style.top = e.clientY - offsetY + 'px';
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                element.style.cursor = 'move';
+            }
+        });
     },
 
     quality: function (button) {
@@ -433,23 +515,18 @@ window.customVideoControls = {
         button.classList.add('pulse-orange');
         setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-        // Remove any existing quality menus
         document.querySelectorAll('.quality-dropdown').forEach(menu => menu.remove());
 
         try {
-            // Get available quality levels
             const availableQualityLevels = player.getAvailableQualityLevels();
 
             if (!availableQualityLevels || availableQualityLevels.length === 0) {
                 showToast('⚠️ Quality settings not available');
-                console.warn('No quality levels available');
                 return;
             }
 
-            // Get current quality
             const currentQuality = player.getPlaybackQuality();
 
-            // Quality labels
             const qualityLabels = {
                 'hd1080': '1080p',
                 'hd720': '720p',
@@ -460,12 +537,10 @@ window.customVideoControls = {
                 'auto': 'Auto'
             };
 
-            // Quality order for display (highest to lowest)
             const qualityOrder = ['hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
             const sortedQualities = qualityOrder.filter(q => availableQualityLevels.includes(q));
-            sortedQualities.push('auto'); // Add auto at the end
+            sortedQualities.push('auto');
 
-            // Create dropdown menu
             const dropdown = document.createElement('div');
             dropdown.className = 'quality-dropdown';
             dropdown.style.cssText = `
@@ -481,18 +556,15 @@ window.customVideoControls = {
                 font-family: 'Raleway', sans-serif;
             `;
 
-            // Position the dropdown near the button
             const buttonRect = button.getBoundingClientRect();
             dropdown.style.left = buttonRect.left + 'px';
             dropdown.style.top = (buttonRect.top - (sortedQualities.length * 36) - 10) + 'px';
 
-            // Create menu items
             sortedQualities.forEach(quality => {
                 const item = document.createElement('div');
                 const label = qualityLabels[quality] || quality;
                 const isActive = quality === currentQuality;
 
-                item.className = 'quality-item';
                 item.style.cssText = `
                     padding: 10px 20px;
                     cursor: pointer;
@@ -511,27 +583,19 @@ window.customVideoControls = {
                     ${isActive ? '<span style="color: #D2691E;">✓</span>' : ''}
                 `;
 
-                // Hover effect
                 item.onmouseenter = () => {
-                    if (!isActive) {
-                        item.style.background = 'rgba(255, 255, 255, 0.1)';
-                    }
+                    if (!isActive) item.style.background = 'rgba(255, 255, 255, 0.1)';
                 };
                 item.onmouseleave = () => {
-                    if (!isActive) {
-                        item.style.background = 'transparent';
-                    }
+                    if (!isActive) item.style.background = 'transparent';
                 };
 
-                // Click handler
                 item.onclick = () => {
                     try {
                         player.setPlaybackQuality(quality);
                         showToast(`📺 Quality: ${label}`);
-                        console.log(`Quality changed to: ${label}`);
                         dropdown.remove();
                     } catch (err) {
-                        console.error('Failed to set quality:', err);
                         showToast('⚠️ Failed to change quality');
                     }
                 };
@@ -539,23 +603,18 @@ window.customVideoControls = {
                 dropdown.appendChild(item);
             });
 
-            // Add to document
             document.body.appendChild(dropdown);
 
-            // Close dropdown when clicking outside
             const closeDropdown = (e) => {
                 if (!dropdown.contains(e.target) && e.target !== button) {
                     dropdown.remove();
                     document.removeEventListener('click', closeDropdown);
                 }
             };
-            setTimeout(() => {
-                document.addEventListener('click', closeDropdown);
-            }, 100);
+            setTimeout(() => document.addEventListener('click', closeDropdown), 100);
 
         } catch (error) {
             console.error('Quality menu failed:', error);
-            showToast('⚠️ Unable to show quality settings');
         }
     },
 
@@ -592,20 +651,34 @@ window.customVideoControls = {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        loadYouTubeAPI();
-    });
+    document.addEventListener('DOMContentLoaded', () => loadYouTubeAPI());
 } else {
     loadYouTubeAPI();
 }
 
-// Also initialize when popups open
+// Initialize when popups open
 document.addEventListener('popupOpened', () => {
     setTimeout(() => {
-        if (isYouTubeAPIReady) {
-            initializeAllYouTubePlayers();
-        }
+        if (isYouTubeAPIReady) initializeAllYouTubePlayers();
     }, 300);
+});
+
+// Disable right-click globally
+document.addEventListener('contextmenu', e => {
+    if (e.target.closest('#custom-pip-container')) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Disable common devtools shortcuts on PiP
+document.addEventListener('keydown', function (e) {
+    const pipContainer = document.getElementById('custom-pip-container');
+    if (!pipContainer) return;
+
+    if (e.key === 'F12') e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && e.key === 'I') e.preventDefault();
+    if (e.ctrlKey && e.key === 'u') e.preventDefault();
 });
 
 console.log('📺 Custom YouTube video controls loaded');
