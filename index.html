@@ -350,7 +350,7 @@
                 <div class="video-protection-shield" oncontextmenu="return false;"></div>
                 <iframe class="js-player js-intro-player"
                     src="https://www.youtube.com/embed/9WWUeHoQvPw?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=9WWUeHoQvPw&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&vq=hd1080"
-                    title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation"
+                    title="Video presentation" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen>
                 </iframe>
@@ -372,15 +372,15 @@
                 </button>
                 <button class="btn-outline btn-toggle-sound" id="intro-sound-btn"
                     onclick="handleIntroAction('sound', event)"
-                    style="width: 48px; background: rgba(255, 255, 255, 0.05); display: inline-flex; align-items: center; justify-content: center; position: relative; z-index: 20;"
+                    style="width: 52px; height: 42px; background: rgba(255, 255, 255, 0.05); display: inline-flex; align-items: center; justify-content: center; position: relative; z-index: 20;"
                     title="Toggle Sound">
-                    <svg class="sound-on" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor"
+                    <svg class="sound-on" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor"
                         stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
                         style="display: none;">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                     </svg>
-                    <svg class="sound-off" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor"
+                    <svg class="sound-off" viewBox="0 0 24 24" width="28" height="28" stroke="currentColor"
                         stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                         <line x1="23" y1="9" x2="17" y2="15"></line>
@@ -4722,14 +4722,11 @@
             animation-delay: 0.4s;
         }
     </style>
-
-    <!-- Plyr (Video Player) - Loaded before main script to ensure availability -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js"></script>
-
-    <script src="updates.js?v=0.7.0" defer></script>
-    <script src="project-data.js?v=0.7.0" defer></script>
-    <script src="feedback-data.js?v=0.7.0" defer></script>
-    <script src="script.js?v=0.7.0" defer></script>
+    <script src="updates.js?v=0.8.5" defer></script>
+    <script src="project-data.js?v=0.8.5" defer></script>
+    <script src="feedback-data.js?v=0.8.5" defer></script>
+    <script src="script.js?v=0.8.5" defer></script>
 
 
 
@@ -4775,11 +4772,12 @@
         </div>
     </div>
 
-    <script src="360-preload.js?v=0.7.0" defer></script>
-    <script src="quick-pickup.js?v=0.7.0" defer></script>
-    <script src="performance-optimization.js?v=0.7.0" defer></script>
+    <script src="360-preload.js?v=0.8.5" defer></script>
+    <script src="quick-pickup.js?v=0.8.5" defer></script>
+    <script src="performance-optimization.js?v=0.8.5" defer></script>
 
     <!-- Heavy Third-Party Scripts Loaded Lazily -->
+
     <script type="text/javascript">
         // Lazy load Tawk.to after everything is ready
         window.addEventListener('load', function () {

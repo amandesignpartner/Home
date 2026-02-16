@@ -1102,12 +1102,12 @@ function initPopups() {
     // Use a single robust delegated listener for ALL interactive buttons
     document.addEventListener('click', (e) => {
         // Find the interactive element that was clicked
-        const btn = e.target.closest('[data-popup], .btn-detach-video, .btn-toggle-sound');
+        const btn = e.target.closest('[data-popup]');
 
         // Basic guards
         if (!btn || btn.classList.contains('was-dragged')) return;
 
-        // 1. Handle Regular Popups
+        // Handle Regular Popups
         if (btn.hasAttribute('data-popup')) {
             e.preventDefault();
             const popupId = btn.getAttribute('data-popup');
@@ -1116,19 +1116,6 @@ function initPopups() {
             };
             if (window._saveBriefData) window._saveBriefData();
             openPopup(popupId, false, options);
-            return;
-        }
-
-        // 2. Handle Detached Video (Picture-in-Picture)
-        if (btn.classList.contains('btn-detach-video')) {
-            window.handleIntroAction('detach', e);
-            return;
-        }
-
-        // 3. Handle Sound Toggle
-        if (btn.classList.contains('btn-toggle-sound')) {
-            window.handleIntroAction('sound', e);
-            return;
         }
     });
 
@@ -1136,63 +1123,66 @@ function initPopups() {
 }
 
 // === Global Intro Video Actions (Direct Access for Stability) ===
-// === Global Intro Video Actions (Direct Access for Stability) ===
 window.handleIntroAction = function (action, event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
 
-    // 1. Try Global Instance
+    // 1. Recover player instance with deep lookup
     let player = window.introPlayer;
-
-    // 2. Try DOM Lookup (Synchronous Recovery)
-    if (!player) {
+    if (!player || !player.elements) {
         const el = document.querySelector('.js-intro-player');
         if (el && el.plyr) {
             player = el.plyr;
-            window.introPlayer = player; // Cache it
+            window.introPlayer = player;
         }
     }
 
-    // 3. Last Resort: Force Init (Synchronous)
+    // 2. Re-initialize as last resort if missing
     if (!player) {
-        console.warn('Intro Player not ready. Forcing init...');
-        if (window.initPlyr) window.initPlyr();
+        window.initPlyr();
         const el = document.querySelector('.js-intro-player');
-        if (el && el.plyr) player = el.plyr;
+        if (el && el.plyr) {
+            player = el.plyr;
+            window.introPlayer = player;
+        }
     }
 
     if (!player) {
-        console.error('Intro Player completely failed to initialize. Attempting direct iframe fallback.');
-        const iframe = document.querySelector('.js-intro-player');
-        if (iframe && iframe.contentWindow) {
-            if (action === 'detach') {
-                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                // Cannot trigger PiP via postMessage alone, but we ensure playback
-            } else if (action === 'sound') {
-                // Toggle mute state blindly as we can't read state easily
-                // We will unmute to be safe
-                iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-            }
-        }
+        console.error('Intro Player not found.');
         return;
     }
 
+    // Visual feedback for click
+    const targetBtn = event ? event.target.closest('.btn-outline') : null;
+    if (targetBtn) {
+        targetBtn.classList.add('pulse-orange');
+        setTimeout(() => targetBtn.classList.remove('pulse-orange'), 600);
+    }
+
     if (action === 'detach') {
+        // Force play and unmute to satisfy browser requirements for PiP
         player.play();
         player.muted = false;
 
-        // Native PiP attempt (must be user gesture)
-        try {
-            if (player.pip !== true) {
-                player.pip = true;
+        // Give YouTube time to respond to play command before PiP
+        setTimeout(() => {
+            try {
+                // Try multiple ways to trigger PiP
+                if ('pip' in player) {
+                    player.pip = true;
+                } else if (typeof player.setPip === 'function') {
+                    player.setPip(true);
+                } else {
+                    // Fallback to regular popup if PiP is completely unsupported
+                    if (typeof openPopup === 'function') openPopup('intro');
+                }
+            } catch (err) {
+                console.error('PiP activation failed:', err);
+                if (typeof openPopup === 'function') openPopup('intro');
             }
-        } catch (err) {
-            console.error('PiP failed/blocked:', err);
-            // Fallback: Just ensure it's playing and unmuted
-        }
+        }, 100);
 
         // Sync Sound UI
         const sBtn = document.getElementById('intro-sound-btn');
@@ -1201,26 +1191,19 @@ window.handleIntroAction = function (action, event) {
             sBtn.querySelector('.sound-off').style.display = 'none';
         }
 
-        // Auto-close overlay if activated from within a popup
-        // Auto-close overlay if activated from within a popup
-        const closeTrigger = event ? event.target.closest('.popup-modal') : null;
-        if (closeTrigger && window.closePopup) window.closePopup();
-
+        // Auto-close if inside popup
+        if (event && event.target.closest('.popup-modal')) {
+            if (typeof closePopup === 'function') closePopup();
+        }
     } else if (action === 'sound') {
         player.muted = !player.muted;
         if (!player.muted && player.volume === 0) player.volume = 1;
 
-        // Sync UI with animation
+        // Sync UI
         const sBtn = document.getElementById('intro-sound-btn');
         if (sBtn) {
             sBtn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
             sBtn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
-
-            // Re-trigger animation
-            sBtn.classList.remove('pulse-orange');
-            void sBtn.offsetWidth; // Force reflow
-            sBtn.classList.add('pulse-orange');
-            setTimeout(() => sBtn.classList.remove('pulse-orange'), 600);
         }
     }
 }
@@ -3035,14 +3018,8 @@ function restoreAllTrackerData() {
 
 // === Plyr Initialization (Custom YouTube-like) ===
 // === Plyr Initialization (Custom YouTube-like) ===
-window.initPlyr = function (container = document, retryCount = 0) {
-    if (typeof Plyr === 'undefined') {
-        if (retryCount < 5) {
-            console.warn('Plyr not loaded yet, retrying in 200ms...');
-            setTimeout(() => window.initPlyr(container, retryCount + 1), 200);
-        }
-        return;
-    }
+window.initPlyr = function (container = document) {
+    if (typeof Plyr === 'undefined') return;
 
     const players = Array.from(container.querySelectorAll('.js-player')).map(p => {
         // Prevent duplicate initialization
