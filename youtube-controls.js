@@ -221,6 +221,30 @@ window.customVideoControls = {
 
         container.appendChild(iframe);
 
+        // CRITICAL: Add transparent overlay to block iframe right-click (cross-origin fix)
+        const iframeBlocker = document.createElement('div');
+        iframeBlocker.id = 'iframe-blocker';
+        iframeBlocker.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: transparent;
+            pointer-events: auto;
+        `;
+
+        // Block all right-clicks on the blocker overlay
+        iframeBlocker.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }, true);
+
+        container.appendChild(iframeBlocker);
+
         // Controls overlay
         const overlay = document.createElement('div');
         overlay.id = 'pip-controls-overlay';
@@ -234,6 +258,7 @@ window.customVideoControls = {
             opacity: 1;
             transition: opacity 0.3s;
             pointer-events: none;
+            z-index: 2;
         `;
 
         // Top bar with PiP and close buttons
