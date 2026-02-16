@@ -396,11 +396,24 @@ window.customVideoControls = {
         overlay.appendChild(bottomBar);
         container.appendChild(overlay);
 
-        // Disable right-click
+        // Disable right-click ONLY (keep left-click fully functional for UI controls)
         container.oncontextmenu = (e) => {
             e.preventDefault();
             return false;
         };
+
+        // Also disable right-click on iframe to prevent YouTube menu
+        iframe.oncontextmenu = (e) => {
+            e.preventDefault();
+            return false;
+        };
+
+        // Comprehensive right-click prevention for all child elements
+        container.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }, true);
 
         document.body.appendChild(container);
 
