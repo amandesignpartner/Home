@@ -71,6 +71,20 @@ function initializeAllYouTubePlayers() {
                     'onReady': (event) => {
                         console.log(`✅ Player ${iframe.id} is ready`);
                         window.youtubePlayersMap.set(iframe.id, event.target);
+
+                        // Set default quality to 1080p HD
+                        try {
+                            const availableLevels = event.target.getAvailableQualityLevels();
+                            if (availableLevels.includes('hd1080')) {
+                                event.target.setPlaybackQuality('hd1080');
+                                console.log(`📺 Set default quality to 1080p HD for ${iframe.id}`);
+                            } else if (availableLevels.includes('hd720')) {
+                                event.target.setPlaybackQuality('hd720');
+                                console.log(`📺 Set default quality to 720p HD for ${iframe.id}`);
+                            }
+                        } catch (err) {
+                            console.warn('Could not set default quality:', err);
+                        }
                     },
                     'onError': (event) => {
                         console.error(`❌ Player ${iframe.id} error:`, event.data);
@@ -197,6 +211,71 @@ window.customVideoControls = {
             } else if (iframe.msRequestFullscreen) {
                 iframe.msRequestFullscreen();
             }
+        }
+    },
+
+    quality: function (button) {
+        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content');
+        const player = getPlayerForContainer(container);
+
+        if (!player) {
+            showToast('⚠️ Video player not ready. Please wait...');
+            return;
+        }
+
+        try {
+            button.classList.add('pulse-orange');
+            setTimeout(() => button.classList.remove('pulse-orange'), 600);
+
+            // Get available quality levels
+            const availableQualityLevels = player.getAvailableQualityLevels();
+
+            if (!availableQualityLevels || availableQualityLevels.length === 0) {
+                showToast('⚠️ Quality settings not available');
+                console.warn('No quality levels available');
+                return;
+            }
+
+            // Get current quality
+            const currentQuality = player.getPlaybackQuality();
+
+            // Quality levels in order of preference: hd1080, hd720, large (480p), medium (360p), small (240p), tiny (144p)
+            const qualityOrder = ['hd1080', 'hd720', 'large', 'medium', 'small', 'tiny'];
+            const qualityLabels = {
+                'hd1080': '1080p HD',
+                'hd720': '720p HD',
+                'large': '480p',
+                'medium': '360p',
+                'small': '240p',
+                'tiny': '144p',
+                'auto': 'Auto'
+            };
+
+            // Filter to only available qualities in our preferred order
+            const availableQualities = qualityOrder.filter(q => availableQualityLevels.includes(q));
+
+            // Add 'auto' as an option
+            availableQualities.push('auto');
+
+            // Find current index
+            let currentIndex = availableQualities.indexOf(currentQuality);
+            if (currentIndex === -1) currentIndex = 0;
+
+            // Cycle to next quality
+            const nextIndex = (currentIndex + 1) % availableQualities.length;
+            const nextQuality = availableQualities[nextIndex];
+
+            // Set the new quality
+            player.setPlaybackQuality(nextQuality);
+
+            // Show notification
+            const qualityLabel = qualityLabels[nextQuality] || nextQuality;
+            showToast(`📺 Quality: ${qualityLabel}`);
+            console.log(`Quality changed to: ${qualityLabel}`);
+
+        } catch (error) {
+            console.error('Quality change failed:', error);
+            showToast('⚠️ Unable to change quality');
         }
     },
 
