@@ -396,24 +396,52 @@ window.customVideoControls = {
         overlay.appendChild(bottomBar);
         container.appendChild(overlay);
 
-        // Disable right-click ONLY (keep left-click fully functional for UI controls)
-        container.oncontextmenu = (e) => {
-            e.preventDefault();
-            return false;
+        // Comprehensive right-click prevention for PiP window
+        const preventRightClick = (e) => {
+            const pipContainer = document.getElementById('custom-pip-container');
+            if (pipContainer && pipContainer.contains(e.target)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
         };
 
-        // Also disable right-click on iframe to prevent YouTube menu
-        iframe.oncontextmenu = (e) => {
-            e.preventDefault();
-            return false;
-        };
+        // Block right-click at multiple levels
+        container.addEventListener("contextmenu", preventRightClick, true);
+        document.addEventListener("contextmenu", preventRightClick, true);
+        window.addEventListener("contextmenu", preventRightClick, true);
 
-        // Comprehensive right-click prevention for all child elements
-        container.addEventListener('contextmenu', (e) => {
+        // Block on iframe specifically
+        iframe.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             return false;
         }, true);
+
+        // Re-apply on fullscreen changes
+        const applyFullscreenProtection = () => {
+            document.addEventListener("contextmenu", preventRightClick, true);
+            window.addEventListener("contextmenu", preventRightClick, true);
+        };
+
+        document.addEventListener("fullscreenchange", applyFullscreenProtection);
+        document.addEventListener("webkitfullscreenchange", applyFullscreenProtection);
+        document.addEventListener("mozfullscreenchange", applyFullscreenProtection);
+        document.addEventListener("MSFullscreenChange", applyFullscreenProtection);
+
+        // Clean up event listeners when PiP is closed
+        const originalRemove = container.remove.bind(container);
+        container.remove = function () {
+            document.removeEventListener("contextmenu", preventRightClick, true);
+            window.removeEventListener("contextmenu", preventRightClick, true);
+            document.removeEventListener("fullscreenchange", applyFullscreenProtection);
+            document.removeEventListener("webkitfullscreenchange", applyFullscreenProtection);
+            document.removeEventListener("mozfullscreenchange", applyFullscreenProtection);
+            document.removeEventListener("MSFullscreenChange", applyFullscreenProtection);
+            originalRemove();
+        };
 
         document.body.appendChild(container);
 
