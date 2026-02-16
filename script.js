@@ -1122,85 +1122,61 @@ function initPopups() {
     if (closeBtn) closeBtn.addEventListener('click', closePopup);
 }
 
-// === Global Intro Video Actions (Direct Access for Stability) ===
-window.handleIntroAction = function (action, event) {
+// === Universal Video Actions (Play, Pause, Sound, PiP) ===
+window.handleVideoAction = function (action, event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
 
-    // 1. Recover player instance with deep lookup
-    let player = window.introPlayer;
-    if (!player || !player.elements) {
-        const el = document.querySelector('.js-intro-player');
-        if (el && el.plyr) {
-            player = el.plyr;
-            window.introPlayer = player;
-        }
-    }
+    const btn = event ? event.target.closest('.btn-outline') : null;
+    if (!btn) return;
 
-    // 2. Re-initialize as last resort if missing
-    if (!player) {
-        window.initPlyr();
-        const el = document.querySelector('.js-intro-player');
-        if (el && el.plyr) {
-            player = el.plyr;
-            window.introPlayer = player;
-        }
-    }
+    // Find the associated player by looking in the parent container
+    const container = btn.closest('.video-gallery-item, .intro-video-embed');
+    const iframe = container ? container.querySelector('.js-player') : null;
+    let player = iframe ? iframe.plyr : window.introPlayer;
 
     if (!player) {
-        console.error('Intro Player not found.');
+        console.error('Video player not found for this action.');
         return;
     }
 
-    // Visual feedback for click
-    const targetBtn = event ? event.target.closest('.btn-outline') : null;
-    if (targetBtn) {
-        targetBtn.classList.add('pulse-orange');
-        setTimeout(() => targetBtn.classList.remove('pulse-orange'), 600);
-    }
+    // Visual feedback
+    btn.classList.add('pulse-orange');
+    setTimeout(() => btn.classList.remove('pulse-orange'), 600);
 
-    if (action === 'detach') {
-        // Force play and unmute to satisfy browser requirements for PiP
+    if (action === 'play') {
+        player.togglePlay();
+        // Sync icon if play/pause icon exists
+        const playIcon = btn.querySelector('.play-icon');
+        const pauseIcon = btn.querySelector('.pause-icon');
+        if (playIcon && pauseIcon) {
+            playIcon.style.display = player.playing ? 'none' : 'block';
+            pauseIcon.style.display = player.playing ? 'block' : 'none';
+        }
+    } else if (action === 'sound') {
+        player.muted = !player.muted;
+        const soundOn = btn.querySelector('.sound-on');
+        const soundOff = btn.querySelector('.sound-off');
+        if (soundOn && soundOff) {
+            soundOn.style.display = player.muted ? 'none' : 'block';
+            soundOff.style.display = player.muted ? 'block' : 'none';
+        }
+    } else if (action === 'detach') {
         player.play();
-        // Ensure playback started (required for PiP)
-        player.play().catch(e => console.warn('Autoplay block:', e));
         player.muted = false;
-
-        // Use Plyr's internal PiP toggle or property
         setTimeout(() => {
             try {
                 if (typeof player.pip === 'boolean') {
                     player.pip = true;
                 } else if (player.elements.container && player.elements.container.requestPictureInPicture) {
                     player.elements.container.requestPictureInPicture();
-                } else {
-                    // Final fallback: open popup
-                    if (window.openPopup) window.openPopup('intro');
                 }
             } catch (err) {
                 console.error('PiP failed:', err);
-                if (window.openPopup) window.openPopup('intro');
             }
         }, 150);
-
-        // Sync Sound UI
-        const sBtn = document.getElementById('intro-sound-btn');
-        if (sBtn) {
-            sBtn.querySelector('.sound-on').style.display = 'block';
-            sBtn.querySelector('.sound-off').style.display = 'none';
-        }
-    } else if (action === 'sound') {
-        player.muted = !player.muted;
-        if (!player.muted && player.volume === 0) player.volume = 1;
-
-        // Sync UI
-        const sBtn = document.getElementById('intro-sound-btn');
-        if (sBtn) {
-            sBtn.querySelector('.sound-on').style.display = player.muted ? 'none' : 'block';
-            sBtn.querySelector('.sound-off').style.display = player.muted ? 'block' : 'none';
-        }
     }
 }
 
