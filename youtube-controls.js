@@ -97,7 +97,7 @@ function initializeAllYouTubePlayers() {
     });
 }
 
-//Get player for a specific video container
+// Get player for a specific video container
 function getPlayerForContainer(container) {
     const iframe = container.querySelector('iframe[src*="youtube.com"]');
     if (!iframe) {
@@ -226,60 +226,127 @@ window.customVideoControls = {
         if (pipContainer) {
             // Toggle off if already open
             pipContainer.remove();
-            showToast('📺 Exited Picture-in-Picture');
+            showToast('📺 Video reattached');
             return;
         }
 
-        pipContainer = document.createElement('div');
+        this.createPiPWindow(videoId, currentTime);
+    },
+
+    createPiPWindow: function (videoId, startTime) {
+        const pipContainer = document.createElement('div');
         pipContainer.id = 'custom-pip-container';
         pipContainer.style.cssText = `
             position: fixed;
             bottom: 20px;
             right: 20px;
             width: 480px;
-            height: 270px;
+            height: 300px;
             z-index: 999999;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
             resize: both;
             min-width: 320px;
-            min-height: 180px;
+            min-height: 200px;
             max-width: 800px;
-            max-height: 450px;
+            max-height: 500px;
+            display: flex;
+            flex-direction: column;
         `;
 
-        // Drag header with close button
-        const dragHeader = document.createElement('div');
-        dragHeader.style.cssText = `
+        // Video container (YouTube iframe without branding)
+        const videoContainer = document.createElement('div');
+        videoContainer.style.cssText = `
+            position: relative;
+            flex: 1;
+            background: #000;
+            overflow: hidden;
+        `;
+
+        const pipIframe = document.createElement('iframe');
+        // Remove YouTube branding and controls - we'll add custom ones
+        pipIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(startTime)}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&enablejsapi=1`;
+        pipIframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: auto;
+        `;
+        pipIframe.setAttribute('frameborder', '0');
+        pipIframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope');
+        pipIframe.setAttribute('allowfullscreen', '');
+
+        // Disable right-click on iframe
+        pipIframe.oncontextmenu = (e) => {
+            e.preventDefault();
+            return false;
+        };
+
+        videoContainer.appendChild(pipIframe);
+
+        // Top control bar with reattach and close buttons
+        const topBar = document.createElement('div');
+        topBar.style.cssText = `
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 30px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
-            cursor: move;
-            z-index: 10;
+            height: 40px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
-            padding: 5px 10px;
+            padding: 8px 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+            cursor: move;
         `;
 
-        // Close button (X)
+        // Reattach button (left)
+        const reattachBtn = document.createElement('button');
+        reattachBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 1.98 2 1.98h18c1.1 0 2-.88 2-1.98V5c0-1.1-.9-2-2-2zm0 16.01H3V4.98h18v14.03z"/>
+            </svg>
+        `;
+        reattachBtn.title = 'Reattach to page';
+        reattachBtn.style.cssText = `
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        `;
+        reattachBtn.onmouseenter = () => reattachBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        reattachBtn.onmouseleave = () => reattachBtn.style.background = 'rgba(0, 0, 0, 0.6)';
+        reattachBtn.onclick = (e) => {
+            e.stopPropagation();
+            pipContainer.remove();
+            showToast('📺 Video reattached');
+        };
+
+        // Close button (right)
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '×';
         closeBtn.title = 'Close';
         closeBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.6);
             border: none;
             color: white;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 24px;
             line-height: 1;
             display: flex;
             align-items: center;
@@ -287,20 +354,31 @@ window.customVideoControls = {
             transition: background 0.2s;
         `;
         closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255, 0, 0, 0.8)';
-        closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
-        closeBtn.onclick = () => {
+        closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(0, 0, 0, 0.6)';
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
             pipContainer.remove();
-            showToast('📺 Exited Picture-in-Picture');
+            showToast('📺 Video closed');
         };
 
-        dragHeader.appendChild(closeBtn);
+        topBar.appendChild(reattachBtn);
+        topBar.appendChild(closeBtn);
+        videoContainer.appendChild(topBar);
+
+        // Show controls on hover
+        pipContainer.onmouseenter = () => {
+            topBar.style.opacity = '1';
+        };
+        pipContainer.onmouseleave = () => {
+            topBar.style.opacity = '0';
+        };
 
         // Dragging functionality
         let isDragging = false;
         let initialX, initialY;
 
-        dragHeader.onmousedown = (e) => {
-            if (e.target === closeBtn) return;
+        topBar.onmousedown = (e) => {
+            if (e.target === closeBtn || e.target === reattachBtn || e.target.closest('button')) return;
             isDragging = true;
             initialX = e.clientX - pipContainer.offsetLeft;
             initialY = e.clientY - pipContainer.offsetTop;
@@ -309,8 +387,15 @@ window.customVideoControls = {
 
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                pipContainer.style.left = (e.clientX - initialX) + 'px';
-                pipContainer.style.top = (e.clientY - initialY) + 'px';
+                const newLeft = e.clientX - initialX;
+                const newTop = e.clientY - initialY;
+
+                // Keep within viewport
+                const maxLeft = window.innerWidth - pipContainer.offsetWidth;
+                const maxTop = window.innerHeight - pipContainer.offsetHeight;
+
+                pipContainer.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
+                pipContainer.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
                 pipContainer.style.bottom = 'auto';
                 pipContainer.style.right = 'auto';
             }
@@ -323,24 +408,17 @@ window.customVideoControls = {
             }
         });
 
-        // Create video iframe with YouTube controls
-        const pipIframe = document.createElement('iframe');
-        pipIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(currentTime)}&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
-        pipIframe.style.cssText = `
-            width: 100%;
-            height: 100%;
-            border: none;
-        `;
-        pipIframe.setAttribute('frameborder', '0');
-        pipIframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-        pipIframe.setAttribute('allowfullscreen', '');
+        // Disable right-click on entire container
+        pipContainer.oncontextmenu = (e) => {
+            e.preventDefault();
+            return false;
+        };
 
-        pipContainer.appendChild(dragHeader);
-        pipContainer.appendChild(pipIframe);
+        pipContainer.appendChild(videoContainer);
         document.body.appendChild(pipContainer);
 
-        showToast('📺 Video detached to Picture-in-Picture');
-        console.log('✅ Custom PiP window activated');
+        showToast('📺 Video detached');
+        console.log('✅ PiP window activated');
     },
 
     quality: function (button) {
