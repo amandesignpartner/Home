@@ -674,22 +674,31 @@ window.customVideoControls = {
 
             const dropdown = document.createElement('div');
             dropdown.className = 'quality-dropdown';
+
+            const buttonRect = button.getBoundingClientRect();
+            const dropdownHeight = (sortedQualities.length * 36) + 16; // 36px per item + padding
+
+            // Check if there is enough space above the button
+            let topPosition = buttonRect.top - dropdownHeight - 10;
+            if (topPosition < 10) {
+                // If not enough space above, show it below the button
+                topPosition = buttonRect.bottom + 10;
+            }
+
             dropdown.style.cssText = `
-                position: absolute;
+                position: fixed;
                 background: rgba(0, 0, 0, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(210, 105, 30, 0.3);
                 border-radius: 8px;
                 padding: 8px 0;
-                min-width: 120px;
-                z-index: 10000;
+                min-width: 140px;
+                z-index: 2147483647;
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
                 font-family: 'Raleway', sans-serif;
+                left: ${Math.min(buttonRect.left, window.innerWidth - 150)}px;
+                top: ${topPosition}px;
             `;
-
-            const buttonRect = button.getBoundingClientRect();
-            dropdown.style.left = buttonRect.left + 'px';
-            dropdown.style.top = (buttonRect.top - (sortedQualities.length * 36) - 10) + 'px';
 
             sortedQualities.forEach(quality => {
                 const item = document.createElement('div');
