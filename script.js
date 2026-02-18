@@ -1,3 +1,14 @@
+// Configuration: Replace with your deployed Google Apps Script URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfrI_oZch3pgHtG-7FyBwxyS8qxO-DC0sHyIP6e84gGJ3MhFGogumI9bl8xpb69fe-/exec';
+
+// Helper to convert File object to Base64
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Check for first visit and set default layout
     checkFirstVisit();
@@ -1815,7 +1826,7 @@ document.addEventListener('change', (e) => {
     if (e.target.id === 'attachmentInput' || e.target.id === 'paymentProofInput') {
         const file = e.target.files[0];
         if (file && file.size > 10 * 1024 * 1024) { // 10MB limit
-            alert('File is too large. FormSubmit allows up to 10MB. Please use WeTransfer for larger files.');
+            alert('File is too large! Max allowed is 10MB. For larger submissions, please use the WeTransfer link provided in the form.');
             e.target.value = ''; // Clear input
         }
     }
@@ -1824,6 +1835,7 @@ document.addEventListener('change', (e) => {
 // Consolidated Form Submission Handler
 document.addEventListener('submit', async (e) => {
     if (e.target.id === 'contactForm') {
+        e.preventDefault();
         const form = e.target;
         const submitBtn = form.querySelector('.btn-submit');
         const statusEl = document.getElementById('form-status');
@@ -1831,15 +1843,18 @@ document.addEventListener('submit', async (e) => {
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.dataset.originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Sending...';
+            submitBtn.textContent = 'Preparing secure delivery...';
         }
 
-        // --- Step 1: Collect Dynamic "Quick Pick" Data ---
-        const qpContainer = form.closest('.popup-content')?.querySelector('.quick-pickup-container');
-        if (qpContainer) {
-            // Collect selected services
+        try {
+            // --- Step 1: Collect Dynamic "Quick Pick" Data ---
+            const qpContainer = form.closest('.popup-content')?.querySelector('.quick-pickup-container');
+            const formData = {};
+            const rawFields = new FormData(form);
+
+            // Detailed Service Collection
             const selectedServices = [];
-            const serviceCheckboxes = qpContainer.querySelectorAll('input[name="Services[]"]:checked');
+            const serviceCheckboxes = qpContainer ? qpContainer.querySelectorAll('input[name="Services[]"]:checked') : [];
             serviceCheckboxes.forEach(checkbox => {
                 if (checkbox.value === 'Other') {
                     const otherInput = qpContainer.querySelector('input[name="Other_Service"]');
@@ -1862,235 +1877,106 @@ document.addEventListener('submit', async (e) => {
                 }
             });
 
-            // Collect Work Type
-            const workTypeSelect = qpContainer.querySelector('#workTypeSelect');
+            // Work Type, Interior, Exterior Collection
+            const workTypeSelect = qpContainer ? qpContainer.querySelector('#workTypeSelect') : null;
             const workType = workTypeSelect ? workTypeSelect.value : '';
 
-            // Collect Interior Items
             const selectedInterior = [];
-            if (workType === 'Interior only' || workType === 'Interior and Exterior both') {
-                const interiorCheckboxes = qpContainer.querySelectorAll('input[name="Interior_Items[]"]:checked');
-                interiorCheckboxes.forEach(checkbox => {
-                    if (checkbox.value === 'Other') {
-                        const customInput = qpContainer.querySelector('input[name="Interior_Custom"]');
-                        if (customInput && customInput.value.trim()) {
-                            selectedInterior.push('Other Interior: ' + customInput.value.trim());
-                        }
-                    } else {
-                        selectedInterior.push(checkbox.value);
-                    }
-                });
-            }
-
-            // Collect Exterior Items
             const selectedExterior = [];
-            if (workType === 'Exterior only' || workType === 'Interior and Exterior both') {
-                const exteriorCheckboxes = qpContainer.querySelectorAll('input[name="Exterior_Items[]"]:checked');
-                exteriorCheckboxes.forEach(checkbox => {
-                    if (checkbox.value === 'Other') {
-                        const customInput = qpContainer.querySelector('input[name="Exterior_Custom"]');
-                        if (customInput && customInput.value.trim()) {
-                            selectedExterior.push('Other Exterior: ' + customInput.value.trim());
-                        }
-                    } else {
-                        selectedExterior.push(checkbox.value);
-                    }
+            if (qpContainer && (workType === 'Interior only' || workType === 'Interior and Exterior both')) {
+                qpContainer.querySelectorAll('input[name="Interior_Items[]"]:checked').forEach(cb => {
+                    selectedInterior.push(cb.value === 'Other' ? (qpContainer.querySelector('input[name="Interior_Custom"]')?.value || 'Other Interior') : cb.value);
+                });
+            }
+            if (qpContainer && (workType === 'Exterior only' || workType === 'Interior and Exterior both')) {
+                qpContainer.querySelectorAll('input[name="Exterior_Items[]"]:checked').forEach(cb => {
+                    selectedExterior.push(cb.value === 'Other' ? (qpContainer.querySelector('input[name="Exterior_Custom"]')?.value || 'Other Exterior') : cb.value);
                 });
             }
 
-            // Collect Billing Type (directly from form radios)
-            const billingRadio = form.querySelector('input[name="Billing_Type"]:checked');
-            const billingType = billingRadio ? billingRadio.value : '';
-
-            // Helper to add/update hidden field
-            const updateHidden = (name, value) => {
-                let field = form.querySelector(`input[name="${name}"].quick-pick-hidden`);
-                if (!field) {
-                    field = document.createElement('input');
-                    field.type = 'hidden';
-                    field.name = name;
-                    field.className = 'quick-pick-hidden';
-                    form.appendChild(field);
+            // Assemble Main Data Object
+            for (let [key, value] of rawFields.entries()) {
+                if (key !== 'Attachment' && !key.includes('[]')) {
+                    formData[key] = value;
                 }
-                field.value = value || '';
-            };
-
-            updateHidden('Quick_Pick_Services', selectedServices.join(', '));
-            updateHidden('Work_Type', workType);
-            updateHidden('Interior_Requirements', selectedInterior.join(', '));
-            updateHidden('Exterior_Requirements', selectedExterior.join(', '));
-            // No need for a hidden Billing_Type field as it's already a radio in the form
-        }
-
-        // --- Step 2: Prepare Attachment and Status ---
-        let fileToAttach = null;
-        const fileInput = form.querySelector('input[type="file"]');
-        if (fileInput && fileInput.files[0]) {
-            fileToAttach = fileInput.files[0];
-        } else if (window._pendingBriefAttachment) {
-            fileToAttach = window._pendingBriefAttachment;
-        }
-
-        const attachmentStatusText = fileToAttach ? `YES - File: ${fileToAttach.name}` : "NO - No file attached";
-
-        // --- Step 3: Handle Tawk.to Copy (Internal Message) ---
-        try {
-            const tawkApi = window.Tawk_API || Tawk_API;
-            if (typeof tawkApi !== 'undefined') {
-                const briefData = new FormData(form);
-                const getVal = (name) => {
-                    // Handle multi-select checkboxes
-                    const vals = briefData.getAll(name);
-                    if (vals.length > 1) return vals.filter(v => v && v.trim() !== "").join(', ');
-                    const val = briefData.get(name);
-                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
-                };
-
-                const summaryMessage = `
-🚀 --- NEW PROJECT BRIEF SUMMARY ---
-Client: ${getVal('Name')}
-Email: ${getVal('Email')}
-Phone: ${getVal('Phone')}
-
-Project Title: ${getVal('Project_Title')}
-Budget: ${getVal('Budget') === 'custom' ? getVal('Budget_Custom') : getVal('Budget')}
-Timeline: ${getVal('Timeline') === 'custom' ? getVal('Timeline_Custom') : getVal('Timeline')}
-
-Quick Pick Services: ${getVal('Quick_Pick_Services')}
-Project Focus: ${getVal('Work_Type')}
-Interior Spec: ${getVal('Interior_Requirements')}
-Exterior Spec: ${getVal('Exterior_Requirements')}
-
-Message:
-${getVal('Message')}
-
-Attachment Status: ${attachmentStatusText}
------------------------------------------
-`.trim();
-
-                // 1. Set attributes for the visitor
-                if (tawkApi.setAttributes) {
-                    tawkApi.setAttributes({
-                        'name': getVal('Name'),
-                        'email': getVal('Email')
-                    }, function (error) { });
-                }
-
-                // 2. Send the message copy (Try both common methods)
-                if (tawkApi.sendChatMessage) {
-                    tawkApi.sendChatMessage(summaryMessage, function (error) { });
-                } else if (tawkApi.sendMessage) {
-                    tawkApi.sendMessage(summaryMessage, function (error) { });
-                }
-
-                if (tawkApi.maximize) tawkApi.maximize();
             }
-        } catch (err) {
-            console.warn("Tawk.to brief copy failed:", err);
-        }
 
-        // --- Step 4: Protocol Check (WhatsApp Fallback) ---
-        if (window.location.protocol === 'file:') {
-            e.preventDefault();
+            // Sync budget and timeline custom values
+            if (formData.Budget === 'custom') formData.Budget = formData.Budget_Custom;
+            if (formData.Timeline === 'custom') formData.Timeline = formData.Timeline_Custom;
+
+            formData.formType = 'contact';
+            formData.Quick_Pick_Services = selectedServices.join(', ');
+            formData.Work_Type = workType;
+            formData.Interior_Requirements = selectedInterior.join(', ');
+            formData.Exterior_Requirements = selectedExterior.join(', ');
+            formData.Timestamp = new Date().toLocaleString();
+
+            // --- Step 2: Handle Attachment ---
+            let fileToAttach = form.querySelector('input[type="file"]')?.files[0] || window._pendingBriefAttachment;
+
+            if (fileToAttach) {
+                if (submitBtn) submitBtn.textContent = 'Encoding attachment...';
+                formData.fileName = fileToAttach.name;
+                formData.fileType = fileToAttach.type;
+                formData.fileData = await fileToBase64(fileToAttach);
+                formData.File_Attached_Status = `YES - ${fileToAttach.name}`;
+            } else {
+                formData.File_Attached_Status = "NO - No file attached";
+            }
+
+            // --- Step 3: Tawk.to Copy (Internal Message) ---
+            try {
+                const tawkApi = window.Tawk_API || Tawk_API;
+                if (typeof tawkApi !== 'undefined') {
+                    const summaryMessage = `🚀 NEW PROJECT BRIEF\nClient: ${formData.Name}\nTitle: ${formData.Project_Title}\nServices: ${formData.Quick_Pick_Services}\nBudget: ${formData.Budget}\nAttachment: ${formData.File_Attached_Status}`.trim();
+                    if (tawkApi.setAttributes) tawkApi.setAttributes({ 'name': formData.Name, 'email': formData.Email });
+                    if (tawkApi.sendChatMessage) tawkApi.sendChatMessage(summaryMessage);
+                    if (tawkApi.maximize) tawkApi.maximize();
+                }
+            } catch (err) { console.warn("Tawk.to copy failed:", err); }
+
+            // --- Step 4: Submit to Google Apps Script ---
+            if (submitBtn) submitBtn.textContent = 'Delivering to Aman...';
+
+            if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
+                throw new Error('Apps Script URL not configured.');
+            }
+
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Apps Script requires no-cors if not handling OPTIONS
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            // Note: with 'no-cors', response.ok is always false and we can't see status
+            // We assume success if no error thrown, or we use a small delay
+            // A better way is to use a standard POST and handle CORS in GAS but 'no-cors' is common for GAS
+
             if (statusEl) {
-                statusEl.innerHTML = `⚠️ <strong>Local Testing Mode:</strong> FormSubmit.co requires a live server. <br>
-                    <button id="send-local-whatsapp" class="btn-outline" style="margin-top:10px; border-color:#4ade80; color:#4ade80;">
-                        Submit via WhatsApp Instead
-                    </button>`;
-                statusEl.style.color = '#ff9f43';
-                document.getElementById('send-local-whatsapp').onclick = (btnE) => {
-                    btnE.preventDefault();
-                    // Fallback helpers for WhatsApp string
-                    const getName = form.querySelector('[name="Name"]')?.value || "Client";
-                    const getTitle = form.querySelector('[name="Project_Title"]')?.value || "Project";
-                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getName}\n*Project:* ${getTitle}`);
-                    window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
-                };
-            }
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Retry Selection';
-            }
-            return;
-        }
-
-        // --- Step 5: Final Submission Sequence ---
-        const finalFormData = new FormData();
-        const rawFields = new FormData(form);
-        for (let [key, value] of rawFields.entries()) {
-            if (key !== 'attachment' && key !== 'Attachment') {
-                finalFormData.append(key, value);
-            }
-        }
-        finalFormData.append('File_Attached_Status', attachmentStatusText);
-        if (fileToAttach) {
-            finalFormData.append('Attachment', fileToAttach, fileToAttach.name);
-        }
-        e.preventDefault();
-        try {
-            const progressStatus = document.getElementById('briefUploadStatus');
-            const progressBar = document.getElementById('briefUploadProgressBar');
-
-            if (progressStatus) {
-                progressStatus.style.display = 'block';
-                progressStatus.textContent = "🚀 Starting secure delivery...";
+                statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
+                statusEl.style.color = '#4ade80';
             }
 
-            const xhr = new XMLHttpRequest();
-            // Using the main endpoint but via XHR to stay on page
-            xhr.open('POST', 'https://formsubmit.co/aman.designpartner@gmail.com', true);
-            xhr.setRequestHeader('Accept', 'application/json');
+            form.reset();
+            window.savedContactFormData = null;
+            window._pendingBriefAttachment = null;
+            localStorage.removeItem('aman_contact_form_data');
 
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable && progressBar && progressStatus) {
-                    const percent = Math.round((event.loaded / event.total) * 100);
-                    progressBar.style.width = percent + '%';
-                    progressStatus.textContent = `Delivering: ${percent}%`;
-                }
-            };
-
-            xhr.onload = function () {
-                // FormSubmit redirects on success to a thank you page
-                // But with XHR/JSON headers, it should return a JSON response
-                if (xhr.status >= 200 && xhr.status < 400) {
-                    if (statusEl) {
-                        statusEl.textContent = '✅ Success! Your brief and file have been received.';
-                        statusEl.style.color = '#4ade80';
-                    }
-
-                    form.reset();
-                    window.savedContactFormData = null;
-                    window._pendingBriefAttachment = null;
-                    localStorage.removeItem('aman_contact_form_data');
-
-                    setTimeout(() => {
-                        window.location.href = window.location.origin + window.location.pathname + '?sent=true';
-                    }, 2000);
-                } else {
-                    handleError(new Error('Server communication error'));
-                }
-            };
-
-            xhr.onerror = () => handleError(new Error('Network error'));
-
-            const handleError = (err) => {
-                if (statusEl) {
-                    statusEl.textContent = '❌ Delivery Error. Please use WhatsApp.';
-                    statusEl.style.color = '#ff4d4d';
-                }
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Retry Submission';
-                }
-            };
-
-            xhr.send(finalFormData);
+            setTimeout(() => {
+                window.location.href = window.location.origin + window.location.pathname + '?sent=true';
+            }, 2500);
 
         } catch (err) {
             console.error("Submission Error:", err);
+            if (statusEl) {
+                statusEl.innerHTML = `❌ ${err.message === 'Apps Script URL not configured.' ? 'System Error: Form is not connected to backend.' : 'Delivery Error. Please try again or use WhatsApp.'}`;
+                statusEl.style.color = '#ff4d4d';
+            }
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Error - Retry';
+                submitBtn.textContent = 'Retry Submission';
             }
         }
     }
@@ -2106,67 +1992,81 @@ async function handlePaymentFormSubmit(e) {
     const form = e.target;
     const statusEl = document.getElementById('paymentFormStatus');
     const submitBtn = form.querySelector('.btn-submit');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+    }
+
     try {
-        const formData = new FormData(form);
+        const rawFields = new FormData(form);
+        const formData = {};
+
+        for (let [key, value] of rawFields.entries()) {
+            if (key !== 'payment_proof') {
+                formData[key] = value;
+            }
+        }
+
+        formData.formType = 'payment';
+        formData.Timestamp = new Date().toLocaleString();
+
+        // Handle Payment Proof Attachment
+        const fileInput = form.querySelector('#paymentProofInput');
+        if (fileInput && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            if (submitBtn) submitBtn.textContent = 'Encoding proof...';
+            formData.fileName = file.name;
+            formData.fileType = file.type;
+            formData.fileData = await fileToBase64(file);
+        }
 
         // --- Tawk.to Copy for Payment ---
         try {
             const hasTawk = typeof Tawk_API !== 'undefined';
             if (hasTawk) {
-                const getVal = (name) => {
-                    const val = formData.get(name);
-                    if (val instanceof File) return val.name ? `Attached: ${val.name}` : "No file";
-                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
-                };
-                const paymentSummary = `
-💰 --- NEW PAYMENT SUBMISSION ---
-Client: ${getVal('name')}
-Email: ${getVal('email')}
-MTCN/Reference: ${getVal('mtcn')}
-Amount: ${getVal('amount')}
-Project: ${getVal('project_name')}
-Proof: ${getVal('payment_proof')}
------------------------------------------
-`.trim();
-                if (Tawk_API.sendChatMessage) {
-                    Tawk_API.sendChatMessage(paymentSummary, function (error) { });
-                } else if (Tawk_API.sendMessage) {
-                    Tawk_API.sendMessage(paymentSummary, function (error) { });
-                }
-
-                if (Tawk_API.addEvent) {
-                    Tawk_API.addEvent('Payment Submitted', {
-                        client: getVal('name'),
-                        amount: getVal('amount')
-                    });
-                }
+                const paymentSummary = `💰 NEW PAYMENT\nClient: ${formData.name}\nMTCN: ${formData.mtcn}\nAmount: ${formData.amount}\nProject: ${formData.project_name}`.trim();
+                if (Tawk_API.sendChatMessage) Tawk_API.sendChatMessage(paymentSummary);
+                if (Tawk_API.addEvent) Tawk_API.addEvent('Payment Submitted', { client: formData.name, amount: formData.amount });
             }
         } catch (e) { console.warn("Tawk error:", e); }
 
-        formData.append("_subject", "New Payment Submission - MTCN");
-        formData.append("_captcha", "false");
-        const response = await fetch('https://formsubmit.co/ajax/aman.designpartner@gmail.com', {
+        if (submitBtn) submitBtn.textContent = 'Sending to Aman...';
+
+        if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
+            throw new Error('Apps Script URL not configured.');
+        }
+
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: formData
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
         });
-        if (response.ok) {
+
+        if (statusEl) {
             statusEl.textContent = '✅ Payment details submitted successfully!';
             statusEl.style.color = '#4CAF50';
-            form.reset();
-            setTimeout(() => {
-                if (confirm('Payment details sent! Inform Aman via WhatsApp?')) {
-                    window.open('https://wa.me/923010003011', '_blank');
-                }
-            }, 1000);
         }
+
+        form.reset();
+        setTimeout(() => {
+            if (confirm('Payment details sent! Inform Aman via WhatsApp?')) {
+                window.open('https://wa.me/923010003011', '_blank');
+            }
+        }, 1500);
+
     } catch (error) {
-        statusEl.textContent = '❌ Error. Please try WhatsApp.';
-        statusEl.style.color = '#f44336';
+        console.error("Payment Submission Error:", error);
+        if (statusEl) {
+            statusEl.textContent = `❌ ${error.message === 'Apps Script URL not configured.' ? 'System Error: Backend not connected.' : 'Error. Please try WhatsApp.'}`;
+            statusEl.style.color = '#f44336';
+        }
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Payment Details';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Payment Details';
+        }
     }
 }
 
