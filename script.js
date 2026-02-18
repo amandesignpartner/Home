@@ -1840,22 +1840,24 @@ document.addEventListener('submit', async (e) => {
                 const formData = new FormData(form);
                 const getVal = (name) => {
                     const val = formData.get(name);
-                    return (val && val.trim() !== "") ? val.trim() : "Not provided";
+                    if (val instanceof File) return val.name ? `Attached: ${val.name}` : "No file";
+                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
                 };
 
-                let budget = getVal('budget');
-                if (budget === 'custom') budget = getVal('budget_custom');
-                let timeline = getVal('timeline');
-                if (timeline === 'custom') timeline = getVal('timeline_custom');
+                // Use PascalCase names as updated in index.html
+                let budget = getVal('Budget');
+                if (budget === 'custom') budget = getVal('Budget_Custom');
+                let timeline = getVal('Timeline');
+                if (timeline === 'custom') timeline = getVal('Timeline_Custom');
 
                 const summaryMessage = `
 🚀 --- NEW PROJECT BRIEF SUMMARY ---
-Client: ${getVal('name')}
-Email: ${getVal('email')}
-Phone: ${getVal('phone')}
+Client: ${getVal('Name')}
+Email: ${getVal('Email')}
+Phone: ${getVal('Phone')}
 
-Project Title: ${getVal('project_title')}
-Billing Type: ${getVal('billing_type')}
+Project Title: ${getVal('Project_Title')}
+Billing Type: ${getVal('Billing_Type')}
 Budget: ${budget}
 Timeline: ${timeline}
 
@@ -1865,17 +1867,18 @@ Interior Requirements: ${getVal('Interior_Requirements')}
 Exterior Requirements: ${getVal('Exterior_Requirements')}
 
 Message:
-${getVal('message')}
+${getVal('Message')}
 
-File Link: ${getVal('file_link')}
+Attachment: ${getVal('Attachment')}
+File Link: ${getVal('File_Link')}
 -----------------------------------------
 `.trim();
 
                 Tawk_API.sendMessage(summaryMessage, function (error) { });
                 Tawk_API.setAttributes({
-                    'name': getVal('name'),
-                    'email': getVal('email'),
-                    'phone': getVal('phone')
+                    'name': getVal('Name'),
+                    'email': getVal('Email'),
+                    'phone': getVal('Phone')
                 }, function (error) { });
             }
         } catch (err) {
@@ -1894,18 +1897,18 @@ File Link: ${getVal('file_link')}
 
                 document.getElementById('send-local-whatsapp').onclick = (btnE) => {
                     btnE.preventDefault();
-                    // Get data again just in case
+                    // Get data again just in case (using PascalCase)
                     const getVal = (id) => {
                         const el = form.querySelector(`[name="${id}"]`) || form.querySelector(`#${id}`);
                         const val = el ? el.value : "";
                         return (val && val.trim() !== "") ? val.trim() : "Not provided";
                     };
-                    let budget = getVal('budget');
-                    if (budget === 'custom') budget = getVal('budget_custom');
-                    let timeline = getVal('timeline');
-                    if (timeline === 'custom') timeline = getVal('timeline_custom');
+                    let budget = getVal('Budget');
+                    if (budget === 'custom') budget = getVal('Budget_Custom');
+                    let timeline = getVal('Timeline');
+                    if (timeline === 'custom') timeline = getVal('Timeline_Custom');
 
-                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('name')}\n*Email:* ${getVal('email')}\n*Phone:* ${getVal('phone')}\n\n*Project Title:* ${getVal('project_title')}\n*Billing Type:* ${getVal('billing_type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Focus:* ${getVal('Work_Type')}\n*Services:* ${getVal('Quick_Pick_Services')}\n\n*Message:* ${getVal('message')}\n\n*File Link:* ${getVal('file_link')}`);
+                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Focus:* ${getVal('Work_Type')}\n*Services:* ${getVal('Quick_Pick_Services')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
                     window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
                 };
             }
@@ -2423,7 +2426,7 @@ function initQuickPickLogic(container) {
             contactForm.addEventListener('submit', function (e) {
                 // Collect selected services
                 const selectedServices = [];
-                const serviceCheckboxes = qpContainer.querySelectorAll('input[name="services[]"]:checked');
+                const serviceCheckboxes = qpContainer.querySelectorAll('input[name="Services[]"]:checked');
                 serviceCheckboxes.forEach(checkbox => {
                     if (checkbox.value === 'Other') {
                         const parentItem = checkbox.closest('.qp-option-item');
@@ -2451,7 +2454,7 @@ function initQuickPickLogic(container) {
                 // Collect Interior Items
                 const selectedInterior = [];
                 if (interiorChecklist && interiorChecklist.style.display !== 'none') {
-                    const interiorCheckboxes = interiorChecklist.querySelectorAll('input[name="interior_items[]"]:checked');
+                    const interiorCheckboxes = interiorChecklist.querySelectorAll('input[name="Interior_Items[]"]:checked');
                     interiorCheckboxes.forEach(checkbox => {
                         if (checkbox.value === 'Other') {
                             const customInput = interiorChecklist.querySelector('input[name="interior_custom"]');
@@ -2467,7 +2470,7 @@ function initQuickPickLogic(container) {
                 // Collect Exterior Items
                 const selectedExterior = [];
                 if (exteriorChecklist && exteriorChecklist.style.display !== 'none') {
-                    const exteriorCheckboxes = exteriorChecklist.querySelectorAll('input[name="exterior_items[]"]:checked');
+                    const exteriorCheckboxes = exteriorChecklist.querySelectorAll('input[name="Exterior_Items[]"]:checked');
                     exteriorCheckboxes.forEach(checkbox => {
                         if (checkbox.value === 'Other') {
                             const customInput = exteriorChecklist.querySelector('input[name="exterior_custom"]');
@@ -2480,8 +2483,8 @@ function initQuickPickLogic(container) {
                     });
                 }
 
-                // Collect Billing Type
-                const billingRadio = container.querySelector('input[name="billing_type"]:checked');
+                // Collect Billing Type (using PascalCase name)
+                const billingRadio = container.querySelector('input[name="Billing_Type"]:checked');
                 const billingType = billingRadio ? billingRadio.value : '';
 
                 // Create hidden fields
