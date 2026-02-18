@@ -198,7 +198,7 @@ window.customVideoControls = {
     },
 
     detach: function (button) {
-        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content');
+        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content, .youtube-embed');
         const iframe = container.querySelector('iframe[src*="youtube.com"]');
         const player = getPlayerForContainer(container);
 
@@ -220,8 +220,11 @@ window.customVideoControls = {
         if (player) {
             try {
                 currentTime = player.getCurrentTime();
+                // Pause original video when detaching
+                player.pauseVideo();
+                this.updatePlayButtonIcon(container, false);
             } catch (e) {
-                console.warn('Could not get current time:', e);
+                console.warn('Could not interact with original player:', e);
             }
         }
 
@@ -248,8 +251,8 @@ window.customVideoControls = {
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            z-index: 999999;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+            z-index: 2147483647;
             cursor: move;
         `;
 
