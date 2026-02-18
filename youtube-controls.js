@@ -81,16 +81,37 @@ function initializeAllYouTubePlayers() {
                         window.youtubePlayersMap.set(playerID, event.target);
                         window.initializingPlayers.delete(playerID);
 
-                        // Set default high quality
+                        // Set default high quality (1080p)
                         try {
-                            const availableLevels = event.target.getAvailableQualityLevels();
-                            if (availableLevels.includes('hd1080')) {
+                            if (event.target.setPlaybackQualityRange) {
+                                event.target.setPlaybackQualityRange('hd1080', 'hd1080');
+                            } else {
                                 event.target.setPlaybackQuality('hd1080');
-                            } else if (availableLevels.includes('hd720')) {
-                                event.target.setPlaybackQuality('hd720');
                             }
+                            window.userSelectedQualities.set(playerID, 'hd1080');
                         } catch (err) {
-                            console.warn('[YouTube] Quality set error:', err);
+                            console.warn('[YouTube] Initial quality set error:', err);
+                        }
+                    },
+                    'onStateChange': (event) => {
+                        // When video starts playing (YT.PlayerState.PLAYING = 1)
+                        if (event.data === 1) {
+                            try {
+                                const current = event.target.getPlaybackQuality();
+                                console.log(`[YouTube] Player ${playerID} started playing. Current quality: ${current}`);
+
+                                // Re-enforce 1080p if it's not already set or defaulted
+                                if (current !== 'hd1080') {
+                                    console.log(`[YouTube] Re-enforcing 1080p for ${playerID}`);
+                                    if (event.target.setPlaybackQualityRange) {
+                                        event.target.setPlaybackQualityRange('hd1080', 'hd1080');
+                                    } else {
+                                        event.target.setPlaybackQuality('hd1080');
+                                    }
+                                }
+                            } catch (err) {
+                                console.warn('[YouTube] State change quality error:', err);
+                            }
                         }
                     },
                     'onError': (event) => {
