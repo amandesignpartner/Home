@@ -1,4 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxF9-UGHyObQ8dwjY8bFOBsk0hnGcVxp2sqWXwW6jAzsM-_gCJnX9YprX7A9EEeolBzw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzkmMfpOh_CKnfYTtTiFyzMN5b7Hr84vzRl-o4ZdGrC6-qaDYPwiMbuKBwTIz6bI4QE/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -453,33 +454,49 @@ function initProjectTracker() {
     if (!mainTrackInput || !mainTrackBtn) return;
 
     // Handle tracking button click
-    const handleTrack = () => {
+    const handleTrack = async () => {
         const rawVal = mainTrackInput.value.trim();
-        const cleanVal = rawVal.replace(/-/g, ''); // Remove dashes for lookup
+        if (!rawVal) return;
+
+        const cleanVal = rawVal.replace(/-/g, '');
         const inputContainer = mainTrackInput.parentElement;
 
-        // Lookup in projectData (loaded from project-data.js)
-        const project = window.projectData && window.projectData[cleanVal];
+        // Show loading state on button
+        const originalBtnText = mainTrackBtn.textContent;
+        mainTrackBtn.innerHTML = '<span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span class="anim-dot dot-3">.</span>';
+        mainTrackBtn.style.pointerEvents = 'none';
 
-        if (rawVal && project) {
-            window.originalTrackerKey = cleanVal; // Save original key for "Update Existing" logic
-            // Found project!
-            openPopup('track-status');
-            inputContainer.classList.remove('error');
+        try {
+            // Priority 1: Fetch from Live Google Sheet
+            const response = await fetch(`${TRACKER_SYNC_URL}?id=${rawVal}`);
+            const result = await response.json();
 
-            // Wait brief moment for popup to render then populate
-            setTimeout(() => {
-                // IMPORTANT: Work on a CLONE so we don't accidentally mutate the live window.projectData
-                // until the user specifically clicks "Update Existing" or "Download New".
-                const projectClone = JSON.parse(JSON.stringify(project));
-                populateTrackerPopup(projectClone);
-            }, 50);
+            if (result.status === "success") {
+                window.originalTrackerKey = cleanVal;
+                openPopup('track-status');
+                inputContainer.classList.remove('error');
 
-            // Clear error
-            const errorMsg = document.getElementById('tracker-error-msg');
-            if (errorMsg) errorMsg.remove();
-        } else {
-            // Error handling
+                setTimeout(() => {
+                    populateTrackerPopup(result.project);
+                }, 50);
+
+                const errorMsg = document.getElementById('tracker-error-msg');
+                if (errorMsg) errorMsg.remove();
+            } else {
+                // Priority 2: Fallback to local project-data.js (for legacy or offline)
+                const project = window.projectData && window.projectData[cleanVal];
+                if (project) {
+                    window.originalTrackerKey = cleanVal;
+                    openPopup('track-status');
+                    inputContainer.classList.remove('error');
+                    setTimeout(() => populateTrackerPopup(JSON.parse(JSON.stringify(project))), 50);
+                    const errorMsg = document.getElementById('tracker-error-msg');
+                    if (errorMsg) errorMsg.remove();
+                } else {
+                    throw new Error("Not Found");
+                }
+            }
+        } catch (err) {
             inputContainer.classList.add('error');
             let errorMsg = document.getElementById('tracker-error-msg');
             if (!errorMsg) {
@@ -490,11 +507,9 @@ function initProjectTracker() {
             }
             errorMsg.textContent = '❌ Invalid Project ID. Please check and try again.';
             errorMsg.style.opacity = '1';
-
-            // Shake effect
-            inputContainer.style.animation = 'none';
-            inputContainer.offsetHeight; // trigger reflow
-            inputContainer.style.animation = 'shake 0.4s ease';
+        } finally {
+            mainTrackBtn.textContent = originalBtnText;
+            mainTrackBtn.style.pointerEvents = 'auto';
         }
     };
 
@@ -801,7 +816,7 @@ function populateTrackerPopup(data) {
                 <button id="btn-save-new" style="padding: 10px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;" title="Saves as a NEW record in the list">💾 Download New Client Form</button>
                 <button id="btn-update-existing" style="padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;" title="Overwrites the original record you opened">📝 Update Existing Client</button>
             </div>
-            <button id="btn-create-new" style="width: 100%; padding: 10px; background: #a855f7; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;">🆕 Create New Client Entry (Clear Form)</button>
+            <button id="btn-reset" style="width: 100%; padding: 10px; background: #a855f7; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;">🔄 Reset to AMAN00Z (Generate New ID)</button>
         `;
 
             const btnSaveNew = document.getElementById('btn-save-new');
@@ -810,36 +825,46 @@ function populateTrackerPopup(data) {
             const btnUpdate = document.getElementById('btn-update-existing');
             if (btnUpdate) btnUpdate.onclick = () => downloadTrackerData(data, 'update');
 
-            const btnCreate = document.getElementById('btn-create-new');
-            if (btnCreate) btnCreate.onclick = () => {
-                const baseSetup = window.projectData && window.projectData["AMAN00Z"] ? window.projectData["AMAN00Z"] : {};
+            const btnReset = document.getElementById('btn-reset');
+            if (btnReset) btnReset.onclick = async () => {
+                const confirmReset = confirm("Are you sure? This will generate a fresh Project ID and reset all progress.");
+                if (!confirmReset) return;
 
-                // Generate Project ID Sequence
-                let lastNum = parseInt(localStorage.getItem('tracker_id_sequence')) || 124;
-                const nextNum = lastNum + 1;
-                localStorage.setItem('tracker_id_sequence', nextNum);
-                const newID = `VMC-26H${nextNum}-A`;
+                btnReset.innerHTML = 'Fetching Next ID...';
 
-                // Calculate Dates
-                const now = new Date();
-                const formDate = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
-                const updateDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); // D MMM YYYY
+                try {
+                    const response = await fetch(`${TRACKER_SYNC_URL}?action=getNextID`);
+                    const res = await response.json();
 
-                const deliveryDateObj = new Date();
-                deliveryDateObj.setDate(now.getDate() + 7);
-                const deliveryDate = deliveryDateObj.toLocaleDateString('en-GB'); // DD/MM/YYYY
+                    const nextNum = res.nextNum;
+                    const newID = res.nextID;
 
-                const resetData = {
-                    ...baseSetup,
-                    id: newID,
-                    startDate: formDate,
-                    lastUpdated: updateDate,
-                    deadline: deliveryDate,
-                    // Ensure other AMAN00Z basics are kept (status, phase, milestone, etc.)
-                    status: baseSetup.status || "progress",
-                };
+                    // Calculate Dates
+                    const now = new Date();
+                    const formDate = now.toLocaleDateString('en-GB');
+                    const updateDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-                populateTrackerPopup(resetData);
+                    const deliveryDateObj = new Date();
+                    deliveryDateObj.setDate(now.getDate() + 7);
+                    const deliveryDate = deliveryDateObj.toLocaleDateString('en-GB');
+
+                    const baseSetup = window.projectData && window.projectData["AMAN00Z"] ? window.projectData["AMAN00Z"] : {};
+
+                    const resetData = {
+                        ...baseSetup,
+                        id: newID,
+                        startDate: formDate,
+                        lastUpdated: updateDate,
+                        deadline: deliveryDate,
+                        status: "progress",
+                    };
+
+                    populateTrackerPopup(resetData);
+                } catch (e) {
+                    alert("Error reaching server for Next ID.");
+                } finally {
+                    btnReset.textContent = '🔄 Reset to AMAN00Z (New ID)';
+                }
             };
         } else {
             // CLEANUP: Remove admin elements if NOT in edit mode
@@ -867,52 +892,39 @@ function populateTrackerPopup(data) {
     }
 }
 
-function downloadTrackerData(editedData, mode) {
-    // Exit edit mode first
-    localStorage.setItem('tracker_edit_mode_active', 'false');
-
-    // 1. Get a deep clone of the current global project data
-    // This ensures we have a "clean" starting point
-    const freshGlobalData = JSON.parse(JSON.stringify(window.projectData));
-
-    let finalKey;
-    if (mode === 'update') {
-        // Use the original key used to open this record
-        // This ensures the record is overwritten correctly
-        finalKey = window.originalTrackerKey || editedData.id.replace(/-/g, '').toUpperCase();
-    } else {
-        // Use the current ID in the form as the new key (for "Download New Client Form")
-        finalKey = editedData.id.replace(/-/g, '').toUpperCase();
+async function downloadTrackerData(editedData, mode) {
+    // 1. Sync with Google Sheet first
+    try {
+        const syncResponse = await fetch(TRACKER_SYNC_URL, {
+            method: 'POST',
+            mode: 'no-cors', // standard for GAS
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(editedData)
+        });
+        console.log("Tracker Two-Way Sync Dispatched");
+    } catch (err) {
+        console.error("Sync Error (Non-Critical):", err);
     }
 
-    // 2. Add or Overwrite the record in our fresh global copy
+    // Exit edit mode
+    localStorage.setItem('tracker_edit_mode_active', 'false');
+
+    // ... rest of the traditional download logic for safety/offline backup ...
+    const freshGlobalData = JSON.parse(JSON.stringify(window.projectData || {}));
+    let finalKey = (mode === 'update' && window.originalTrackerKey) ? window.originalTrackerKey : editedData.id.replace(/-/g, '').toUpperCase();
     freshGlobalData[finalKey] = editedData;
 
-    // 3. Create the file content
     const content = `// Project Data Replacement File\n// Replace the contents of project-data.js with this:\n\nconst projectData = ${JSON.stringify(freshGlobalData, null, 4)};\n\nwindow.projectData = projectData;`;
-
     const blob = new Blob([content], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = mode === 'new' ? "project-data-NEW.js" : "project-data-UPDATED.js";
-
-    // CRITICAL FIX: Link must be part of the DOM for click to work in some environments
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Close popup and cleanup
-    setTimeout(() => {
-        closePopup();
-        URL.revokeObjectURL(url);
-
-        // Force refresh of the popup state if user re-opens immediately
-        if (window.lastTrackedProject && document.getElementById('popup-track-status')) {
-            // If we didn't close it properly or if we want to ensure UI cleanliness
-            // We can re-render it in non-edit mode, but closePopup() hides it anyway.
-        }
-    }, 500);
+    setTimeout(() => { closePopup(); URL.revokeObjectURL(url); }, 500);
 }
 
 // ===== Minimize/Maximize =====
@@ -3368,7 +3380,7 @@ window.initPlyr = function (container = document) {
         const config = {
             controls: ['play-large', 'play', 'mute', 'volume'],
             seekTime: 5,
-            youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
+            youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
             tooltips: { controls: false, seek: false },
             displayDuration: false,
             invertTime: false,
