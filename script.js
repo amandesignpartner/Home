@@ -1922,14 +1922,35 @@ document.addEventListener('submit', async (e) => {
             // No need for a hidden Billing_Type field as it's already a radio in the form
         }
 
-        // --- Step 2: Handle Tawk.to Copy (Internal Message) ---
+        // --- Step 2: Build Final Submission Data ---
+        const formData = new FormData();
+        const rawFormData = new FormData(form);
+
+        // 1. Add normal fields
+        for (let [key, value] of rawFormData.entries()) {
+            if (key !== 'attachment') formData.append(key, value);
+        }
+
+        // 2. Add Attachment (ensure it's the LAST field for maximum compatibility)
+        let fileToAttach = null;
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput && fileInput.files[0]) {
+            fileToAttach = fileInput.files[0];
+        } else if (window._pendingBriefAttachment) {
+            fileToAttach = window._pendingBriefAttachment;
+        }
+
+        if (fileToAttach) {
+            formData.append('attachment', fileToAttach);
+        }
+
+        // --- Step 3: Handle Tawk.to Copy (Internal Message) ---
         try {
-            const hasTawk = typeof Tawk_API !== 'undefined';
-            if (hasTawk) {
-                const formData = new FormData(form);
+            const tawkApi = window.Tawk_API || Tawk_API;
+            if (typeof tawkApi !== 'undefined') {
                 const getVal = (name) => {
                     const val = formData.get(name);
-                    if (val instanceof File) return val.name ? `Attached: ${val.name}` : "No file";
+                    if (val instanceof File) return val.name ? `Attached: ${val.name} (${Math.round(val.size / 1024)}KB)` : "No file";
                     return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
                 };
 
@@ -1963,9 +1984,10 @@ File Link: ${getVal('File_Link')}
 -----------------------------------------
 `.trim();
 
+                if (tawkApi.maximize) tawkApi.maximize();
                 // 1. Set attributes for the visitor
-                if (Tawk_API.setAttributes) {
-                    Tawk_API.setAttributes({
+                if (tawkApi.setAttributes) {
+                    tawkApi.setAttributes({
                         'name': getVal('Name'),
                         'email': getVal('Email'),
                         'phone': getVal('Phone')
@@ -1973,25 +1995,25 @@ File Link: ${getVal('File_Link')}
                 }
 
                 // 2. Add an event (Very reliable)
-                if (Tawk_API.addEvent) {
-                    Tawk_API.addEvent('Project Brief Submitted', {
+                if (tawkApi.addEvent) {
+                    tawkApi.addEvent('Project Brief Submitted', {
                         title: getVal('Project_Title'),
                         client: getVal('Name')
                     });
                 }
 
                 // 3. Send the message copy to the agent
-                if (Tawk_API.sendChatMessage) {
-                    Tawk_API.sendChatMessage(summaryMessage, function (error) { });
-                } else if (Tawk_API.sendMessage) {
-                    Tawk_API.sendMessage(summaryMessage, function (error) { });
+                if (tawkApi.sendChatMessage) {
+                    tawkApi.sendChatMessage(summaryMessage, function (error) { });
+                } else if (tawkApi.sendMessage) {
+                    tawkApi.sendMessage(summaryMessage, function (error) { });
                 }
             }
         } catch (err) {
             console.warn("Failed to send message copy to chat:", err);
         }
 
-        // --- Step 3: Handle Protocol Check (Better Fallback for local files) ---
+        // --- Step 4: Protocol Check (WhatsApp Fallback) ---
         if (window.location.protocol === 'file:') {
             e.preventDefault();
             if (statusEl) {
@@ -2004,14 +2026,9 @@ File Link: ${getVal('File_Link')}
                 document.getElementById('send-local-whatsapp').onclick = (btnE) => {
                     btnE.preventDefault();
                     // Get data again just in case (using PascalCase)
-                    const getVal = (id) => {
-                        const el = form.querySelector(`[name="${id}"]`) || form.querySelector(`#${id}`);
-                        const val = el ? el.value : "";
-                        return (val && val.trim() !== "") ? val.trim() : "Not provided";
-                    };
-                    const getHidden = (name) => {
-                        const el = form.querySelector(`input[name="${name}"]`);
-                        return el ? el.value : "None";
+                    const getVal = (name) => {
+                        const val = formData.get(name);
+                        return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
                     };
 
                     let budget = getVal('Budget');
@@ -2019,7 +2036,7 @@ File Link: ${getVal('File_Link')}
                     let timeline = getVal('Timeline');
                     if (timeline === 'custom') timeline = getVal('Timeline_Custom');
 
-                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Services:* ${getHidden('Quick_Pick_Services')}\n*Focus:* ${getHidden('Work_Type')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
+                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Services:* ${getVal('Quick_Pick_Services')}\n*Focus:* ${getVal('Work_Type')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
                     window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
                 };
             }
@@ -2030,83 +2047,79 @@ File Link: ${getVal('File_Link')}
             return;
         }
 
-        // --- Step 4: AJAX Submit to FormSubmit.co (with Progress) ---
+        // --- Step 5: AJAX Submit to FormSubmit.co (with Progress Monitoring) ---
         e.preventDefault();
         try {
-            const formData = new FormData(form);
-
-            // CRITICAL: Ensure attachment is included if we have it in memory but input is empty
-            if (window._pendingBriefAttachment) {
-                const existingFile = formData.get('attachment');
-                const isFileEmpty = !existingFile || (existingFile instanceof File && existingFile.size === 0);
-
-                if (isFileEmpty) {
-                    console.log("Manually appending preserved attachment to FormData");
-                    formData.set('attachment', window._pendingBriefAttachment);
-                }
-            }
-
-            // Progress UI elements
             const progressContainer = document.getElementById('briefUploadProgressContainer');
             const progressBar = document.getElementById('briefUploadProgressBar');
             const progressStatus = document.getElementById('briefUploadStatus');
-            const hasFile = (formData.get('attachment') instanceof File && formData.get('attachment').size > 0);
 
-            if (hasFile && progressContainer) {
+            if (fileToAttach && progressContainer) {
+                const fileSizeKB = Math.round(fileToAttach.size / 1024);
                 progressContainer.style.display = 'block';
                 progressStatus.style.display = 'block';
+                progressStatus.style.color = '#ff9f43';
+                progressStatus.textContent = `Preparing: ${fileToAttach.name} (${fileSizeKB}KB)`;
             }
 
             // Using XMLHttpRequest for upload progress
             const xhr = new XMLHttpRequest();
             xhr.open('POST', 'https://formsubmit.co/ajax/aman.designpartner@gmail.com', true);
+            xhr.setRequestHeader("Accept", "application/json"); // Often helps with AJAX response reliability
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable && progressBar && progressStatus) {
                     const percent = Math.round((event.loaded / event.total) * 100);
                     progressBar.style.width = percent + '%';
-                    progressStatus.textContent = `Uploading: ${percent}%`;
+                    progressStatus.textContent = `Streaming to Server: ${percent}%`;
                 }
             };
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     if (statusEl) {
-                        statusEl.textContent = '✅ Success! Your brief has been sent.';
+                        statusEl.textContent = '✅ Success! Your brief and attachment have been sent.';
                         statusEl.style.color = '#4ade80';
                     }
-                    if (progressStatus) progressStatus.textContent = 'Upload Complete 100%';
+                    if (progressStatus) {
+                        progressStatus.textContent = '✅ Delivered Successfully!';
+                        progressStatus.style.color = '#4ade80';
+                    }
 
                     form.reset();
                     window.savedContactFormData = null;
                     window._pendingBriefAttachment = null;
                     localStorage.removeItem('aman_contact_form_data');
 
+                    // Success Redirect
                     setTimeout(() => {
                         const currentUrl = new URL(window.location.href);
                         currentUrl.searchParams.set('sent', 'true');
                         window.location.href = currentUrl.toString();
-                    }, 1500);
+                    }, 2000);
                 } else {
-                    handleError(new Error('Status ' + xhr.status));
+                    handleError(new Error('Server returned status ' + xhr.status));
                 }
             };
 
             xhr.onerror = function () {
-                handleError(new Error('Network error during upload'));
+                handleError(new Error('Network connection failed during upload'));
             };
 
             const handleError = (err) => {
                 console.error("Submission Error:", err);
                 if (statusEl) {
-                    statusEl.textContent = '❌ Error: Submission failed. Please try again or use WhatsApp.';
+                    statusEl.textContent = '❌ Submission Failed. The file might be too large or there is a connection issue. Please use WhatsApp.';
                     statusEl.style.color = '#ff4d4d';
                 }
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
                 }
-                if (progressContainer) progressContainer.style.display = 'none';
+                if (progressStatus) {
+                    progressStatus.textContent = "❌ Delivery Failed";
+                    progressStatus.style.color = "#ff4d4d";
+                }
             };
 
             xhr.send(formData);
@@ -2602,8 +2615,54 @@ function initQuickPickLogic(container) {
             if (inp.type === 'file') {
                 inp.addEventListener('change', () => {
                     const label = inp.parentElement.querySelector('.file-name-label');
-                    if (label) {
-                        label.textContent = inp.files.length > 0 ? "Selected: " + inp.files[0].name : "";
+                    const progressContainer = document.getElementById('briefUploadProgressContainer');
+                    const progressBar = document.getElementById('briefUploadProgressBar');
+                    const progressStatus = document.getElementById('briefUploadStatus');
+
+                    // Clear previous simulation if any
+                    if (window._briefProgressInterval) {
+                        clearInterval(window._briefProgressInterval);
+                        window._briefProgressInterval = null;
+                    }
+
+                    if (inp.files.length > 0) {
+                        const file = inp.files[0];
+
+                        // Check size (10MB)
+                        if (file.size > 10 * 1024 * 1024) {
+                            alert("⚠️ File is too large! Max is 10MB. Please use the WeTransfer link below.");
+                            inp.value = '';
+                            if (label) label.textContent = "";
+                            if (progressContainer) progressContainer.style.display = 'none';
+                            return;
+                        }
+
+                        if (label) label.textContent = "Selected: " + file.name;
+
+                        // Show "Immediate Progress" simulation
+                        if (progressContainer && progressBar && progressStatus) {
+                            progressContainer.style.display = 'block';
+                            progressStatus.style.display = 'block';
+                            progressStatus.textContent = "Uploading to Cache: 0%";
+                            progressStatus.style.color = 'var(--text-muted)';
+                            progressBar.style.width = '0%';
+
+                            let p = 0;
+                            window._briefProgressInterval = setInterval(() => {
+                                p += Math.floor(Math.random() * 20) + 10;
+                                if (p >= 100) {
+                                    p = 100;
+                                    clearInterval(window._briefProgressInterval);
+                                    progressStatus.textContent = "✅ File Ready for Submission";
+                                    progressStatus.style.color = "#4ade80";
+                                }
+                                progressBar.style.width = p + '%';
+                                if (p < 100) progressStatus.textContent = `Uploading to Cache: ${p}%`;
+                            }, 40);
+                        }
+                    } else {
+                        if (label) label.textContent = "";
+                        if (progressContainer) progressContainer.style.display = 'none';
                     }
                 });
             }
