@@ -2844,9 +2844,121 @@ function init3DComparisonSlider(container) {
     // Load first image
     loadImage(0);
 
+    // Grid View Toggle Logic
+    window.toggleComparisonView = function () {
+        const sliderView = container.querySelector('#comparison-slider-ui');
+        const gridView = container.querySelector('#comparison-grid-view');
+        const grid = container.querySelector('.comparison-render-grid');
+        const toggleBtn = container.querySelector('#comparison-view-toggle');
+        const toggleText = toggleBtn.querySelector('.toggle-text');
+        const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+
+        if (!sliderView || !gridView || !grid) return;
+
+        if (gridView.style.display === 'none') {
+            // SWITCH TO GRID VIEW
+            sliderView.style.display = 'none';
+            gridView.style.display = 'block';
+            if (toggleText) toggleText.textContent = 'Slider';
+            if (toggleIcon) {
+                toggleIcon.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <polyline points="5 9 2 12 5 15"></polyline>
+                        <polyline points="19 9 22 12 19 15"></polyline>
+                    </svg>
+                `;
+            }
+
+            // Populate Grid only if needed
+            if (grid.children.length === 0) {
+                imagePaths.forEach((path, idx) => {
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.style.cssText = `
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 12px;
+                        aspect-ratio: 16/9;
+                        background: #000;
+                        border: 1px solid rgba(255,140,0,0.2);
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    `;
+
+                    const img = document.createElement('img');
+                    img.src = path;
+                    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;';
+
+                    imgWrapper.appendChild(img);
+
+                    // Add "View in Slider" hover overlay
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `
+                        position: absolute;
+                        inset: 0;
+                        background: rgba(210, 105, 30, 0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        opacity: 0;
+                        transition: opacity 0.3s ease;
+                        color: white;
+                        font-family: 'Raleway', sans-serif;
+                        font-weight: 600;
+                        font-size: 12px;
+                    `;
+                    overlay.innerHTML = 'VIEW IN SLIDER';
+                    imgWrapper.appendChild(overlay);
+
+                    imgWrapper.onmouseenter = () => {
+                        imgWrapper.style.transform = 'translateY(-5px)';
+                        imgWrapper.style.boxShadow = '0 10px 25px rgba(210, 105, 30, 0.3)';
+                        imgWrapper.style.borderColor = 'var(--primary-orange)';
+                        img.style.transform = 'scale(1.1)';
+                        overlay.style.opacity = '1';
+                    };
+                    imgWrapper.onmouseleave = () => {
+                        imgWrapper.style.transform = 'translateY(0)';
+                        imgWrapper.style.boxShadow = 'none';
+                        imgWrapper.style.borderColor = 'rgba(255,140,0,0.2)';
+                        img.style.transform = 'scale(1)';
+                        overlay.style.opacity = '0';
+                    };
+
+                    imgWrapper.onclick = () => {
+                        currentIndex = idx;
+                        loadImage(currentIndex);
+                        window.toggleComparisonView();
+                    };
+
+                    grid.appendChild(imgWrapper);
+                });
+            }
+        } else {
+            // SWITCH BACK TO SLIDER VIEW
+            sliderView.style.display = 'block';
+            gridView.style.display = 'none';
+            if (toggleText) toggleText.textContent = 'Grid';
+            if (toggleIcon) {
+                toggleIcon.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                `;
+            }
+        }
+    };
+
     // Cleanup function when popup closes
     window.addEventListener('popupClosed', () => {
         document.removeEventListener('keydown', handleKeyboard);
+        // Reset view to slider for next time
+        if (typeof window.toggleComparisonView === 'function' && container.querySelector('#comparison-grid-view')?.style.display === 'block') {
+            // we don't call it here to avoid logic flashes, openPopup logic naturally resets popups usually 
+        }
         // Exit fullscreen if active
         if (document.fullscreenElement) {
             document.exitFullscreen();
