@@ -1,5 +1,5 @@
 // Configuration: Replace with your deployed Google Apps Script URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyoeDcbkLx7htDq7Xd32pXMCzUzja_sftPaDs5E0OItwCkKZ18lSqx9pNgcsx3i1-Sbg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7HzYrlpgvfCjjjIwkN7W9UTPuuZfBtdTrDrPbvXtmsbablVWJCV1EnNUThn0QSBPvqw/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
