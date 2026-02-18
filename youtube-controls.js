@@ -35,37 +35,53 @@ function extractVideoId(url) {
     return match ? match[1] : null;
 }
 
+// Set to track initializing players to avoid duplicate constructors
+window.initializingPlayers = window.initializingPlayers || new Set();
+
 // Initialize all YouTube players on the page
 function initializeAllYouTubePlayers() {
     const iframes = document.querySelectorAll('iframe[src*="youtube.com"]');
-    console.log(`Found ${iframes.length} YouTube iframes`);
+    console.log(`[YouTube] Found ${iframes.length} iframes to initialize`);
 
     iframes.forEach((iframe, index) => {
+        // 1. Ensure unique, stable ID
         if (!iframe.id) {
-            iframe.id = `youtube-player-${index}-${Date.now()}`;
+            iframe.id = `yt-player-${index}-${Math.random().toString(36).substr(2, 9)}`;
         }
 
-        if (window.youtubePlayersMap.has(iframe.id)) {
+        const playerID = iframe.id;
+
+        // 2. Skip if already fully initialized
+        if (window.youtubePlayersMap.has(playerID)) {
+            return;
+        }
+
+        // 3. Skip if currently in process of initializing
+        if (window.initializingPlayers.has(playerID)) {
             return;
         }
 
         const videoId = extractVideoId(iframe.src);
-        if (!videoId) {
-            return;
-        }
+        if (!videoId) return;
 
         try {
+            // Ensure enablejsapi=1 is present (required for API)
             const currentSrc = iframe.src;
             if (!currentSrc.includes('enablejsapi=1')) {
                 iframe.src = currentSrc + (currentSrc.includes('?') ? '&' : '?') + 'enablejsapi=1';
             }
 
-            const player = new YT.Player(iframe.id, {
+            console.log(`[YouTube] Initializing player: ${playerID}`);
+            window.initializingPlayers.add(playerID);
+
+            const player = new YT.Player(playerID, {
                 events: {
                     'onReady': (event) => {
-                        console.log(`✅ Player ${iframe.id} is ready`);
-                        window.youtubePlayersMap.set(iframe.id, event.target);
+                        console.log(`✅ [YouTube] Player Ready: ${playerID}`);
+                        window.youtubePlayersMap.set(playerID, event.target);
+                        window.initializingPlayers.delete(playerID);
 
+                        // Set default high quality
                         try {
                             const availableLevels = event.target.getAvailableQualityLevels();
                             if (availableLevels.includes('hd1080')) {
@@ -74,13 +90,18 @@ function initializeAllYouTubePlayers() {
                                 event.target.setPlaybackQuality('hd720');
                             }
                         } catch (err) {
-                            console.warn('Could not set default quality:', err);
+                            console.warn('[YouTube] Quality set error:', err);
                         }
+                    },
+                    'onError': (event) => {
+                        console.error(`❌ [YouTube] Player Error (${playerID}):`, event.data);
+                        window.initializingPlayers.delete(playerID);
                     }
                 }
             });
         } catch (error) {
-            console.error(`Failed to initialize player ${iframe.id}:`, error);
+            console.error(`[YouTube] Constructor failed for ${playerID}:`, error);
+            window.initializingPlayers.delete(playerID);
         }
     });
 }
@@ -100,21 +121,43 @@ function getPlayerForContainer(container) {
 // Custom video control actions
 window.customVideoControls = {
     play: function (button) {
-        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content');
-        const player = getPlayerForContainer(container);
+        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content, .youtube-embed');
+        let player = getPlayerForContainer(container);
 
         if (!player) {
-            showToast('⚠️ Video player not ready. Please wait...');
-            setTimeout(() => initializeAllYouTubePlayers(), 500);
+            const iframe = container.querySelector('iframe');
+            const isInitializing = iframe && iframe.id && window.initializingPlayers.has(iframe.id);
+
+            if (isInitializing) {
+                showToast('⏳ Video player still loading... one moment');
+                return;
+            }
+
+            console.log('[YouTube] Player not found, forcing init...');
+            initializeAllYouTubePlayers();
+
+            // Try one more time after a short delay
+            setTimeout(() => {
+                player = getPlayerForContainer(container);
+                if (player) {
+                    this.executePlay(player, button, container);
+                } else {
+                    showToast('⚠️ Player failed to start. Please wait...');
+                }
+            }, 800);
             return;
         }
 
+        this.executePlay(player, button, container);
+    },
+
+    executePlay: function (player, button, container) {
         try {
             const state = player.getPlayerState();
             button.classList.add('pulse-orange');
             setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-            if (state === 1) {
+            if (state === 1) { // Playing
                 player.pauseVideo();
                 this.updatePlayButtonIcon(container, false);
             } else {
@@ -122,7 +165,9 @@ window.customVideoControls = {
                 this.updatePlayButtonIcon(container, true);
             }
         } catch (error) {
-            console.error('Play/Pause failed:', error);
+            console.error('[YouTube] Play/Pause action failed:', error);
+            // If it failed, try to re-init
+            initializeAllYouTubePlayers();
         }
     },
 

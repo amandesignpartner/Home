@@ -1361,13 +1361,6 @@ function openPopup(id, isBack = false, options = {}) {
             document.dispatchEvent(new CustomEvent('popupOpened', {
                 detail: { popupId: id }
             }));
-
-            // Also directly call initialization if function exists
-            if (window.initializeAllYouTubePlayers) {
-                setTimeout(() => {
-                    window.initializeAllYouTubePlayers();
-                }, 500);
-            }
         }
 
         // Keep Plyr for other video content if needed
