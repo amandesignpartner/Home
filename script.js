@@ -1,5 +1,5 @@
 // Configuration: Replace with your deployed Google Apps Script URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfrI_oZch3pgHtG-7FyBwxyS8qxO-DC0sHyIP6e84gGJ3MhFGogumI9bl8xpb69fe-/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwonzNCFpItTx7IiJeAKER2VbwFs3aH8z3QnwCUNEBilfzbbdmkp6XQcGafBo1C-bi/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -1181,7 +1181,7 @@ window.handleVideoAction = function (action, event, btnElement) {
                 controls: ['play-large', 'play', 'mute', 'volume', 'pip'],
                 seekTime: 5,
                 youtube: {
-                    noCookie: false,
+                    noCookie: true,
                     rel: 0,
                     showinfo: 0,
                     iv_load_policy: 3,
@@ -1939,20 +1939,20 @@ document.addEventListener('submit', async (e) => {
             // --- Step 4: Submit to Google Apps Script ---
             if (submitBtn) submitBtn.textContent = 'Delivering to Aman...';
 
-            if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
+            if (SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
                 throw new Error('Apps Script URL not configured.');
             }
 
+            console.log("SENDING DATA TO GAS:", formData);
+
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors', // Apps Script requires no-cors if not handling OPTIONS
-                headers: { 'Content-Type': 'application/json' },
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' }, // Simple content type for no-cors
                 body: JSON.stringify(formData)
             });
 
-            // Note: with 'no-cors', response.ok is always false and we can't see status
-            // We assume success if no error thrown, or we use a small delay
-            // A better way is to use a standard POST and handle CORS in GAS but 'no-cors' is common for GAS
+            console.log("GAS RESPONSE RECEIVED (no-cors mode)");
 
             if (statusEl) {
                 statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
@@ -2037,12 +2037,15 @@ async function handlePaymentFormSubmit(e) {
             throw new Error('Apps Script URL not configured.');
         }
 
+        console.log("SENDING PAYMENT DATA TO GAS:", formData);
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(formData)
         });
+
+        console.log("PAYMENT RESPONSE RECEIVED");
 
         if (statusEl) {
             statusEl.textContent = '✅ Payment details submitted successfully!';
