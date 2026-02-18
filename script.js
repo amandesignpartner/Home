@@ -1924,7 +1924,8 @@ document.addEventListener('submit', async (e) => {
 
         // --- Step 2: Handle Tawk.to Copy (Internal Message) ---
         try {
-            if (typeof Tawk_API !== 'undefined' && Tawk_API.sendMessage) {
+            const hasTawk = typeof Tawk_API !== 'undefined';
+            if (hasTawk) {
                 const formData = new FormData(form);
                 const getVal = (name) => {
                     const val = formData.get(name);
@@ -1957,17 +1958,34 @@ Exterior Requirements: ${getVal('Exterior_Requirements')}
 Message:
 ${getVal('Message')}
 
-Attachment: ${getVal('attachment')}
+Attachment: ${getVal('Attachment')}
 File Link: ${getVal('File_Link')}
 -----------------------------------------
 `.trim();
 
-                Tawk_API.sendMessage(summaryMessage, function (error) { });
-                Tawk_API.setAttributes({
-                    'name': getVal('Name'),
-                    'email': getVal('Email'),
-                    'phone': getVal('Phone')
-                }, function (error) { });
+                // 1. Set attributes for the visitor
+                if (Tawk_API.setAttributes) {
+                    Tawk_API.setAttributes({
+                        'name': getVal('Name'),
+                        'email': getVal('Email'),
+                        'phone': getVal('Phone')
+                    }, function (error) { });
+                }
+
+                // 2. Add an event (Very reliable)
+                if (Tawk_API.addEvent) {
+                    Tawk_API.addEvent('Project Brief Submitted', {
+                        title: getVal('Project_Title'),
+                        client: getVal('Name')
+                    });
+                }
+
+                // 3. Send the message copy to the agent
+                if (Tawk_API.sendChatMessage) {
+                    Tawk_API.sendChatMessage(summaryMessage, function (error) { });
+                } else if (Tawk_API.sendMessage) {
+                    Tawk_API.sendMessage(summaryMessage, function (error) { });
+                }
             }
         } catch (err) {
             console.warn("Failed to send message copy to chat:", err);
@@ -2016,6 +2034,19 @@ File Link: ${getVal('File_Link')}
         e.preventDefault();
         try {
             const formData = new FormData(form);
+
+            // CRITICAL: Ensure attachment is included if we have it in memory but input is empty
+            const fileInput = form.querySelector('input[type="file"]');
+            if (window._pendingBriefAttachment) {
+                const existingFile = formData.get('Attachment');
+                const isFileEmpty = !existingFile || (existingFile instanceof File && existingFile.size === 0);
+
+                if (isFileEmpty) {
+                    console.log("Manually appending preserved attachment to FormData");
+                    formData.set('Attachment', window._pendingBriefAttachment);
+                }
+            }
+
             // FormSubmit AJAX endpoint
             const response = await fetch('https://formsubmit.co/ajax/aman.designpartner@gmail.com', {
                 method: 'POST',
@@ -2073,10 +2104,12 @@ async function handlePaymentFormSubmit(e) {
 
         // --- Tawk.to Copy for Payment ---
         try {
-            if (typeof Tawk_API !== 'undefined' && Tawk_API.sendMessage) {
+            const hasTawk = typeof Tawk_API !== 'undefined';
+            if (hasTawk) {
                 const getVal = (name) => {
                     const val = formData.get(name);
-                    return (val && val.trim() !== "") ? val.trim() : "Not provided";
+                    if (val instanceof File) return val.name ? `Attached: ${val.name}` : "No file";
+                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
                 };
                 const paymentSummary = `
 💰 --- NEW PAYMENT SUBMISSION ---
@@ -2085,9 +2118,21 @@ Email: ${getVal('email')}
 MTCN/Reference: ${getVal('mtcn')}
 Amount: ${getVal('amount')}
 Project: ${getVal('project_name')}
+Proof: ${getVal('payment_proof')}
 -----------------------------------------
 `.trim();
-                Tawk_API.sendMessage(paymentSummary, function (error) { });
+                if (Tawk_API.sendChatMessage) {
+                    Tawk_API.sendChatMessage(paymentSummary, function (error) { });
+                } else if (Tawk_API.sendMessage) {
+                    Tawk_API.sendMessage(paymentSummary, function (error) { });
+                }
+
+                if (Tawk_API.addEvent) {
+                    Tawk_API.addEvent('Payment Submitted', {
+                        client: getVal('name'),
+                        amount: getVal('amount')
+                    });
+                }
             }
         } catch (e) { console.warn("Tawk error:", e); }
 
@@ -2420,7 +2465,7 @@ function initQuickPickLogic(container) {
 
             // CRITICAL: Preserve actual File object in memory (since localStorage can't store Files)
             const fileInput = container.querySelector('input[type="file"]');
-            if (fileInput && fileInput.files[0]) {
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 window._pendingBriefAttachment = fileInput.files[0];
             }
         };
@@ -2432,6 +2477,24 @@ function initQuickPickLogic(container) {
         const restoreAllData = () => {
             const stored = localStorage.getItem('aman_contact_form_data');
             const data = stored ? JSON.parse(stored) : window.savedContactFormData;
+
+            // CRITICAL: Restore File object FIRST before triggering events
+            const fileInput = container.querySelector('input[type="file"]');
+            if (fileInput && window._pendingBriefAttachment) {
+                try {
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(window._pendingBriefAttachment);
+                    fileInput.files = dataTransfer.files;
+                    console.log("Restored attachment in restoreAllData:", window._pendingBriefAttachment.name);
+
+                    // Update visual feedback if present
+                    const label = fileInput.parentElement.querySelector('.file-name-label');
+                    if (label) label.textContent = "Selected: " + window._pendingBriefAttachment.name;
+                } catch (e) {
+                    console.warn("Failed to restore attachment:", e);
+                }
+            }
+
             if (!data) return;
 
             Object.keys(data).forEach(key => {
@@ -2445,35 +2508,22 @@ function initQuickPickLogic(container) {
                         } else {
                             el.checked = (el.value === value);
                         }
-                    } else {
+                    } else if (el.type !== 'file') {
                         el.value = value;
                     }
 
-                    // Trigger events to update dynamic UI (like budget or billing detail visibility)
+                    // Trigger events to update dynamic UI
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                     el.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    // Explicitly call inline onchange if present (as dispatchEvent doesn't always trigger it)
                     if (typeof el.onchange === 'function') {
                         el.onchange({ target: el });
                     }
                 });
             });
 
-            // Ensure all dynamic sections are updated based on restored values
-            setTimeout(updateVisibility, 0);
-
-            // CRITICAL: Restore File object if we have one in memory
-            const fileInput = container.querySelector('input[type="file"]');
-            if (fileInput && window._pendingBriefAttachment) {
-                try {
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(window._pendingBriefAttachment);
-                    fileInput.files = dataTransfer.files;
-                } catch (e) {
-                    console.warn("Failed to restore attachment:", e);
-                }
-            }
+            // Ensure sections are visible
+            setTimeout(updateVisibility, 10);
         };
 
         // Helper to toggle input visibility
@@ -2514,6 +2564,16 @@ function initQuickPickLogic(container) {
         // Attach listener to ALL inputs in the container
         const allInputs = container.querySelectorAll('input, select, textarea');
         allInputs.forEach(inp => {
+            // Special handling for file input visual feedback
+            if (inp.type === 'file') {
+                inp.addEventListener('change', () => {
+                    const label = inp.parentElement.querySelector('.file-name-label');
+                    if (label) {
+                        label.textContent = inp.files.length > 0 ? "Selected: " + inp.files[0].name : "";
+                    }
+                });
+            }
+
             // Save on change
             inp.addEventListener('change', () => {
                 updateVisibility();
@@ -2534,13 +2594,8 @@ function initQuickPickLogic(container) {
             }
         });
 
-        // Initial restoration
+        // Initial setup
         restoreAllData();
-
-        // Initial restoration
-        restoreAllData();
-
-        // Initial check
         updateVisibility();
     } catch (err) {
         console.error("Error in Quick Pick Logic:", err);
