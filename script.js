@@ -1834,7 +1834,95 @@ document.addEventListener('submit', async (e) => {
             submitBtn.textContent = 'Sending...';
         }
 
-        // --- Step 1: Handle Tawk.to Copy (Internal Message) ---
+        // --- Step 1: Collect Dynamic "Quick Pick" Data ---
+        const qpContainer = form.closest('.popup-content')?.querySelector('.quick-pickup-container');
+        if (qpContainer) {
+            // Collect selected services
+            const selectedServices = [];
+            const serviceCheckboxes = qpContainer.querySelectorAll('input[name="Services[]"]:checked');
+            serviceCheckboxes.forEach(checkbox => {
+                if (checkbox.value === 'Other') {
+                    const otherInput = qpContainer.querySelector('input[name="Other_Service"]');
+                    if (otherInput && otherInput.value.trim()) {
+                        selectedServices.push('Other Service: ' + otherInput.value.trim());
+                    }
+                } else if (checkbox.value === '2D Architecture Concept Plan') {
+                    let serviceName = checkbox.value;
+                    const conceptDetails = qpContainer.querySelector('#conceptPlanDetails');
+                    if (conceptDetails) {
+                        const subOptions = conceptDetails.querySelectorAll('input[name="Concept_Details[]"]:checked');
+                        if (subOptions.length > 0) {
+                            const details = Array.from(subOptions).map(opt => opt.value).join(', ');
+                            serviceName += ` (${details})`;
+                        }
+                    }
+                    selectedServices.push(serviceName);
+                } else {
+                    selectedServices.push(checkbox.value);
+                }
+            });
+
+            // Collect Work Type
+            const workTypeSelect = qpContainer.querySelector('#workTypeSelect');
+            const workType = workTypeSelect ? workTypeSelect.value : '';
+
+            // Collect Interior Items
+            const selectedInterior = [];
+            if (workType === 'Interior only' || workType === 'Interior and Exterior both') {
+                const interiorCheckboxes = qpContainer.querySelectorAll('input[name="Interior_Items[]"]:checked');
+                interiorCheckboxes.forEach(checkbox => {
+                    if (checkbox.value === 'Other') {
+                        const customInput = qpContainer.querySelector('input[name="Interior_Custom"]');
+                        if (customInput && customInput.value.trim()) {
+                            selectedInterior.push('Other Interior: ' + customInput.value.trim());
+                        }
+                    } else {
+                        selectedInterior.push(checkbox.value);
+                    }
+                });
+            }
+
+            // Collect Exterior Items
+            const selectedExterior = [];
+            if (workType === 'Exterior only' || workType === 'Interior and Exterior both') {
+                const exteriorCheckboxes = qpContainer.querySelectorAll('input[name="Exterior_Items[]"]:checked');
+                exteriorCheckboxes.forEach(checkbox => {
+                    if (checkbox.value === 'Other') {
+                        const customInput = qpContainer.querySelector('input[name="Exterior_Custom"]');
+                        if (customInput && customInput.value.trim()) {
+                            selectedExterior.push('Other Exterior: ' + customInput.value.trim());
+                        }
+                    } else {
+                        selectedExterior.push(checkbox.value);
+                    }
+                });
+            }
+
+            // Collect Billing Type (directly from form radios)
+            const billingRadio = form.querySelector('input[name="Billing_Type"]:checked');
+            const billingType = billingRadio ? billingRadio.value : '';
+
+            // Helper to add/update hidden field
+            const updateHidden = (name, value) => {
+                let field = form.querySelector(`input[name="${name}"].quick-pick-hidden`);
+                if (!field) {
+                    field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = name;
+                    field.className = 'quick-pick-hidden';
+                    form.appendChild(field);
+                }
+                field.value = value || '';
+            };
+
+            updateHidden('Quick_Pick_Services', selectedServices.join(', '));
+            updateHidden('Work_Type', workType);
+            updateHidden('Interior_Requirements', selectedInterior.join(', '));
+            updateHidden('Exterior_Requirements', selectedExterior.join(', '));
+            // No need for a hidden Billing_Type field as it's already a radio in the form
+        }
+
+        // --- Step 2: Handle Tawk.to Copy (Internal Message) ---
         try {
             if (typeof Tawk_API !== 'undefined' && Tawk_API.sendMessage) {
                 const formData = new FormData(form);
@@ -1869,7 +1957,7 @@ Exterior Requirements: ${getVal('Exterior_Requirements')}
 Message:
 ${getVal('Message')}
 
-Attachment: ${getVal('Attachment')}
+Attachment: ${getVal('attachment')}
 File Link: ${getVal('File_Link')}
 -----------------------------------------
 `.trim();
@@ -1885,7 +1973,7 @@ File Link: ${getVal('File_Link')}
             console.warn("Failed to send message copy to chat:", err);
         }
 
-        // --- Step 2: Handle Protocol Check (Better Fallback for local files) ---
+        // --- Step 3: Handle Protocol Check (Better Fallback for local files) ---
         if (window.location.protocol === 'file:') {
             e.preventDefault();
             if (statusEl) {
@@ -1903,12 +1991,17 @@ File Link: ${getVal('File_Link')}
                         const val = el ? el.value : "";
                         return (val && val.trim() !== "") ? val.trim() : "Not provided";
                     };
+                    const getHidden = (name) => {
+                        const el = form.querySelector(`input[name="${name}"]`);
+                        return el ? el.value : "None";
+                    };
+
                     let budget = getVal('Budget');
                     if (budget === 'custom') budget = getVal('Budget_Custom');
                     let timeline = getVal('Timeline');
                     if (timeline === 'custom') timeline = getVal('Timeline_Custom');
 
-                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Focus:* ${getVal('Work_Type')}\n*Services:* ${getVal('Quick_Pick_Services')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
+                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Services:* ${getHidden('Quick_Pick_Services')}\n*Focus:* ${getHidden('Work_Type')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
                     window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
                 };
             }
@@ -1919,7 +2012,7 @@ File Link: ${getVal('File_Link')}
             return;
         }
 
-        // --- Step 3: AJAX Submit to FormSubmit.co ---
+        // --- Step 4: AJAX Submit to FormSubmit.co ---
         e.preventDefault();
         try {
             const formData = new FormData(form);
@@ -1935,6 +2028,11 @@ File Link: ${getVal('File_Link')}
                     statusEl.style.color = '#4ade80';
                 }
                 form.reset();
+                // Clear saved form data on successful submission
+                window.savedContactFormData = null;
+                window._pendingBriefAttachment = null;
+                localStorage.removeItem('aman_contact_form_data');
+
                 setTimeout(() => {
                     // Redirect to ?sent=true which is handled by checkFormSuccess()
                     const currentUrl = new URL(window.location.href);
@@ -2319,6 +2417,12 @@ function initQuickPickLogic(container) {
             // Persist to both memory and localStorage for maximum safety
             window.savedContactFormData = data;
             localStorage.setItem('aman_contact_form_data', JSON.stringify(data));
+
+            // CRITICAL: Preserve actual File object in memory (since localStorage can't store Files)
+            const fileInput = container.querySelector('input[type="file"]');
+            if (fileInput && fileInput.files[0]) {
+                window._pendingBriefAttachment = fileInput.files[0];
+            }
         };
 
         // Expose save function globally while the brief is open
@@ -2358,6 +2462,18 @@ function initQuickPickLogic(container) {
 
             // Ensure all dynamic sections are updated based on restored values
             setTimeout(updateVisibility, 0);
+
+            // CRITICAL: Restore File object if we have one in memory
+            const fileInput = container.querySelector('input[type="file"]');
+            if (fileInput && window._pendingBriefAttachment) {
+                try {
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(window._pendingBriefAttachment);
+                    fileInput.files = dataTransfer.files;
+                } catch (e) {
+                    console.warn("Failed to restore attachment:", e);
+                }
+            }
         };
 
         // Helper to toggle input visibility
@@ -2421,97 +2537,8 @@ function initQuickPickLogic(container) {
         // Initial restoration
         restoreAllData();
 
-        // Form submission - ensure Quick Pick data is included
-        if (contactForm) {
-            contactForm.addEventListener('submit', function (e) {
-                // Collect selected services
-                const selectedServices = [];
-                const serviceCheckboxes = qpContainer.querySelectorAll('input[name="Services[]"]:checked');
-                serviceCheckboxes.forEach(checkbox => {
-                    if (checkbox.value === 'Other') {
-                        const parentItem = checkbox.closest('.qp-option-item');
-                        const otherInput = parentItem.querySelector('.qp-other-input');
-                        if (otherInput && otherInput.value.trim()) {
-                            selectedServices.push('Other Service: ' + otherInput.value.trim());
-                        }
-                    } else {
-                        let serviceName = checkbox.value;
-                        // If it's the concept plan, check if sub-options are selected
-                        if (serviceName === '2D Architecture Concept Plan' && conceptPlanDetails) {
-                            const subOptions = conceptPlanDetails.querySelectorAll('input:checked');
-                            if (subOptions.length > 0) {
-                                const details = Array.from(subOptions).map(opt => opt.value).join(', ');
-                                serviceName += ` (${details})`;
-                            }
-                        }
-                        selectedServices.push(serviceName);
-                    }
-                });
-
-                // Collect Work Type
-                const workType = workTypeSelect ? workTypeSelect.value : '';
-
-                // Collect Interior Items
-                const selectedInterior = [];
-                if (interiorChecklist && interiorChecklist.style.display !== 'none') {
-                    const interiorCheckboxes = interiorChecklist.querySelectorAll('input[name="Interior_Items[]"]:checked');
-                    interiorCheckboxes.forEach(checkbox => {
-                        if (checkbox.value === 'Other') {
-                            const customInput = interiorChecklist.querySelector('input[name="interior_custom"]');
-                            if (customInput && customInput.value.trim()) {
-                                selectedInterior.push('Other Interior: ' + customInput.value.trim());
-                            }
-                        } else {
-                            selectedInterior.push(checkbox.value);
-                        }
-                    });
-                }
-
-                // Collect Exterior Items
-                const selectedExterior = [];
-                if (exteriorChecklist && exteriorChecklist.style.display !== 'none') {
-                    const exteriorCheckboxes = exteriorChecklist.querySelectorAll('input[name="Exterior_Items[]"]:checked');
-                    exteriorCheckboxes.forEach(checkbox => {
-                        if (checkbox.value === 'Other') {
-                            const customInput = exteriorChecklist.querySelector('input[name="exterior_custom"]');
-                            if (customInput && customInput.value.trim()) {
-                                selectedExterior.push('Other Exterior: ' + customInput.value.trim());
-                            }
-                        } else {
-                            selectedExterior.push(checkbox.value);
-                        }
-                    });
-                }
-
-                // Collect Billing Type (using PascalCase name)
-                const billingRadio = container.querySelector('input[name="Billing_Type"]:checked');
-                const billingType = billingRadio ? billingRadio.value : '';
-
-                // Create hidden fields
-                const existingFields = contactForm.querySelectorAll('.quick-pick-hidden');
-                existingFields.forEach(field => field.remove());
-
-                const addHidden = (name, value) => {
-                    if (!value) return;
-                    const field = document.createElement('input');
-                    field.type = 'hidden';
-                    field.name = name;
-                    field.value = value;
-                    field.className = 'quick-pick-hidden';
-                    contactForm.appendChild(field);
-                };
-
-                addHidden('Quick_Pick_Services', selectedServices.join(', '));
-                addHidden('Work_Type', workType);
-                addHidden('Interior_Requirements', selectedInterior.join(', '));
-                addHidden('Exterior_Requirements', selectedExterior.join(', '));
-                addHidden('Billing_Type', billingType);
-
-                // Clear saved form data on successful submission
-                window.savedContactFormData = null;
-                localStorage.removeItem('aman_contact_form_data');
-            });
-        }
+        // Initial restoration
+        restoreAllData();
 
         // Initial check
         updateVisibility();
