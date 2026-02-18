@@ -2968,18 +2968,39 @@ function init3DComparisonSlider(container) {
 
 // ===== Fullscreen Functions for Comparison Slider =====
 function toggleComparisonFullscreen() {
+    const container = document.querySelector('.comparison-slider-container');
     const wrapper = document.querySelector('.comparison-wrapper');
+    const gridView = document.querySelector('#comparison-grid-view');
+    const toggleBtn = document.querySelector('#comparison-view-toggle');
     const closeBtn = document.querySelector('.comparison-close-btn');
     const fullscreenBtn = document.querySelector('.comparison-fullscreen-btn');
 
-    if (!wrapper) return;
+    if (!container) return;
 
     if (!document.fullscreenElement) {
         // Enter fullscreen
-        wrapper.requestFullscreen().then(() => {
-            wrapper.style.height = '100vh';
-            wrapper.style.borderRadius = '0';
-            if (closeBtn) closeBtn.style.display = 'flex';
+        container.requestFullscreen().then(() => {
+            container.style.maxWidth = 'none';
+            container.style.height = '100vh';
+            container.style.backgroundColor = '#000';
+            container.style.padding = '20px';
+
+            if (wrapper) {
+                wrapper.style.height = 'calc(100vh - 140px)';
+                wrapper.style.borderRadius = '0';
+            }
+            if (gridView) {
+                gridView.style.height = 'calc(100vh - 140px)';
+                gridView.style.borderRadius = '0';
+            }
+            if (toggleBtn) {
+                toggleBtn.style.right = '20px';
+            }
+            if (closeBtn) {
+                closeBtn.style.display = 'flex';
+                closeBtn.style.right = '20px';
+                closeBtn.style.top = '20px';
+            }
             if (fullscreenBtn) fullscreenBtn.style.display = 'none';
         }).catch(err => {
             console.log('Error entering fullscreen:', err);
@@ -2990,36 +3011,80 @@ function toggleComparisonFullscreen() {
 }
 
 function exitComparisonFullscreen() {
+    const container = document.querySelector('.comparison-slider-container');
     const wrapper = document.querySelector('.comparison-wrapper');
+    const gridView = document.querySelector('#comparison-grid-view');
+    const toggleBtn = document.querySelector('#comparison-view-toggle');
     const closeBtn = document.querySelector('.comparison-close-btn');
     const fullscreenBtn = document.querySelector('.comparison-fullscreen-btn');
 
     if (document.fullscreenElement) {
         document.exitFullscreen().then(() => {
+            if (container) {
+                container.style.maxWidth = '1400px';
+                container.style.height = 'auto';
+                container.style.backgroundColor = 'transparent';
+                container.style.padding = '0';
+            }
             if (wrapper) {
                 wrapper.style.height = '600px';
                 wrapper.style.borderRadius = '16px';
             }
-            if (closeBtn) closeBtn.style.display = 'none';
-            if (fullscreenBtn) fullscreenBtn.style.display = 'flex';
+            if (gridView) {
+                gridView.style.height = '600px';
+                gridView.style.borderRadius = '16px';
+            }
+            if (toggleBtn) {
+                toggleBtn.style.right = '-50px';
+            }
+            if (closeBtn) {
+                closeBtn.style.display = 'none';
+                closeBtn.style.right = '20px';
+                closeBtn.style.top = '20px';
+            }
+            if (fullscreenBtn) {
+                fullscreenBtn.style.display = 'flex';
+                fullscreenBtn.style.right = '-50px';
+            }
         });
     }
 }
 
 // Listen for fullscreen changes (e.g., ESC key pressed)
 document.addEventListener('fullscreenchange', () => {
+    const container = document.querySelector('.comparison-slider-container');
     const wrapper = document.querySelector('.comparison-wrapper');
+    const gridView = document.querySelector('#comparison-grid-view');
+    const toggleBtn = document.querySelector('#comparison-view-toggle');
     const closeBtn = document.querySelector('.comparison-close-btn');
     const fullscreenBtn = document.querySelector('.comparison-fullscreen-btn');
 
     if (!document.fullscreenElement) {
         // Exited fullscreen
+        if (container) {
+            container.style.maxWidth = '1400px';
+            container.style.height = 'auto';
+            container.style.backgroundColor = 'transparent';
+            container.style.padding = '0';
+        }
         if (wrapper) {
             wrapper.style.height = '600px';
             wrapper.style.borderRadius = '16px';
         }
-        if (closeBtn) closeBtn.style.display = 'none';
-        if (fullscreenBtn) fullscreenBtn.style.display = 'flex';
+        if (gridView) {
+            gridView.style.height = '600px';
+            gridView.style.borderRadius = '16px';
+        }
+        if (toggleBtn) {
+            toggleBtn.style.right = '-50px';
+        }
+        if (closeBtn) {
+            closeBtn.style.display = 'none';
+        }
+        if (fullscreenBtn) {
+            fullscreenBtn.style.display = 'flex';
+            fullscreenBtn.style.right = '-50px';
+        }
     }
 });
 
