@@ -1,4 +1,4 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyAQKKor-6BcgFcgRfqFL4W5H4jaN659EhzFDrVPoOWHkOKfdJVZyGgFVocANebsH3/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzvVyUqlU2qmlC8qmIo7uHUbr42i51vqe_bDAynIdFLmD7UaV8dFPnARgbLICCyQH4l/exec';
 const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbxl0gQMuZ760zWPkBfzkeZt7qZrCscmUHtQNm8yrQhzbmeC3Amylg8NUhVF8cNMf4CCGQ/exec';
 
 // Helper to convert File object to Base64
