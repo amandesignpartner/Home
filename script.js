@@ -1,5 +1,5 @@
 // Configuration: Replace with your deployed Google Apps Script URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwonzNCFpItTx7IiJeAKER2VbwFs3aH8z3QnwCUNEBilfzbbdmkp6XQcGafBo1C-bi/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyoeDcbkLx7htDq7Xd32pXMCzUzja_sftPaDs5E0OItwCkKZ18lSqx9pNgcsx3i1-Sbg/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -1943,16 +1943,22 @@ document.addEventListener('submit', async (e) => {
                 throw new Error('Apps Script URL not configured.');
             }
 
-            console.log("SENDING DATA TO GAS:", formData);
+            // Local testing warning
+            if (window.location.protocol === 'file:') {
+                console.warn("⚠️ Testing from a local file. Some browsers may block this submission.");
+            }
 
+            console.log("SENDING DATA TO GAS:", formData.Project_Title);
+
+            // Using simple text/plain to bypass CORS "pre-flight" checks completely
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' }, // Simple content type for no-cors
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(formData)
             });
 
-            console.log("GAS RESPONSE RECEIVED (no-cors mode)");
+            console.log("GAS REQUEST DISPATCHED");
 
             if (statusEl) {
                 statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
@@ -2037,15 +2043,15 @@ async function handlePaymentFormSubmit(e) {
             throw new Error('Apps Script URL not configured.');
         }
 
-        console.log("SENDING PAYMENT DATA TO GAS:", formData);
+        console.log("SENDING PAYMENT DATA TO GAS:", formData.name);
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(formData)
         });
 
-        console.log("PAYMENT RESPONSE RECEIVED");
+        console.log("PAYMENT REQUEST DISPATCHED");
 
         if (statusEl) {
             statusEl.textContent = '✅ Payment details submitted successfully!';
