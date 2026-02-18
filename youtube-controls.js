@@ -192,33 +192,6 @@ window.customVideoControls = {
         }
     },
 
-    mute: function (button) {
-        const container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content, .youtube-embed');
-        const player = getPlayerForContainer(container);
-
-        if (!player) {
-            showToast('⚠️ Video player not ready. Please wait...');
-            return;
-        }
-
-        try {
-            button.classList.add('pulse-orange');
-            setTimeout(() => button.classList.remove('pulse-orange'), 600);
-
-            if (player.isMuted() || player.getVolume() === 0) {
-                player.unMute();
-                player.setVolume(100);
-                this.updateMuteButtonIcon(container, false);
-                showToast('🔊 Volume: 100%');
-            } else {
-                player.mute();
-                this.updateMuteButtonIcon(container, true);
-                showToast('🔇 Muted');
-            }
-        } catch (error) {
-            console.error('Mute toggle failed:', error);
-        }
-    },
 
     volume: function (button) {
         let container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content, .youtube-embed');
@@ -245,19 +218,14 @@ window.customVideoControls = {
 
         try {
             const currentVolume = player.isMuted() ? 0 : player.getVolume();
-            const levels = [
-                { val: 100, label: '100% (Max)', icon: '🔊' },
-                { val: 75, label: '75% (High)', icon: '🔉' },
-                { val: 50, label: '50% (Medium)', icon: '🔉' },
-                { val: 25, label: '25% (Low)', icon: '🔈' },
-                { val: 0, label: '0% (Muted)', icon: '🔇' }
-            ];
 
             const dropdown = document.createElement('div');
             dropdown.className = 'volume-dropdown';
 
             const buttonRect = button.getBoundingClientRect();
-            const dropdownHeight = (levels.length * 44) + 16;
+            // Taller for vertical slider
+            const dropdownHeight = 180;
+            const dropdownWidth = 46;
 
             let topPosition = buttonRect.top - dropdownHeight - 10;
             if (topPosition < 10) topPosition = buttonRect.bottom + 10;
@@ -267,79 +235,148 @@ window.customVideoControls = {
                 background: rgba(15, 15, 15, 0.98);
                 backdrop-filter: blur(25px);
                 border: 1px solid rgba(210, 105, 30, 0.4);
-                border-radius: 12px;
-                padding: 10px 0;
-                min-width: 160px;
+                border-radius: 20px;
+                padding: 15px 0;
+                width: ${dropdownWidth}px;
+                height: ${dropdownHeight}px;
                 z-index: 2147483647;
                 box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
-                font-family: 'Raleway', sans-serif;
-                left: ${Math.max(10, Math.min(buttonRect.left, window.innerWidth - 170))}px;
+                left: ${buttonRect.left + (buttonRect.width / 2) - (dropdownWidth / 2)}px;
                 top: ${topPosition}px;
                 animation: qualityFadeIn 0.2s ease-out;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-between;
             `;
 
-            levels.forEach(level => {
-                const item = document.createElement('div');
-                const isActive = Math.abs(currentVolume - level.val) < 5; // Allow small rounding margin
+            // Volume Icon at top of slider
+            const iconDiv = document.createElement('div');
+            iconDiv.style.color = '#fff';
+            iconDiv.style.fontSize = '18px';
+            iconDiv.style.marginBottom = '8px';
+            iconDiv.innerHTML = currentVolume === 0 ? '🔇' : (currentVolume < 50 ? '🔈' : '🔊');
 
-                item.style.cssText = `
-                    padding: 12px 20px;
-                    cursor: pointer;
-                    color: ${isActive ? '#D2691E' : '#fff'};
-                    font-size: 14px;
-                    font-weight: ${isActive ? '700' : '500'};
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    transition: all 0.2s ease;
-                    background: ${isActive ? 'rgba(210, 105, 30, 0.15)' : 'transparent'};
-                `;
+            // Slider Wrapper (for vertical layout)
+            const sliderWrapper = document.createElement('div');
+            sliderWrapper.style.cssText = `
+                height: 120px;
+                width: 4px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 2px;
+                position: relative;
+                cursor: pointer;
+            `;
 
-                item.innerHTML = `
-                    <span style="display: flex; align-items: center; gap: 10px;">
-                        <span style="width: 20px; text-align: center;">${level.icon}</span>
-                        ${level.label}
-                    </span>
-                    ${isActive ? '<span style="color: #D2691E; font-size: 18px;">✓</span>' : ''}
-                `;
+            const fillBar = document.createElement('div');
+            fillBar.style.cssText = `
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: ${currentVolume}%;
+                background: #D2691E;
+                border-radius: 2px;
+                transition: height 0.1s ease;
+            `;
 
-                item.onmouseenter = () => { if (!isActive) { item.style.background = 'rgba(255, 255, 255, 0.1)'; item.style.color = '#D2691E'; } };
-                item.onmouseleave = () => { if (!isActive) { item.style.background = 'transparent'; item.style.color = '#fff'; } };
+            const sliderKnob = document.createElement('div');
+            sliderKnob.style.cssText = `
+                position: absolute;
+                left: 50%;
+                bottom: ${currentVolume}%;
+                transform: translate(-50%, 50%);
+                width: 12px;
+                height: 12px;
+                background: #fff;
+                border-radius: 50%;
+                box-shadow: 0 0 10px rgba(210, 105, 30, 0.8);
+                transition: bottom 0.1s ease;
+            `;
 
-                item.onclick = () => {
-                    try {
-                        if (level.val === 0) {
-                            player.mute();
-                            if (isPiP) {
-                                const pipVolIcon = document.getElementById('pip-volume-icon');
-                                if (pipVolIcon) pipVolIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
-                            } else {
-                                this.updateMuteButtonIcon(container, true);
-                            }
-                        } else {
-                            player.unMute();
-                            player.setVolume(level.val);
-                            if (isPiP) {
-                                const pipVolIcon = document.getElementById('pip-volume-icon');
-                                if (pipVolIcon) pipVolIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>';
-                            } else {
-                                this.updateMuteButtonIcon(container, false);
-                            }
-                        }
-                        showToast(`🔊 Volume: ${level.label}`);
-                        dropdown.remove();
-                    } catch (err) {
-                        console.error('Volume adjust failed:', err);
+            sliderWrapper.appendChild(fillBar);
+            sliderWrapper.appendChild(sliderKnob);
+
+            const updateVolume = (e) => {
+                const rect = sliderWrapper.getBoundingClientRect();
+                let percentage = (rect.bottom - e.clientY) / rect.height;
+                percentage = Math.max(0, Math.min(1, percentage));
+                const vol = Math.round(percentage * 100);
+
+                player.unMute();
+                player.setVolume(vol);
+                if (vol === 0) player.mute();
+
+                fillBar.style.height = vol + '%';
+                sliderKnob.style.bottom = vol + '%';
+                iconDiv.innerHTML = vol === 0 ? '🔇' : (vol < 50 ? '🔈' : '🔊');
+
+                // Update main UI button icon
+                const volBtnSvg = button.querySelector('svg');
+                if (volBtnSvg) {
+                    if (vol === 0) {
+                        // Muted icon
+                        volBtnSvg.innerHTML = `
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                            <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2"></line>
+                            <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2"></line>
+                        `;
+                    } else {
+                        // Active icon
+                        volBtnSvg.innerHTML = `
+                            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            ${vol > 50 ? '<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>' : ''}
+                        `;
                     }
-                };
+                }
 
-                dropdown.appendChild(item);
+                // Update UI icons for PiP
+                if (isPiP) {
+                    const pipVolIcon = document.getElementById('pip-volume-icon');
+                    if (pipVolIcon) {
+                        if (vol === 0) pipVolIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+                        else pipVolIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>';
+                    }
+                }
+            };
+
+            let isDraggingSlider = false;
+            sliderWrapper.onmousedown = (e) => {
+                isDraggingSlider = true;
+                updateVolume(e);
+                e.preventDefault();
+            };
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingSlider) updateVolume(e);
             });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingSlider = false;
+            });
+
+            dropdown.appendChild(iconDiv);
+            dropdown.appendChild(sliderWrapper);
+
+            // Volume % label at bottom
+            const percentLabel = document.createElement('div');
+            percentLabel.style.cssText = `
+                color: rgba(255,255,255,0.6);
+                font-size: 10px;
+                margin-top: 5px;
+            `;
+            const updatePercentLabel = () => {
+                const vol = player.isMuted() ? 0 : player.getVolume();
+                percentLabel.textContent = vol + '%';
+            };
+            setInterval(updatePercentLabel, 200);
+            dropdown.appendChild(percentLabel);
 
             document.body.appendChild(dropdown);
 
             const closeDropdown = (e) => {
-                if (!dropdown.contains(e.target) && e.target !== button) {
+                if (!isDraggingSlider && !dropdown.contains(e.target) && e.target !== button) {
                     dropdown.remove();
                     document.removeEventListener('click', closeDropdown);
                 }
@@ -348,7 +385,7 @@ window.customVideoControls = {
 
         } catch (error) {
             console.error('[YouTube] Volume menu error:', error);
-            showToast('⚠️ Unable to load volume settings');
+            showToast('⚠️ Unable to load volume bar');
         }
     },
 
@@ -552,21 +589,6 @@ window.customVideoControls = {
         }
     },
 
-    updateMuteButtonIcon: function (container, isMuted) {
-        if (!container) return;
-        const soundOn = container.querySelector('.sound-on');
-        const soundOff = container.querySelector('.sound-off');
-
-        if (soundOn && soundOff) {
-            if (isMuted) {
-                soundOn.style.display = 'none';
-                soundOff.style.display = 'block';
-            } else {
-                soundOn.style.display = 'block';
-                soundOff.style.display = 'none';
-            }
-        }
-    },
 
     createPiPPlayer: function (videoId, startTime) {
         const container = document.createElement('div');
