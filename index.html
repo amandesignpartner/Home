@@ -3224,10 +3224,21 @@
                         <label
                             style="display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 12px;">Attach
                             PDF or File (Max 10MB):</label>
-                        <input type="file" name="Attachment" id="attachmentInput"
+                        <input type="file" name="attachment" id="attachmentInput"
                             style="color: var(--text-light); font-size: 12px;" accept="image/*,.pdf,.doc,.docx,.zip">
                         <span class="file-name-label"
                             style="display: block; margin-top: 5px; font-size: 11px; color: var(--primary-orange); font-weight: 500;"></span>
+
+                        <!-- File Upload Progress Bar -->
+                        <div id="briefUploadProgressContainer"
+                            style="display: none; margin-top: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; height: 6px; overflow: hidden;">
+                            <div id="briefUploadProgressBar"
+                                style="width: 0%; height: 100%; background: var(--primary-orange); transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                        <span id="briefUploadStatus"
+                            style="display: none; font-size: 10px; color: var(--text-muted); margin-top: 4px;">Uploading:
+                            0%</span>
                     </div>
 
                     <div class="form-group"

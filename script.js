@@ -1958,7 +1958,7 @@ Exterior Requirements: ${getVal('Exterior_Requirements')}
 Message:
 ${getVal('Message')}
 
-Attachment: ${getVal('Attachment')}
+Attachment: ${getVal('attachment')}
 File Link: ${getVal('File_Link')}
 -----------------------------------------
 `.trim();
@@ -2030,55 +2030,89 @@ File Link: ${getVal('File_Link')}
             return;
         }
 
-        // --- Step 4: AJAX Submit to FormSubmit.co ---
+        // --- Step 4: AJAX Submit to FormSubmit.co (with Progress) ---
         e.preventDefault();
         try {
             const formData = new FormData(form);
 
             // CRITICAL: Ensure attachment is included if we have it in memory but input is empty
-            const fileInput = form.querySelector('input[type="file"]');
             if (window._pendingBriefAttachment) {
-                const existingFile = formData.get('Attachment');
+                const existingFile = formData.get('attachment');
                 const isFileEmpty = !existingFile || (existingFile instanceof File && existingFile.size === 0);
 
                 if (isFileEmpty) {
                     console.log("Manually appending preserved attachment to FormData");
-                    formData.set('Attachment', window._pendingBriefAttachment);
+                    formData.set('attachment', window._pendingBriefAttachment);
                 }
             }
 
-            // FormSubmit AJAX endpoint
-            const response = await fetch('https://formsubmit.co/ajax/aman.designpartner@gmail.com', {
-                method: 'POST',
-                body: formData
-            });
+            // Progress UI elements
+            const progressContainer = document.getElementById('briefUploadProgressContainer');
+            const progressBar = document.getElementById('briefUploadProgressBar');
+            const progressStatus = document.getElementById('briefUploadStatus');
+            const hasFile = (formData.get('attachment') instanceof File && formData.get('attachment').size > 0);
 
-            if (response.ok) {
+            if (hasFile && progressContainer) {
+                progressContainer.style.display = 'block';
+                progressStatus.style.display = 'block';
+            }
+
+            // Using XMLHttpRequest for upload progress
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://formsubmit.co/ajax/aman.designpartner@gmail.com', true);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && progressBar && progressStatus) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressStatus.textContent = `Uploading: ${percent}%`;
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    if (statusEl) {
+                        statusEl.textContent = '✅ Success! Your brief has been sent.';
+                        statusEl.style.color = '#4ade80';
+                    }
+                    if (progressStatus) progressStatus.textContent = 'Upload Complete 100%';
+
+                    form.reset();
+                    window.savedContactFormData = null;
+                    window._pendingBriefAttachment = null;
+                    localStorage.removeItem('aman_contact_form_data');
+
+                    setTimeout(() => {
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('sent', 'true');
+                        window.location.href = currentUrl.toString();
+                    }, 1500);
+                } else {
+                    handleError(new Error('Status ' + xhr.status));
+                }
+            };
+
+            xhr.onerror = function () {
+                handleError(new Error('Network error during upload'));
+            };
+
+            const handleError = (err) => {
+                console.error("Submission Error:", err);
                 if (statusEl) {
-                    statusEl.textContent = '✅ Success! Your brief has been sent.';
-                    statusEl.style.color = '#4ade80';
+                    statusEl.textContent = '❌ Error: Submission failed. Please try again or use WhatsApp.';
+                    statusEl.style.color = '#ff4d4d';
                 }
-                form.reset();
-                // Clear saved form data on successful submission
-                window.savedContactFormData = null;
-                window._pendingBriefAttachment = null;
-                localStorage.removeItem('aman_contact_form_data');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
+                }
+                if (progressContainer) progressContainer.style.display = 'none';
+            };
 
-                setTimeout(() => {
-                    // Redirect to ?sent=true which is handled by checkFormSuccess()
-                    const currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('sent', 'true');
-                    window.location.href = currentUrl.toString();
-                }, 1500);
-            } else {
-                const result = await response.json();
-                throw new Error(result.message || 'Submission failed');
-            }
+            xhr.send(formData);
+
         } catch (err) {
-            if (statusEl) {
-                statusEl.textContent = '❌ Error: ' + err.message + '. Please use WhatsApp.';
-                statusEl.style.color = '#ff4d4d';
-            }
+            console.error("Form logic error:", err);
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
