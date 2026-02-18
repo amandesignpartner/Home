@@ -3368,7 +3368,7 @@ window.initPlyr = function (container = document) {
         const config = {
             controls: ['play-large', 'play', 'mute', 'volume'],
             seekTime: 5,
-            youtube: { noCookie: false, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
+            youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 },
             tooltips: { controls: false, seek: false },
             displayDuration: false,
             invertTime: false,
