@@ -205,16 +205,150 @@ window.customVideoControls = {
             button.classList.add('pulse-orange');
             setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-            if (player.isMuted()) {
+            if (player.isMuted() || player.getVolume() === 0) {
                 player.unMute();
                 player.setVolume(100);
                 this.updateMuteButtonIcon(container, false);
+                showToast('🔊 Volume: 100%');
             } else {
                 player.mute();
                 this.updateMuteButtonIcon(container, true);
+                showToast('🔇 Muted');
             }
         } catch (error) {
-            console.error('Mute/Unmute failed:', error);
+            console.error('Mute toggle failed:', error);
+        }
+    },
+
+    volume: function (button) {
+        let container = button.closest('.video-gallery-item, .intro-video-embed, .sticky-content, .youtube-embed');
+        let player = getPlayerForContainer(container);
+        let isPiP = false;
+
+        // Handle PiP case
+        if (!player && (button.id === 'pip-volume-btn' || button.closest('#custom-pip-container'))) {
+            player = pipPlayerInstance;
+            container = document.getElementById('custom-pip-container');
+            isPiP = true;
+        }
+
+        if (!player) {
+            showToast('⚠️ Video player not ready. Please wait...');
+            return;
+        }
+
+        button.classList.add('pulse-orange');
+        setTimeout(() => button.classList.remove('pulse-orange'), 600);
+
+        // Remove any existing dropdowns first
+        document.querySelectorAll('.quality-dropdown, .volume-dropdown').forEach(menu => menu.remove());
+
+        try {
+            const currentVolume = player.isMuted() ? 0 : player.getVolume();
+            const levels = [
+                { val: 100, label: '100% (Max)', icon: '🔊' },
+                { val: 75, label: '75% (High)', icon: '🔉' },
+                { val: 50, label: '50% (Medium)', icon: '🔉' },
+                { val: 25, label: '25% (Low)', icon: '🔈' },
+                { val: 0, label: '0% (Muted)', icon: '🔇' }
+            ];
+
+            const dropdown = document.createElement('div');
+            dropdown.className = 'volume-dropdown';
+
+            const buttonRect = button.getBoundingClientRect();
+            const dropdownHeight = (levels.length * 44) + 16;
+
+            let topPosition = buttonRect.top - dropdownHeight - 10;
+            if (topPosition < 10) topPosition = buttonRect.bottom + 10;
+
+            dropdown.style.cssText = `
+                position: fixed;
+                background: rgba(15, 15, 15, 0.98);
+                backdrop-filter: blur(25px);
+                border: 1px solid rgba(210, 105, 30, 0.4);
+                border-radius: 12px;
+                padding: 10px 0;
+                min-width: 160px;
+                z-index: 2147483647;
+                box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7);
+                font-family: 'Raleway', sans-serif;
+                left: ${Math.max(10, Math.min(buttonRect.left, window.innerWidth - 170))}px;
+                top: ${topPosition}px;
+                animation: qualityFadeIn 0.2s ease-out;
+            `;
+
+            levels.forEach(level => {
+                const item = document.createElement('div');
+                const isActive = Math.abs(currentVolume - level.val) < 5; // Allow small rounding margin
+
+                item.style.cssText = `
+                    padding: 12px 20px;
+                    cursor: pointer;
+                    color: ${isActive ? '#D2691E' : '#fff'};
+                    font-size: 14px;
+                    font-weight: ${isActive ? '700' : '500'};
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    transition: all 0.2s ease;
+                    background: ${isActive ? 'rgba(210, 105, 30, 0.15)' : 'transparent'};
+                `;
+
+                item.innerHTML = `
+                    <span style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 20px; text-align: center;">${level.icon}</span>
+                        ${level.label}
+                    </span>
+                    ${isActive ? '<span style="color: #D2691E; font-size: 18px;">✓</span>' : ''}
+                `;
+
+                item.onmouseenter = () => { if (!isActive) { item.style.background = 'rgba(255, 255, 255, 0.1)'; item.style.color = '#D2691E'; } };
+                item.onmouseleave = () => { if (!isActive) { item.style.background = 'transparent'; item.style.color = '#fff'; } };
+
+                item.onclick = () => {
+                    try {
+                        if (level.val === 0) {
+                            player.mute();
+                            if (isPiP) {
+                                const pipVolIcon = document.getElementById('pip-volume-icon');
+                                if (pipVolIcon) pipVolIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+                            } else {
+                                this.updateMuteButtonIcon(container, true);
+                            }
+                        } else {
+                            player.unMute();
+                            player.setVolume(level.val);
+                            if (isPiP) {
+                                const pipVolIcon = document.getElementById('pip-volume-icon');
+                                if (pipVolIcon) pipVolIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>';
+                            } else {
+                                this.updateMuteButtonIcon(container, false);
+                            }
+                        }
+                        showToast(`🔊 Volume: ${level.label}`);
+                        dropdown.remove();
+                    } catch (err) {
+                        console.error('Volume adjust failed:', err);
+                    }
+                };
+
+                dropdown.appendChild(item);
+            });
+
+            document.body.appendChild(dropdown);
+
+            const closeDropdown = (e) => {
+                if (!dropdown.contains(e.target) && e.target !== button) {
+                    dropdown.remove();
+                    document.removeEventListener('click', closeDropdown);
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeDropdown), 100);
+
+        } catch (error) {
+            console.error('[YouTube] Volume menu error:', error);
+            showToast('⚠️ Unable to load volume settings');
         }
     },
 
@@ -273,7 +407,7 @@ window.customVideoControls = {
         button.classList.add('pulse-orange');
         setTimeout(() => button.classList.remove('pulse-orange'), 600);
 
-        document.querySelectorAll('.quality-dropdown').forEach(menu => menu.remove());
+        document.querySelectorAll('.quality-dropdown, .volume-dropdown').forEach(menu => menu.remove());
 
         try {
             const availableQualityLevels = player.getAvailableQualityLevels();
@@ -678,13 +812,7 @@ window.customVideoControls = {
                         forwardBtn.onclick = () => player.seekTo(Math.min(player.getDuration(), player.getCurrentTime() + 10), true);
 
                         volumeBtn.onclick = () => {
-                            if (player.isMuted()) {
-                                player.unMute();
-                                document.getElementById('pip-volume-icon').innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>';
-                            } else {
-                                player.mute();
-                                document.getElementById('pip-volume-icon').innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
-                            }
+                            window.customVideoControls.volume(volumeBtn);
                         };
 
                         fullscreenBtn.onclick = () => {
