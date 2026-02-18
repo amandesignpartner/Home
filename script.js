@@ -1922,16 +1922,7 @@ document.addEventListener('submit', async (e) => {
             // No need for a hidden Billing_Type field as it's already a radio in the form
         }
 
-        // --- Step 2: Build Final Submission Data ---
-        const formData = new FormData();
-        const rawFormData = new FormData(form);
-
-        // 1. Add normal fields
-        for (let [key, value] of rawFormData.entries()) {
-            if (key !== 'attachment') formData.append(key, value);
-        }
-
-        // 2. Add Attachment (ensure it's the LAST field for maximum compatibility)
+        // --- Step 2: Prepare Attachment and Status ---
         let fileToAttach = null;
         const fileInput = form.querySelector('input[type="file"]');
         if (fileInput && fileInput.files[0]) {
@@ -1940,149 +1931,111 @@ document.addEventListener('submit', async (e) => {
             fileToAttach = window._pendingBriefAttachment;
         }
 
-        if (fileToAttach) {
-            formData.append('attachment', fileToAttach);
-        }
-
         // --- Step 3: Handle Tawk.to Copy (Internal Message) ---
         try {
             const tawkApi = window.Tawk_API || Tawk_API;
             if (typeof tawkApi !== 'undefined') {
-                const getVal = (name) => {
-                    const val = formData.get(name);
-                    if (val instanceof File) return val.name ? `Attached: ${val.name} (${Math.round(val.size / 1024)}KB)` : "No file";
-                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
+                const getValFromForm = (name) => {
+                    const el = form.querySelector(`[name="${name}"]`);
+                    return el ? el.value : "";
                 };
 
-                // Use PascalCase names as updated in index.html
-                let budget = getVal('Budget');
-                if (budget === 'custom') budget = getVal('Budget_Custom');
-                let timeline = getVal('Timeline');
-                if (timeline === 'custom') timeline = getVal('Timeline_Custom');
+                const attachmentInfo = fileToAttach ? `✅ Attached: ${fileToAttach.name} (${Math.round(fileToAttach.size / 1024)}KB)` : "❌ No file attached";
+                let budget = getValFromForm('Budget');
+                if (budget === 'custom') budget = getValFromForm('Budget_Custom');
+                let timeline = getValFromForm('Timeline');
+                if (timeline === 'custom') timeline = getValFromForm('Timeline_Custom');
 
                 const summaryMessage = `
 🚀 --- NEW PROJECT BRIEF SUMMARY ---
-Client: ${getVal('Name')}
-Email: ${getVal('Email')}
-Phone: ${getVal('Phone')}
+Client: ${getValFromForm('Name')}
+Email: ${getValFromForm('Email')}
+Phone: ${getValFromForm('Phone')}
 
-Project Title: ${getVal('Project_Title')}
-Billing Type: ${getVal('Billing_Type')}
+Project Title: ${getValFromForm('Project_Title')}
+Billing Type: ${getValFromForm('Billing_Type')}
 Budget: ${budget}
 Timeline: ${timeline}
 
-Quick Pick Services: ${getVal('Quick_Pick_Services')}
-Project Focus: ${getVal('Work_Type')}
-Interior Requirements: ${getVal('Interior_Requirements')}
-Exterior Requirements: ${getVal('Exterior_Requirements')}
+Quick Pick Services: ${getValFromForm('Quick_Pick_Services')}
+Project Focus: ${getValFromForm('Work_Type')}
+Interior Requirements: ${getValFromForm('Interior_Requirements')}
+Exterior Requirements: ${getValFromForm('Exterior_Requirements')}
 
 Message:
-${getVal('Message')}
+${getValFromForm('Message')}
 
-Attachment: ${getVal('attachment')}
-File Link: ${getVal('File_Link')}
+Attachment Status: ${attachmentInfo}
 -----------------------------------------
 `.trim();
 
                 if (tawkApi.maximize) tawkApi.maximize();
-                // 1. Set attributes for the visitor
                 if (tawkApi.setAttributes) {
                     tawkApi.setAttributes({
-                        'name': getVal('Name'),
-                        'email': getVal('Email'),
-                        'phone': getVal('Phone')
+                        'name': getValFromForm('Name'),
+                        'email': getValFromForm('Email'),
+                        'phone': getValFromForm('Phone')
                     }, function (error) { });
                 }
-
-                // 2. Add an event (Very reliable)
                 if (tawkApi.addEvent) {
-                    tawkApi.addEvent('Project Brief Submitted', {
-                        title: getVal('Project_Title'),
-                        client: getVal('Name')
-                    });
+                    tawkApi.addEvent('Project Brief Submitted', { title: getValFromForm('Project_Title') });
                 }
-
-                // 3. Send the message copy to the agent
-                if (tawkApi.sendChatMessage) {
-                    tawkApi.sendChatMessage(summaryMessage, function (error) { });
-                } else if (tawkApi.sendMessage) {
-                    tawkApi.sendMessage(summaryMessage, function (error) { });
-                }
+                if (tawkApi.sendChatMessage) tawkApi.sendChatMessage(summaryMessage);
             }
-        } catch (err) {
-            console.warn("Failed to send message copy to chat:", err);
+        } catch (err) { }
+
+        // --- Step 4: Final Payload Construction (Ordering is Key) ---
+        const finalFormData = new FormData();
+
+        // 1. Add ALL form fields except the attachment first
+        const rawFields = new FormData(form);
+        for (let [key, value] of rawFields.entries()) {
+            if (key !== 'attachment') {
+                finalFormData.append(key, value);
+            }
         }
 
-        // --- Step 4: Protocol Check (WhatsApp Fallback) ---
-        if (window.location.protocol === 'file:') {
-            e.preventDefault();
-            if (statusEl) {
-                statusEl.innerHTML = `⚠️ <strong>Local Testing Mode:</strong> FormSubmit.co requires a live server. <br>
-                    <button id="send-local-whatsapp" class="btn-outline" style="margin-top:10px; border-color:#4ade80; color:#4ade80;">
-                        Submit via WhatsApp Instead
-                    </button>`;
-                statusEl.style.color = '#ff9f43';
+        // 2. Add the User requested status column
+        finalFormData.append('File_Attached_In_Email', fileToAttach ? `YES - File name: ${fileToAttach.name}` : "NO - No file was attached by user");
 
-                document.getElementById('send-local-whatsapp').onclick = (btnE) => {
-                    btnE.preventDefault();
-                    // Get data again just in case (using PascalCase)
-                    const getVal = (name) => {
-                        const val = formData.get(name);
-                        return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
-                    };
-
-                    let budget = getVal('Budget');
-                    if (budget === 'custom') budget = getVal('Budget_Custom');
-                    let timeline = getVal('Timeline');
-                    if (timeline === 'custom') timeline = getVal('Timeline_Custom');
-
-                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getVal('Name')}\n*Email:* ${getVal('Email')}\n*Phone:* ${getVal('Phone')}\n\n*Project Title:* ${getVal('Project_Title')}\n*Billing Type:* ${getVal('Billing_Type')}\n*Budget:* ${budget}\n*Timeline:* ${timeline}\n\n*Services:* ${getVal('Quick_Pick_Services')}\n*Focus:* ${getVal('Work_Type')}\n\n*Message:* ${getVal('Message')}\n\n*File Link:* ${getVal('File_Link')}`);
-                    window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
-                };
-            }
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
-            }
-            return;
+        // 3. Add the actual attachment LAST (Critical for FormSubmit.co)
+        if (fileToAttach) {
+            finalFormData.append('attachment', fileToAttach, fileToAttach.name);
+            console.log("Finalizing payload with attachment:", fileToAttach.name);
         }
 
-        // --- Step 5: AJAX Submit to FormSubmit.co (with Progress Monitoring) ---
+        // --- Step 5: Submission via XMLHttpRequest (Most reliable for Files) ---
         e.preventDefault();
         try {
-            const progressContainer = document.getElementById('briefUploadProgressContainer');
-            const progressBar = document.getElementById('briefUploadProgressBar');
             const progressStatus = document.getElementById('briefUploadStatus');
+            const progressBar = document.getElementById('briefUploadProgressBar');
 
-            if (fileToAttach && progressContainer) {
-                const fileSizeKB = Math.round(fileToAttach.size / 1024);
-                progressContainer.style.display = 'block';
+            if (progressStatus) {
                 progressStatus.style.display = 'block';
-                progressStatus.style.color = '#ff9f43';
-                progressStatus.textContent = `Preparing: ${fileToAttach.name} (${fileSizeKB}KB)`;
+                progressStatus.textContent = "🚀 Starting secure upload...";
+                progressStatus.style.color = 'var(--primary-orange)';
             }
 
-            // Using XMLHttpRequest for upload progress
             const xhr = new XMLHttpRequest();
             xhr.open('POST', 'https://formsubmit.co/ajax/aman.designpartner@gmail.com', true);
-            xhr.setRequestHeader("Accept", "application/json"); // Often helps with AJAX response reliability
+            xhr.setRequestHeader('Accept', 'application/json');
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable && progressBar && progressStatus) {
                     const percent = Math.round((event.loaded / event.total) * 100);
                     progressBar.style.width = percent + '%';
-                    progressStatus.textContent = `Streaming to Server: ${percent}%`;
+                    progressStatus.textContent = `Streaming file: ${percent}%`;
                 }
             };
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     if (statusEl) {
-                        statusEl.textContent = '✅ Success! Your brief and attachment have been sent.';
+                        statusEl.textContent = '✅ Success! Your brief and attachment have been delivered.';
                         statusEl.style.color = '#4ade80';
                     }
                     if (progressStatus) {
-                        progressStatus.textContent = '✅ Delivered Successfully!';
+                        progressStatus.textContent = '✅ Attachment Delivered to Server!';
                         progressStatus.style.color = '#4ade80';
                     }
 
@@ -2091,44 +2044,39 @@ File Link: ${getVal('File_Link')}
                     window._pendingBriefAttachment = null;
                     localStorage.removeItem('aman_contact_form_data');
 
-                    // Success Redirect
                     setTimeout(() => {
                         const currentUrl = new URL(window.location.href);
                         currentUrl.searchParams.set('sent', 'true');
                         window.location.href = currentUrl.toString();
                     }, 2000);
                 } else {
-                    handleError(new Error('Server returned status ' + xhr.status));
+                    handleError(new Error('Server communication failed (' + xhr.status + ')'));
                 }
             };
 
             xhr.onerror = function () {
-                handleError(new Error('Network connection failed during upload'));
+                handleError(new Error('Network failure or file too large'));
             };
 
             const handleError = (err) => {
                 console.error("Submission Error:", err);
                 if (statusEl) {
-                    statusEl.textContent = '❌ Submission Failed. The file might be too large or there is a connection issue. Please use WhatsApp.';
+                    statusEl.textContent = '❌ Error: ' + err.message + '. Please use WhatsApp.';
                     statusEl.style.color = '#ff4d4d';
                 }
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
-                }
-                if (progressStatus) {
-                    progressStatus.textContent = "❌ Delivery Failed";
-                    progressStatus.style.color = "#ff4d4d";
+                    submitBtn.textContent = 'Retry Submission';
                 }
             };
 
-            xhr.send(formData);
+            xhr.send(finalFormData);
 
         } catch (err) {
-            console.error("Form logic error:", err);
+            console.error("Logic Error:", err);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = submitBtn.dataset.originalText || 'Send Message';
+                submitBtn.textContent = 'Error - Retry';
             }
         }
     }
@@ -2559,12 +2507,13 @@ function initQuickPickLogic(container) {
                         el.value = value;
                     }
 
-                    // Trigger events to update dynamic UI
-                    el.dispatchEvent(new Event('change', { bubbles: true }));
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-
-                    if (typeof el.onchange === 'function') {
-                        el.onchange({ target: el });
+                    // Trigger events to update dynamic UI (but skip file inputs to avoid clearing)
+                    if (el.type !== 'file') {
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        if (typeof el.onchange === 'function') {
+                            el.onchange({ target: el });
+                        }
                     }
                 });
             });
@@ -2639,17 +2588,20 @@ function initQuickPickLogic(container) {
 
                         if (label) label.textContent = "Selected: " + file.name;
 
-                        // Show "Immediate Progress" simulation
+                        // Show "Immediate Progress" bar Simulation
                         if (progressContainer && progressBar && progressStatus) {
                             progressContainer.style.display = 'block';
                             progressStatus.style.display = 'block';
-                            progressStatus.textContent = "Uploading to Cache: 0%";
+                            progressStatus.textContent = "⏱️ Uploading to local cache: 0%";
                             progressStatus.style.color = 'var(--text-muted)';
                             progressBar.style.width = '0%';
 
                             let p = 0;
                             window._briefProgressInterval = setInterval(() => {
-                                p += Math.floor(Math.random() * 20) + 10;
+                                // Fast at start, slower at end
+                                const step = p < 70 ? 15 : 5;
+                                p += Math.floor(Math.random() * step) + 5;
+
                                 if (p >= 100) {
                                     p = 100;
                                     clearInterval(window._briefProgressInterval);
@@ -2657,8 +2609,8 @@ function initQuickPickLogic(container) {
                                     progressStatus.style.color = "#4ade80";
                                 }
                                 progressBar.style.width = p + '%';
-                                if (p < 100) progressStatus.textContent = `Uploading to Cache: ${p}%`;
-                            }, 40);
+                                if (p < 100) progressStatus.textContent = `⏱️ Uploading to local cache: ${p}%`;
+                            }, 50);
                         }
                     } else {
                         if (label) label.textContent = "";
