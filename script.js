@@ -1,4 +1,4 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxgD6nKJwCF28q_OMct6mkr8_CFL-rnBlknYCXB5x7owW4dIBRBCZo3IS8csNsrctx_g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxynrUysdB8nfZ9DXpm9Xqe3YYGUBEKctwFPx_vnFbrIgLcxfa8Z7r3W72CzWtBwv986Q/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
