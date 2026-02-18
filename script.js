@@ -1931,80 +1931,101 @@ document.addEventListener('submit', async (e) => {
             fileToAttach = window._pendingBriefAttachment;
         }
 
+        const attachmentStatusText = fileToAttach ? `YES - File: ${fileToAttach.name}` : "NO - No file attached";
+
         // --- Step 3: Handle Tawk.to Copy (Internal Message) ---
         try {
             const tawkApi = window.Tawk_API || Tawk_API;
             if (typeof tawkApi !== 'undefined') {
-                const getValFromForm = (name) => {
-                    const el = form.querySelector(`[name="${name}"]`);
-                    return el ? el.value : "";
+                const briefData = new FormData(form);
+                const getVal = (name) => {
+                    // Handle multi-select checkboxes
+                    const vals = briefData.getAll(name);
+                    if (vals.length > 1) return vals.filter(v => v && v.trim() !== "").join(', ');
+                    const val = briefData.get(name);
+                    return (val && typeof val === 'string' && val.trim() !== "") ? val.trim() : "Not provided";
                 };
-
-                const attachmentInfo = fileToAttach ? `✅ Attached: ${fileToAttach.name} (${Math.round(fileToAttach.size / 1024)}KB)` : "❌ No file attached";
-                let budget = getValFromForm('Budget');
-                if (budget === 'custom') budget = getValFromForm('Budget_Custom');
-                let timeline = getValFromForm('Timeline');
-                if (timeline === 'custom') timeline = getValFromForm('Timeline_Custom');
 
                 const summaryMessage = `
 🚀 --- NEW PROJECT BRIEF SUMMARY ---
-Client: ${getValFromForm('Name')}
-Email: ${getValFromForm('Email')}
-Phone: ${getValFromForm('Phone')}
+Client: ${getVal('Name')}
+Email: ${getVal('Email')}
+Phone: ${getVal('Phone')}
 
-Project Title: ${getValFromForm('Project_Title')}
-Billing Type: ${getValFromForm('Billing_Type')}
-Budget: ${budget}
-Timeline: ${timeline}
+Project Title: ${getVal('Project_Title')}
+Budget: ${getVal('Budget') === 'custom' ? getVal('Budget_Custom') : getVal('Budget')}
+Timeline: ${getVal('Timeline') === 'custom' ? getVal('Timeline_Custom') : getVal('Timeline')}
 
-Quick Pick Services: ${getValFromForm('Quick_Pick_Services')}
-Project Focus: ${getValFromForm('Work_Type')}
-Interior Requirements: ${getValFromForm('Interior_Requirements')}
-Exterior Requirements: ${getValFromForm('Exterior_Requirements')}
+Quick Pick Services: ${getVal('Quick_Pick_Services')}
+Project Focus: ${getVal('Work_Type')}
+Interior Spec: ${getVal('Interior_Requirements')}
+Exterior Spec: ${getVal('Exterior_Requirements')}
 
 Message:
-${getValFromForm('Message')}
+${getVal('Message')}
 
-Attachment Status: ${attachmentInfo}
+Attachment Status: ${attachmentStatusText}
 -----------------------------------------
 `.trim();
 
-                if (tawkApi.maximize) tawkApi.maximize();
+                // 1. Set attributes for the visitor
                 if (tawkApi.setAttributes) {
                     tawkApi.setAttributes({
-                        'name': getValFromForm('Name'),
-                        'email': getValFromForm('Email'),
-                        'phone': getValFromForm('Phone')
+                        'name': getVal('Name'),
+                        'email': getVal('Email')
                     }, function (error) { });
                 }
-                if (tawkApi.addEvent) {
-                    tawkApi.addEvent('Project Brief Submitted', { title: getValFromForm('Project_Title') });
+
+                // 2. Send the message copy (Try both common methods)
+                if (tawkApi.sendChatMessage) {
+                    tawkApi.sendChatMessage(summaryMessage, function (error) { });
+                } else if (tawkApi.sendMessage) {
+                    tawkApi.sendMessage(summaryMessage, function (error) { });
                 }
-                if (tawkApi.sendChatMessage) tawkApi.sendChatMessage(summaryMessage);
+
+                if (tawkApi.maximize) tawkApi.maximize();
             }
-        } catch (err) { }
+        } catch (err) {
+            console.warn("Tawk.to brief copy failed:", err);
+        }
 
-        // --- Step 4: Final Payload Construction (Ordering is Key) ---
+        // --- Step 4: Protocol Check (WhatsApp Fallback) ---
+        if (window.location.protocol === 'file:') {
+            e.preventDefault();
+            if (statusEl) {
+                statusEl.innerHTML = `⚠️ <strong>Local Testing Mode:</strong> FormSubmit.co requires a live server. <br>
+                    <button id="send-local-whatsapp" class="btn-outline" style="margin-top:10px; border-color:#4ade80; color:#4ade80;">
+                        Submit via WhatsApp Instead
+                    </button>`;
+                statusEl.style.color = '#ff9f43';
+                document.getElementById('send-local-whatsapp').onclick = (btnE) => {
+                    btnE.preventDefault();
+                    // Fallback helpers for WhatsApp string
+                    const getName = form.querySelector('[name="Name"]')?.value || "Client";
+                    const getTitle = form.querySelector('[name="Project_Title"]')?.value || "Project";
+                    const waMessage = encodeURIComponent(`*--- NEW PROJECT BRIEF ---*\n\n*Client:* ${getName}\n*Project:* ${getTitle}`);
+                    window.open(`https://wa.me/923010003011?text=${waMessage}`, '_blank');
+                };
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Retry Selection';
+            }
+            return;
+        }
+
+        // --- Step 5: Final Submission Sequence ---
         const finalFormData = new FormData();
-
-        // 1. Add ALL form fields except the attachment first
         const rawFields = new FormData(form);
         for (let [key, value] of rawFields.entries()) {
-            if (key !== 'attachment') {
+            if (key !== 'attachment' && key !== 'Attachment') {
                 finalFormData.append(key, value);
             }
         }
-
-        // 2. Add the User requested status column
-        finalFormData.append('File_Attached_In_Email', fileToAttach ? `YES - File name: ${fileToAttach.name}` : "NO - No file was attached by user");
-
-        // 3. Add the actual attachment LAST (Critical for FormSubmit.co)
+        finalFormData.append('File_Attached_Status', attachmentStatusText);
         if (fileToAttach) {
-            finalFormData.append('attachment', fileToAttach, fileToAttach.name);
-            console.log("Finalizing payload with attachment:", fileToAttach.name);
+            finalFormData.append('Attachment', fileToAttach, fileToAttach.name);
         }
-
-        // --- Step 5: Submission via XMLHttpRequest (Most reliable for Files) ---
         e.preventDefault();
         try {
             const progressStatus = document.getElementById('briefUploadStatus');
@@ -2012,31 +2033,29 @@ Attachment Status: ${attachmentInfo}
 
             if (progressStatus) {
                 progressStatus.style.display = 'block';
-                progressStatus.textContent = "🚀 Starting secure upload...";
-                progressStatus.style.color = 'var(--primary-orange)';
+                progressStatus.textContent = "🚀 Starting secure delivery...";
             }
 
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'https://formsubmit.co/ajax/aman.designpartner@gmail.com', true);
+            // Using the main endpoint but via XHR to stay on page
+            xhr.open('POST', 'https://formsubmit.co/aman.designpartner@gmail.com', true);
             xhr.setRequestHeader('Accept', 'application/json');
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable && progressBar && progressStatus) {
                     const percent = Math.round((event.loaded / event.total) * 100);
                     progressBar.style.width = percent + '%';
-                    progressStatus.textContent = `Streaming file: ${percent}%`;
+                    progressStatus.textContent = `Delivering: ${percent}%`;
                 }
             };
 
             xhr.onload = function () {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                // FormSubmit redirects on success to a thank you page
+                // But with XHR/JSON headers, it should return a JSON response
+                if (xhr.status >= 200 && xhr.status < 400) {
                     if (statusEl) {
-                        statusEl.textContent = '✅ Success! Your brief and attachment have been delivered.';
+                        statusEl.textContent = '✅ Success! Your brief and file have been received.';
                         statusEl.style.color = '#4ade80';
-                    }
-                    if (progressStatus) {
-                        progressStatus.textContent = '✅ Attachment Delivered to Server!';
-                        progressStatus.style.color = '#4ade80';
                     }
 
                     form.reset();
@@ -2045,23 +2064,18 @@ Attachment Status: ${attachmentInfo}
                     localStorage.removeItem('aman_contact_form_data');
 
                     setTimeout(() => {
-                        const currentUrl = new URL(window.location.href);
-                        currentUrl.searchParams.set('sent', 'true');
-                        window.location.href = currentUrl.toString();
+                        window.location.href = window.location.origin + window.location.pathname + '?sent=true';
                     }, 2000);
                 } else {
-                    handleError(new Error('Server communication failed (' + xhr.status + ')'));
+                    handleError(new Error('Server communication error'));
                 }
             };
 
-            xhr.onerror = function () {
-                handleError(new Error('Network failure or file too large'));
-            };
+            xhr.onerror = () => handleError(new Error('Network error'));
 
             const handleError = (err) => {
-                console.error("Submission Error:", err);
                 if (statusEl) {
-                    statusEl.textContent = '❌ Error: ' + err.message + '. Please use WhatsApp.';
+                    statusEl.textContent = '❌ Delivery Error. Please use WhatsApp.';
                     statusEl.style.color = '#ff4d4d';
                 }
                 if (submitBtn) {
@@ -2073,7 +2087,7 @@ Attachment Status: ${attachmentInfo}
             xhr.send(finalFormData);
 
         } catch (err) {
-            console.error("Logic Error:", err);
+            console.error("Submission Error:", err);
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Error - Retry';
