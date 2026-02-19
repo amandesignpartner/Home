@@ -1641,42 +1641,69 @@ function openPopup(id, isBack = false, options = {}) {
                 orderInput.value = formatProjectID(orderInput.value);
             });
 
-            unlockBtn.addEventListener('click', () => {
+            unlockBtn.addEventListener('click', async () => {
                 const rawVal = orderInput.value.trim();
                 const cleanVal = rawVal.replace(/-/g, '');
 
-                // Dynamic unlock: Check if Project ID exists in global projectData
-                const project = window.projectData && window.projectData[cleanVal];
+                if (!rawVal) return;
 
-                if (rawVal && project) {
-                    lockedSection.style.display = 'block';
-                    errorMsg.style.display = 'none';
-                    orderInput.style.borderColor = 'var(--primary-green)';
+                // Visual Feedback: Loading
+                const originalText = unlockBtn.textContent;
+                unlockBtn.innerHTML = '<span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span class="anim-dot dot-3">.</span>';
+                unlockBtn.style.pointerEvents = 'none';
 
-                    // Fill the Project Details in the form
-                    if (formOrderNumber) formOrderNumber.value = rawVal;
+                try {
+                    // 1. Primary: Verify against LIVE Google Sheet Tracker
+                    console.log("Verifying Project ID against Sheet:", rawVal);
+                    const response = await fetch(`${TRACKER_SYNC_URL}?action=getProject&id=${rawVal}`);
+                    const result = await response.json();
 
-                    const formClientName = content.querySelector('#formClientName');
-                    const formProjectTitle = content.querySelector('#formProjectTitle');
-                    const formAmount = content.querySelector('#formAmount');
+                    let project = null;
+                    if (result.status === "success" && result.project) {
+                        project = result.project;
+                        console.log("ID Verified via Sheet:", project.id);
+                    } else {
+                        // 2. Secondary: Fallback to local projectData (legacy/offline)
+                        project = window.projectData && window.projectData[cleanVal];
+                        if (project) console.log("ID Verified via Local Data");
+                    }
 
-                    if (formClientName) formClientName.value = project.client || '';
-                    if (formProjectTitle) formProjectTitle.value = project.project || '';
-                    if (formAmount) formAmount.value = project.cost || '';
+                    if (project) {
+                        lockedSection.style.display = 'block';
+                        errorMsg.style.display = 'none';
+                        orderInput.style.borderColor = 'var(--primary-green)';
 
-                    // Scroll to Western Union section
-                    setTimeout(() => {
-                        lockedSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
-                } else {
+                        // Fill the Project Details in the form
+                        if (formOrderNumber) formOrderNumber.value = rawVal;
+
+                        const formClientName = content.querySelector('#formClientName');
+                        const formProjectTitle = content.querySelector('#formProjectTitle');
+                        const formAmount = content.querySelector('#formAmount');
+
+                        if (formClientName) formClientName.value = project.client || '';
+                        if (formProjectTitle) formProjectTitle.value = project.project || '';
+                        if (formAmount) formAmount.value = project.cost || '';
+
+                        // Scroll to Western Union section
+                        setTimeout(() => {
+                            lockedSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    } else {
+                        throw new Error("Invalid ID");
+                    }
+                } catch (err) {
+                    console.error("Payment Unlock Error:", err);
                     errorMsg.style.display = 'block';
-                    errorMsg.textContent = '❌ Invalid Project ID. Please contact Aman for assistance.';
+                    errorMsg.textContent = '❌ Invalid Project ID. Please ensure it matches your ID in the Tracker.';
                     orderInput.style.borderColor = '#ff4d4d';
 
                     // Simple shake for feedback
                     orderInput.parentElement.style.animation = 'none';
                     orderInput.parentElement.offsetHeight;
                     orderInput.parentElement.style.animation = 'shake 0.4s ease';
+                } finally {
+                    unlockBtn.textContent = originalText;
+                    unlockBtn.style.pointerEvents = 'auto';
                 }
             });
 
