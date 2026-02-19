@@ -3,9 +3,14 @@
  * Live Ready Architecture
  */
 
+// FORCE PERMISSIONS: Run this function in the toolbar if you get "Drive" errors
+function forceScope() { DriveApp.getFoldersByName('Authorize'); }
+
 const CONFIG = {
   SHEET_NAME: 'TrackerData',
   FEEDBACK_SHEET_NAME: 'Feedback',
+  SUBMISSIONS_SHEET_NAME: 'Submissions',
+  ATTACHMENTS_FOLDER_ID: '10QQIt6fSRgTzxIZU7KdzDoLGlfAausCT',
   ID_PREFIX: 'VMC',
   STARTING_ID_NUM: 125
 };
@@ -37,7 +42,6 @@ function doGet(e) {
     const fbSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
     if (!fbSheet) return json({ status: "success", data: [] });
     const data = fbSheet.getDataRange().getValues();
-    const headers = data[0];
     const results = [];
     for (let i = 1; i < data.length; i++) {
       results.push({
@@ -66,9 +70,13 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     
-    // Handle Feedback
     if (data.action === 'submitFeedback') {
       return json(handleFeedback(data.feedback));
+    }
+
+    // Handle Project Brief Submission
+    if (data.action === 'submitBrief') {
+      return json(handleBrief(data.brief));
     }
 
     const sheet = getSheet();
@@ -112,6 +120,73 @@ function handleFeedback(fb) {
   ]);
 
   return { status: "success", message: "Feedback saved" };
+}
+
+function handleBrief(brief) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  
+  // MATCHING HEADINGS STYLE: All Fields included exactly in order
+  const headers = [
+    "Timestamp", "Name", "Email", "Phone", "Project Title", 
+    "Services", "Other Service", "Work Type", 
+    "Interior Items", "Interior Other", "Exterior Items", "Exterior Other",
+    "Billing Type", "Budget", "Timeline", "Message", 
+    "Attachment Link", "External File Link"
+  ];
+
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SUBMISSIONS_SHEET_NAME);
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+    sheet.setFrozenRows(1);
+  }
+
+  // Handle Attachment if exists
+  let attachmentUrl = "";
+  if (brief.attachment && brief.attachment.data) {
+    attachmentUrl = saveFileToDrive(brief.attachment);
+  }
+
+  const now = new Date();
+  const row = [
+    Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss"),
+    brief.name || "",
+    brief.email || "",
+    brief.phone || "",
+    brief.projectTitle || "",
+    (brief.services || []).join(", "),
+    brief.otherService || "",
+    brief.workType || "",
+    (brief.interiorItems || []).join(", "),
+    brief.interiorCustom || "",
+    (brief.exteriorItems || []).join(", "),
+    brief.exteriorCustom || "",
+    brief.billingType || "",
+    brief.budget || brief.budgetCustom || "",
+    brief.timeline || brief.timelineCustom || "",
+    brief.message || "",
+    attachmentUrl,
+    brief.fileLink || ""
+  ];
+
+  sheet.appendRow(row);
+  return { status: "success", message: "Brief submitted successfully", attachmentUrl: attachmentUrl };
+}
+
+function saveFileToDrive(fileObj) {
+  try {
+    const folder = DriveApp.getFolderById(CONFIG.ATTACHMENTS_FOLDER_ID);
+    const contentType = fileObj.data.substring(fileObj.data.indexOf(":") + 1, fileObj.data.indexOf(";"));
+    const bytes = Utilities.base64Decode(fileObj.data.split(",")[1]);
+    const blob = Utilities.newBlob(bytes, contentType, fileObj.name);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return file.getUrl();
+  } catch (e) {
+    return "Error saving file: " + e.toString();
+  }
 }
 
 /* ============================= */

@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzKNPZv6UGxG_o8ChgU4lELYTQkIULkM9-B2w-HM0CA_TLzKdrx9_AojDRMblIjIdXs3g/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbx3KMaAQfjQs_nXQd5gm8gm7VNvMksSnM_UwrUOvVQ9zJzElw7VxCfPxvojpUWfmRQwRQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -2142,21 +2142,49 @@ document.addEventListener('submit', async (e) => {
                 }
             } catch (err) { console.warn("Tawk.to copy failed:", err); }
 
-            // --- Step 4: Submit to Google Apps Script ---
+            // --- Step 4: Submit to Google Sheets (Submissions Tab) ---
+            const briefSyncData = {
+                action: 'submitBrief',
+                brief: {
+                    name: formData.Name,
+                    email: formData.Email,
+                    phone: formData.Phone,
+                    projectTitle: formData.Project_Title,
+                    services: selectedServices,
+                    otherService: qpContainer?.querySelector('input[name="Other_Service"]')?.value || '',
+                    workType: workType,
+                    interiorItems: selectedInterior,
+                    interiorCustom: qpContainer?.querySelector('input[name="Interior_Custom"]')?.value || '',
+                    exteriorItems: selectedExterior,
+                    exteriorOther: qpContainer?.querySelector('input[name="Exterior_Custom"]')?.value || '', // Fixed mapping
+                    billingType: formData.Billing_Type,
+                    budget: formData.Budget,
+                    budgetCustom: formData.Budget_Custom,
+                    timeline: formData.Timeline,
+                    timelineCustom: formData.Timeline_Custom,
+                    message: formData.Message,
+                    attachment: fileToAttach ? { name: fileToAttach.name, data: formData.fileData } : null,
+                    fileLink: formData.File_Link
+                }
+            };
+
+            // Sync to Google Sheets (Brief Tab) - DO NOT WAIT (non-blocking)
+            fetch(TRACKER_SYNC_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(briefSyncData)
+            }).catch(e => console.error("Brief Sheet Sync Fail:", e));
+
+            // --- Step 5: Submit to Email Backend ---
             if (submitBtn) submitBtn.textContent = 'Delivering to Aman...';
 
             if (SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
                 throw new Error('Apps Script URL not configured.');
             }
 
-            // Local testing warning
-            if (window.location.protocol === 'file:') {
-                console.warn("⚠️ Testing from a local file. Some browsers may block this submission.");
-            }
+            console.log("SENDING DATA TO EMAIL BACKEND:", formData.Project_Title);
 
-            console.log("SENDING DATA TO GAS:", formData.Project_Title);
-
-            // Using simple text/plain to bypass CORS "pre-flight" checks completely
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -2164,7 +2192,7 @@ document.addEventListener('submit', async (e) => {
                 body: JSON.stringify(formData)
             });
 
-            console.log("GAS REQUEST DISPATCHED");
+            console.log("BACKEND DISPATCHED");
 
             if (statusEl) {
                 statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
