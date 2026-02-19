@@ -69,6 +69,7 @@ function doPost(e) {
     if (data.action === 'submitFeedback') return json(handleFeedback(data.feedback));
     if (data.action === 'submitBrief') return json(handleBrief(data.brief));
     if (data.action === 'submitPayment') return json(handlePayment(data));
+    if (data.action === 'logDownload') return json(handleDownloadLog(data));
 
     const sheet = getSheet();
     const project = data.project || data;
@@ -202,6 +203,29 @@ function saveFileToDrive(fileObj) {
   }
 }
 
+function handleDownloadLog(data) {
+  const sheet = getSheet();
+  const rows = sheet.getDataRange().getValues();
+  const cleanID = clean(data.id);
+  const now = new Date();
+  const timestamp = Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss");
+  
+  for (let i = 1; i < rows.length; i++) {
+    if (clean(rows[i][0]) === cleanID) {
+      // Column 15 is "Client View Status"
+      sheet.getRange(i + 1, 15).setValue("Viewed on " + timestamp);
+      
+      try {
+        const emailBody = `👀 CLIENT ALERT\n\nClient: ${rows[i][1]}\nProject: ${rows[i][2]} (${rows[i][0]})\nStatus: Opened/Downloaded project files.\nTime: ${timestamp}`;
+        GmailApp.sendEmail(CONFIG.NOTIFICATION_EMAIL, "File Viewed: " + rows[i][1], emailBody);
+      } catch(e) {}
+      
+      return { status: "success", message: "Download logged" };
+    }
+  }
+  return { status: "error", message: "Project not found" };
+}
+
 /* ============================= */
 /* ===== CORE FUNCTIONS ======== */
 /* ============================= */
@@ -212,7 +236,7 @@ function getSheet() {
 }
 
 function updateOrInsert(sheet, project) {
-  const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version"];
+  const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
   if (sheet.getLastRow() === 0) {
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");

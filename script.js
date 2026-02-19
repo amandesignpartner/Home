@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJXamEgX6DLIu_xwQ4T6qivSKvVmAM_OWD4U_13RxYbIjtQE1uF08gpFsBnxfzDRNBgQ/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyJXamEgX6DLIu_xwQ4T6qivSKvVmAM_OWD4U_13RxYbIjtQE1uF08gpFsBnxfzDRNBgQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-nOimYQSKXu8fM8p3VuF1VT2nxfCLEfene89jsWcfm_sWrNoM-askE00T69MWROhwtw/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbw-nOimYQSKXu8fM8p3VuF1VT2nxfCLEfene89jsWcfm_sWrNoM-askE00T69MWROhwtw/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -998,6 +998,20 @@ function populateTrackerPopup(data, skipSync = false) {
     if (downloadBtn) {
         downloadBtn.innerHTML = '<span style="margin-right: 8px;">📥</span> Download Latest Project Files';
         downloadBtn.href = (data.downloadLink && data.downloadLink !== '#') ? data.downloadLink : 'https://aman3dpartner.netlify.app/';
+
+        // --- NEW: Track when client clicks download ---
+        downloadBtn.onclick = () => {
+            console.log("Logging file view for ID:", data.id);
+            fetch(TRACKER_SYNC_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'logDownload',
+                    id: data.id
+                })
+            }).catch(e => console.warn("Log failed:", e));
+        };
 
         // Admin Buttons and Link Input for Tracker
         const btnContainer = downloadBtn ? downloadBtn.parentElement : null;
