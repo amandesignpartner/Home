@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyYsUL9WJ_Y8m4T94Vwmq11yFO3coBOl5Y49kUBKTyv-DnOjPesFM0sqfJhhwUMvKCMxA/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzKNPZv6UGxG_o8ChgU4lELYTQkIULkM9-B2w-HM0CA_TLzKdrx9_AojDRMblIjIdXs3g/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -1580,6 +1580,10 @@ function openPopup(id, isBack = false, options = {}) {
             if (discussBtn) {
                 discussBtn.style.display = 'none';
             }
+        }
+
+        if (id === 'client-reviews') {
+            renderAutoReviews();
         }
     }
 
@@ -3395,6 +3399,19 @@ Sent via Website Feedback Form
         })
     }).catch(err => console.error("Feedback Sheet Sync failed:", err));
 
+    // SAVE TO LOCAL FEEDBACK (Dynamic UI Update)
+    try {
+        const stored = JSON.parse(localStorage.getItem('user_feedback_list') || '[]');
+        stored.unshift({
+            name: clientName,
+            project: projectName,
+            rating: rating,
+            message: message,
+            date: new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+        });
+        localStorage.setItem('user_feedback_list', JSON.stringify(stored.slice(0, 10))); // Keep last 10
+    } catch (e) { console.error("Local Feedback Save Fail", e); }
+
     // Send via Tawk.to chat (hidden)
     if (window.Tawk_API && window.Tawk_API.addEvent) {
         window.Tawk_API.addEvent('Feedback Submission', {
@@ -3461,6 +3478,67 @@ Sent via Website Feedback Form
     }, 800);
 
     return false;
+}
+
+// ===== Live Render Feedback from Google Sheets =====
+async function renderAutoReviews() {
+    const container = document.getElementById('auto-reviews-container');
+    if (!container) return;
+
+    // Show loading state
+    container.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px;">
+            Reviews are loading<span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span class="anim-dot dot-3">.</span>
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`${TRACKER_SYNC_URL}?action=getFeedback`);
+        const res = await response.json();
+
+        if (res.status === "success" && res.data && res.data.length > 0) {
+            let html = '';
+            res.data.forEach(fb => {
+                const initial = (fb.clientName || '?').charAt(0).toUpperCase();
+                const stars = '⭐'.repeat(parseInt(fb.rating) || 5);
+
+                // Format Date
+                let dateStr = fb.timestamp;
+                try {
+                    const d = new Date(fb.timestamp);
+                    if (!isNaN(d.getTime())) {
+                        dateStr = d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+                    }
+                } catch (e) { }
+
+                html += `
+                    <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; animation: fadeIn 0.5s ease;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-orange), #ff8c42); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #fff;">
+                                    ${initial}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 3px;">${fb.clientName}</div>
+                                    <div style="color: var(--primary-green); font-size: 12px;">${stars}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted);">${dateStr}</div>
+                        </div>
+                        <p style="margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-light);">
+                            "${fb.message}"
+                        </p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = ''; // No live feedback yet
+        }
+    } catch (e) {
+        console.error("Live Feedback Fetch Fail", e);
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px;">Live reviews offline. Showing static reviews only.</div>';
+    }
 }
 
 // ===== Open Feedback From Tracker (Auto-Fill) =====

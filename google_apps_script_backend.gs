@@ -33,6 +33,25 @@ function doGet(e) {
     return json({ status: "success", data: getAllProjects(sheet) });
   }
 
+  if (params.action === 'getFeedback') {
+    const fbSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
+    if (!fbSheet) return json({ status: "success", data: [] });
+    const data = fbSheet.getDataRange().getValues();
+    const headers = data[0];
+    const results = [];
+    for (let i = 1; i < data.length; i++) {
+      results.push({
+        timestamp: data[i][0],
+        projectID: data[i][1],
+        projectName: data[i][2],
+        clientName: data[i][3],
+        rating: data[i][4],
+        message: data[i][5]
+      });
+    }
+    return json({ status: "success", data: results.reverse() }); // Newest first
+  }
+
   return json({ status: "error", message: "Invalid request" });
 }
 
