@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbx3KMaAQfjQs_nXQd5gm8gm7VNvMksSnM_UwrUOvVQ9zJzElw7VxCfPxvojpUWfmRQwRQ/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyo0hO3LGSf21JhCohvoF1SPbItdG-jFPnUoNq1sso3617JjZttyaWQ1UVduBkADRzzHQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -2156,7 +2156,7 @@ document.addEventListener('submit', async (e) => {
                     interiorItems: selectedInterior,
                     interiorCustom: qpContainer?.querySelector('input[name="Interior_Custom"]')?.value || '',
                     exteriorItems: selectedExterior,
-                    exteriorOther: qpContainer?.querySelector('input[name="Exterior_Custom"]')?.value || '', // Fixed mapping
+                    exteriorCustom: qpContainer?.querySelector('input[name="Exterior_Custom"]')?.value || '', // Fixed mapping
                     billingType: formData.Billing_Type,
                     budget: formData.Budget,
                     budgetCustom: formData.Budget_Custom,
