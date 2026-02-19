@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYzdl2nvaJLi6mapC2d_Fv-PJWiU-47KHViz3RRHFnuczUskLxNz2Q8sGA-hBABco0eg/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbxYzdl2nvaJLi6mapC2d_Fv-PJWiU-47KHViz3RRHFnuczUskLxNz2Q8sGA-hBABco0eg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJXamEgX6DLIu_xwQ4T6qivSKvVmAM_OWD4U_13RxYbIjtQE1uF08gpFsBnxfzDRNBgQ/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyJXamEgX6DLIu_xwQ4T6qivSKvVmAM_OWD4U_13RxYbIjtQE1uF08gpFsBnxfzDRNBgQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -1652,10 +1652,18 @@ function openPopup(id, isBack = false, options = {}) {
                     lockedSection.style.display = 'block';
                     errorMsg.style.display = 'none';
                     orderInput.style.borderColor = 'var(--primary-green)';
-                    // Fill the Project ID in the form
-                    if (formOrderNumber) {
-                        formOrderNumber.value = rawVal;
-                    }
+
+                    // Fill the Project Details in the form
+                    if (formOrderNumber) formOrderNumber.value = rawVal;
+
+                    const formClientName = content.querySelector('#formClientName');
+                    const formProjectTitle = content.querySelector('#formProjectTitle');
+                    const formAmount = content.querySelector('#formAmount');
+
+                    if (formClientName) formClientName.value = project.client || '';
+                    if (formProjectTitle) formProjectTitle.value = project.project || '';
+                    if (formAmount) formAmount.value = project.cost || '';
+
                     // Scroll to Western Union section
                     setTimeout(() => {
                         lockedSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2228,52 +2236,48 @@ async function handlePaymentFormSubmit(e) {
 
     try {
         const rawFields = new FormData(form);
-        const formData = {};
+        const paymentData = {
+            action: 'submitPayment',
+            timestamp: new Date().toISOString()
+        };
 
         for (let [key, value] of rawFields.entries()) {
             if (key !== 'payment_proof') {
-                formData[key] = value;
+                paymentData[key] = value;
             }
         }
-
-        formData.formType = 'payment';
-        formData.Timestamp = new Date().toLocaleString();
 
         // Handle Payment Proof Attachment
         const fileInput = form.querySelector('#paymentProofInput');
         if (fileInput && fileInput.files[0]) {
             const file = fileInput.files[0];
             if (submitBtn) submitBtn.textContent = 'Encoding proof...';
-            formData.fileName = file.name;
-            formData.fileType = file.type;
-            formData.fileData = await fileToBase64(file);
+            paymentData.proofFile = {
+                name: file.name,
+                type: file.type,
+                data: await fileToBase64(file)
+            };
         }
 
         // --- Tawk.to Copy for Payment ---
         try {
-            const hasTawk = typeof Tawk_API !== 'undefined';
-            if (hasTawk) {
-                const paymentSummary = `💰 NEW PAYMENT\nClient: ${formData.name}\nMTCN: ${formData.mtcn}\nAmount: ${formData.amount}\nProject: ${formData.project_name}`.trim();
-                if (Tawk_API.sendChatMessage) Tawk_API.sendChatMessage(paymentSummary);
-                if (Tawk_API.addEvent) Tawk_API.addEvent('Payment Submitted', { client: formData.name, amount: formData.amount });
+            if (typeof Tawk_API !== 'undefined') {
+                const summary = `💰 NEW PAYMENT\nClient: ${paymentData.name}\nID: ${paymentData.project_id}\nMTCN: ${paymentData.mtcn}\nAmount: ${paymentData.amount}`;
+                if (Tawk_API.sendChatMessage) Tawk_API.sendChatMessage(summary);
+                if (Tawk_API.addEvent) Tawk_API.addEvent('payment_submitted', { id: paymentData.project_id });
             }
-        } catch (e) { console.warn("Tawk error:", e); }
+        } catch (e) { }
 
         if (submitBtn) submitBtn.textContent = 'Sending to Aman...';
 
-        if (SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
-            throw new Error('Apps Script URL not configured.');
-        }
+        console.log("SENDING PAYMENT DATA TO GAS:", paymentData.project_id);
 
-        console.log("SENDING PAYMENT DATA TO GAS:", formData.name);
-        const response = await fetch(SCRIPT_URL, {
+        const response = await fetch(TRACKER_SYNC_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(paymentData)
         });
-
-        console.log("PAYMENT REQUEST DISPATCHED");
 
         if (statusEl) {
             statusEl.textContent = '✅ Payment details submitted successfully!';
@@ -2281,8 +2285,13 @@ async function handlePaymentFormSubmit(e) {
         }
 
         form.reset();
+        if (submitBtn) {
+            submitBtn.textContent = 'Submitted Successfully';
+            submitBtn.style.background = '#4CAF50';
+        }
+
         setTimeout(() => {
-            if (confirm('Payment details sent! Inform Aman via WhatsApp?')) {
+            if (confirm('Payment details logged! Inform Aman via WhatsApp for faster verification?')) {
                 window.open('https://wa.me/923010003011', '_blank');
             }
         }, 1500);
@@ -2290,13 +2299,13 @@ async function handlePaymentFormSubmit(e) {
     } catch (error) {
         console.error("Payment Submission Error:", error);
         if (statusEl) {
-            statusEl.textContent = `❌ ${error.message === 'Apps Script URL not configured.' ? 'System Error: Backend not connected.' : 'Error. Please try WhatsApp.'}`;
-            statusEl.style.color = '#f44336';
+            statusEl.textContent = '❌ Delivery Error. Please try again or use WhatsApp.';
+            statusEl.style.color = '#ff4d4d';
         }
     } finally {
-        if (submitBtn) {
+        if (submitBtn && submitBtn.textContent !== 'Submitted Successfully') {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Payment Details';
+            submitBtn.textContent = 'Retry Submission';
         }
     }
 }
