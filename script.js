@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbxtl4s6M7of1bOiXtwfl9aidDCn-6AM7QGDgSpnXDu3xcUJvPJUi0MZENkSHmKii9pEvw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPoMiAuoCLP2U8e5Dj_9qj1YxYWLWYOZlqQz6lmB92ITuXmiA48ShNGJ5EUG0GeXexyg/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwPoMiAuoCLP2U8e5Dj_9qj1YxYWLWYOZlqQz6lmB92ITuXmiA48ShNGJ5EUG0GeXexyg/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -2142,7 +2142,7 @@ document.addEventListener('submit', async (e) => {
                 }
             } catch (err) { console.warn("Tawk.to copy failed:", err); }
 
-            // --- Step 4: Submit to Google Sheets (Submissions Tab) ---
+            // --- Step 4: Unified Submission (Sheets + Email + Attachments) ---
             const briefSyncData = {
                 action: 'submitBrief',
                 brief: {
@@ -2156,7 +2156,7 @@ document.addEventListener('submit', async (e) => {
                     interiorItems: selectedInterior,
                     interiorCustom: qpContainer?.querySelector('input[name="Interior_Custom"]')?.value || '',
                     exteriorItems: selectedExterior,
-                    exteriorCustom: qpContainer?.querySelector('input[name="Exterior_Custom"]')?.value || '', // Fixed mapping
+                    exteriorCustom: qpContainer?.querySelector('input[name="Exterior_Custom"]')?.value || '',
                     billingType: formData.Billing_Type,
                     budget: formData.Budget,
                     budgetCustom: formData.Budget_Custom,
@@ -2168,31 +2168,19 @@ document.addEventListener('submit', async (e) => {
                 }
             };
 
-            // Sync to Google Sheets (Brief Tab) - DO NOT WAIT (non-blocking)
-            fetch(TRACKER_SYNC_URL, {
+            if (submitBtn) submitBtn.textContent = 'Delivering to Aman...';
+
+            console.log("SENDING UNIFIED BRIEF DATA:", formData.Project_Title);
+
+            // Using await here to ensure we know it's SENT before showing success
+            await fetch(TRACKER_SYNC_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(briefSyncData)
-            }).catch(e => console.error("Brief Sheet Sync Fail:", e));
-
-            // --- Step 5: Submit to Email Backend ---
-            if (submitBtn) submitBtn.textContent = 'Delivering to Aman...';
-
-            if (SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
-                throw new Error('Apps Script URL not configured.');
-            }
-
-            console.log("SENDING DATA TO EMAIL BACKEND:", formData.Project_Title);
-
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(formData)
             });
 
-            console.log("BACKEND DISPATCHED");
+            console.log("UNIFIED HUB DISPATCHED");
 
             if (statusEl) {
                 statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
