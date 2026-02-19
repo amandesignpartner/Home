@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzkmMfpOh_CKnfYTtTiFyzMN5b7Hr84vzRl-o4ZdGrC6-qaDYPwiMbuKBwTIz6bI4QE/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzkO5DZVjNDOqjXIBoetjZPCmTr5CVCKqVoUmN0I295m54bk0mJ5NGMxgWUnPb0nHtC/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -453,6 +453,9 @@ function initProjectTracker() {
 
     if (!mainTrackInput || !mainTrackBtn) return;
 
+    // Real-time polling reference
+    window.trackerPollInterval = null;
+
     // Handle tracking button click
     const handleTrack = async () => {
         const rawVal = mainTrackInput.value.trim();
@@ -467,8 +470,8 @@ function initProjectTracker() {
         mainTrackBtn.style.pointerEvents = 'none';
 
         try {
-            // Priority 1: Fetch from Live Google Sheet
-            const response = await fetch(`${TRACKER_SYNC_URL}?id=${rawVal}`);
+            // Priority 1: Fetch from Live Google Sheet (V2 API)
+            const response = await fetch(`${TRACKER_SYNC_URL}?action=getProject&id=${rawVal}`);
             const result = await response.json();
 
             if (result.status === "success") {
@@ -545,10 +548,93 @@ function initProjectTracker() {
     });
 }
 
+/**
+ * Universal Sync Function (Frontend -> Google Sheet)
+ * Debounced to prevent excessive API calls during typing
+ */
+let syncTimeout = null;
+async function syncProjectToSheet(data) {
+    if (!data || !data.id) return;
+
+    // Clear existing timeout
+    if (syncTimeout) clearTimeout(syncTimeout);
+
+    syncTimeout = setTimeout(async () => {
+        console.log("Syncing to Sheet:", data.id);
+        try {
+            await fetch(TRACKER_SYNC_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    project: data
+                })
+            });
+            console.log("Sync Dispatched successfully");
+        } catch (err) {
+            console.error("Sync failed:", err);
+        }
+    }, 1000);
+}
+
+function startTrackerPolling(projectId) {
+    if (window.trackerPollInterval) clearInterval(window.trackerPollInterval);
+
+    window.trackerPollInterval = setInterval(async () => {
+        const isPopupOpen = document.getElementById('popup-track-status');
+        if (!isPopupOpen || !projectId) {
+            stopTrackerPolling();
+            return;
+        }
+
+        try {
+            // Polling getAll updates the entire site's local cache
+            const response = await fetch(`${TRACKER_SYNC_URL}?action=getAll`);
+            const result = await response.json();
+
+            if (result.status === "success" && result.data) {
+                // 1. Update Global Cache
+                const newDataMap = {};
+                result.data.forEach(proj => {
+                    const cleanKey = proj.id.toString().replace(/-/g, '').toUpperCase();
+                    newDataMap[cleanKey] = proj;
+                });
+                window.projectData = newDataMap;
+
+                // 2. Update Current Popup if applicable
+                const currentData = window.lastTrackedProject;
+                const incomingData = newDataMap[projectId.replace(/-/g, '').toUpperCase()];
+
+                if (incomingData) {
+                    const currentVersion = (currentData && currentData.version) ? currentData.version : 0;
+                    const incomingVersion = incomingData.version || 0;
+
+                    if (incomingVersion > currentVersion) {
+                        console.log(`Global Poll: Live Update for ${projectId} (V${currentVersion} -> V${incomingVersion})`);
+                        populateTrackerPopup(incomingData, true);
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Polling error:", err);
+        }
+    }, 5000);
+}
+
+function stopTrackerPolling() {
+    if (window.trackerPollInterval) {
+        clearInterval(window.trackerPollInterval);
+        window.trackerPollInterval = null;
+    }
+}
+
 // Function to populate popup with data
-function populateTrackerPopup(data) {
+function populateTrackerPopup(data, skipSync = false) {
     window.lastTrackedProject = data;
     const isEditMode = localStorage.getItem('tracker_edit_mode_active') === 'true';
+
+    // Start polling for this project
+    startTrackerPolling(data.id);
 
     // Status Title and Subtitle Data
     const statusTitles = {
@@ -628,6 +714,9 @@ function populateTrackerPopup(data) {
                 });
                 const activePill = document.getElementById('status-' + newStatus);
                 if (activePill) activePill.style.opacity = '1';
+
+                // Sync change
+                if (!skipSync) syncProjectToSheet(data);
             };
         }
         if (phaseSelect) {
@@ -653,6 +742,9 @@ function populateTrackerPopup(data) {
                     trkPhase.textContent = newText;
                     data.phase = newText;
                     e.target.selectedIndex = 0;
+
+                    // Sync change
+                    if (!skipSync) syncProjectToSheet(data);
                 }
             };
         }
@@ -679,6 +771,9 @@ function populateTrackerPopup(data) {
                     trkMilestone.textContent = newText;
                     data.nextMilestone = newText;
                     e.target.selectedIndex = 0;
+
+                    // Sync change
+                    if (!skipSync) syncProjectToSheet(data);
                 }
             };
         }
@@ -724,20 +819,33 @@ function populateTrackerPopup(data) {
                         'trk-phase': 'phase', 'trk-updated': 'lastUpdated', 'trk-deadline': 'deadline',
                         'trk-milestone': 'nextMilestone', 'trk-pending': 'pendingAmount'
                     };
-                    if (fieldMap[id]) data[fieldMap[id]] = el.textContent.trim();
+                    if (fieldMap[id]) {
+                        data[fieldMap[id]] = el.textContent.trim();
+                        if (!skipSync) syncProjectToSheet(data);
+                    }
                 };
             }
         }
+    };
+
+    const cleanDate = (d) => {
+        if (!d || typeof d !== 'string') return d;
+        if (d.includes('T') && d.includes('Z')) {
+            // Convert ISO string to D MMM YYYY
+            const date = new Date(d);
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+        return d;
     };
 
     setSafe('trk-id', data.id);
     setSafe('trk-cost', data.cost);
     setSafe('trk-client', data.client);
     setSafe('trk-project', data.project);
-    setSafe('trk-start', data.startDate);
+    setSafe('trk-start', cleanDate(data.startDate));
     setSafe('trk-phase', data.phase);
-    setSafe('trk-updated', data.lastUpdated);
-    setSafe('trk-deadline', data.deadline);
+    setSafe('trk-updated', cleanDate(data.lastUpdated));
+    setSafe('trk-deadline', cleanDate(data.deadline));
     setSafe('trk-milestone', data.nextMilestone);
     setSafe('trk-pending', data.pendingAmount);
 
@@ -771,6 +879,7 @@ function populateTrackerPopup(data) {
                 el.onclick = () => {
                     data.status = status;
                     populateTrackerPopup(data);
+                    if (!skipSync) syncProjectToSheet(data);
                 };
             }
         }
@@ -801,7 +910,12 @@ function populateTrackerPopup(data) {
                 }
             }
             linkInput.value = data.downloadLink || '';
-            linkInput.oninput = () => { data.downloadLink = linkInput.value.trim(); };
+            linkInput.oninput = () => {
+                const newLink = linkInput.value.trim();
+                data.downloadLink = newLink;
+                if (downloadBtn) downloadBtn.href = newLink || 'https://aman3dpartner.netlify.app/';
+                if (!skipSync) syncProjectToSheet(data);
+            };
 
             // 2. Admin Buttons
             let adminGroup = document.getElementById('trk-admin-btns');
@@ -816,7 +930,7 @@ function populateTrackerPopup(data) {
                 <button id="btn-save-new" style="padding: 10px; background: #22c55e; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;" title="Saves as a NEW record in the list">💾 Download New Client Form</button>
                 <button id="btn-update-existing" style="padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;" title="Overwrites the original record you opened">📝 Update Existing Client</button>
             </div>
-            <button id="btn-reset" style="width: 100%; padding: 10px; background: #a855f7; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;">🔄 Reset to AMAN00Z (Generate New ID)</button>
+            <button id="btn-reset" style="width: 100%; padding: 10px; background: #a855f7; color: #fff; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;">🔄 Reset Tracker (Generate New Branded ID)</button>
         `;
 
             const btnSaveNew = document.getElementById('btn-save-new');
@@ -860,10 +974,14 @@ function populateTrackerPopup(data) {
                     };
 
                     populateTrackerPopup(resetData);
+
+                    // PROMPT SYNC IMMEDIATELY ON RESET
+                    syncProjectToSheet(resetData);
+
                 } catch (e) {
                     alert("Error reaching server for Next ID.");
                 } finally {
-                    btnReset.textContent = '🔄 Reset to AMAN00Z (New ID)';
+                    btnReset.textContent = '🔄 Reset Tracker (New ID Generated)';
                 }
             };
         } else {
@@ -892,40 +1010,6 @@ function populateTrackerPopup(data) {
     }
 }
 
-async function downloadTrackerData(editedData, mode) {
-    // 1. Sync with Google Sheet first
-    try {
-        const syncResponse = await fetch(TRACKER_SYNC_URL, {
-            method: 'POST',
-            mode: 'no-cors', // standard for GAS
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(editedData)
-        });
-        console.log("Tracker Two-Way Sync Dispatched");
-    } catch (err) {
-        console.error("Sync Error (Non-Critical):", err);
-    }
-
-    // Exit edit mode
-    localStorage.setItem('tracker_edit_mode_active', 'false');
-
-    // ... rest of the traditional download logic for safety/offline backup ...
-    const freshGlobalData = JSON.parse(JSON.stringify(window.projectData || {}));
-    let finalKey = (mode === 'update' && window.originalTrackerKey) ? window.originalTrackerKey : editedData.id.replace(/-/g, '').toUpperCase();
-    freshGlobalData[finalKey] = editedData;
-
-    const content = `// Project Data Replacement File\n// Replace the contents of project-data.js with this:\n\nconst projectData = ${JSON.stringify(freshGlobalData, null, 4)};\n\nwindow.projectData = projectData;`;
-    const blob = new Blob([content], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = mode === 'new' ? "project-data-NEW.js" : "project-data-UPDATED.js";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    setTimeout(() => { closePopup(); URL.revokeObjectURL(url); }, 500);
-}
 
 // ===== Minimize/Maximize =====
 function initMinimize() {
@@ -2111,6 +2195,7 @@ function closePopup() {
             downloadTrackerData(window.lastTrackedProject, 'update', false);
         }
         localStorage.setItem('tracker_edit_mode_active', 'false');
+        stopTrackerPolling();
     }
 
     const overlay = document.getElementById('popupOverlay');
@@ -2161,7 +2246,21 @@ window.confirmClosePopup = function (confirm) {
     }
 };
 
-function downloadTrackerData(editedData, mode, shouldClose = true) {
+async function downloadTrackerData(editedData, mode, shouldClose = true) {
+    // 1. Sync with Google Sheet first
+    try {
+        await fetch(TRACKER_SYNC_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                project: editedData
+            })
+        });
+        console.log("Tracker Two-Way Sync Dispatched");
+    } catch (err) {
+        console.error("Sync Error (Non-Critical):", err);
+    }
     // Exit edit mode first
     localStorage.setItem('tracker_edit_mode_active', 'false');
 
