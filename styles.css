@@ -804,6 +804,10 @@ body {
     box-shadow: 0 4px 15px rgba(210, 105, 30, 0.3);
     margin-top: 10px;
     font-family: 'Raleway', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
 }
 
 .tracker-btn-title:hover {
@@ -3584,3 +3588,226 @@ body {
         font-size: 14px !important;
     }
 }
+
+/* ================================================= */
+/* Premium Timeline Countdown Tracker Styles        */
+/* ================================================= */
+
+.premium-countdown-card {
+    position: relative;
+    background: linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.6));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 15px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.2),
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 5;
+}
+
+/* Subtle Micro Grain / Noise Texture */
+.premium-countdown-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Ambient Glow Decoration */
+.countdown-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+    filter: blur(40px);
+    opacity: 0.6;
+    transition: all 1.5s ease;
+    pointer-events: none;
+    z-index: -2;
+}
+
+/* Progress Line at Top */
+.timeline-progress-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.timeline-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    transition: width 1s linear;
+}
+
+/* Typography & Layout */
+.countdown-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.countdown-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.countdown-label-top {
+    font-size: 10px;
+    font-weight: 600;
+    color: #10b981;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.late-mark {
+    display: none;
+    font-size: 10px;
+    font-weight: 800;
+    color: #ef4444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.countdown-card-late .late-mark {
+    display: block;
+}
+
+.countdown-card-late .countdown-label-top {
+    color: #ef4444;
+    opacity: 0.8;
+}
+
+.countdown-body-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.countdown-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    animation: calm-pulse 4s infinite ease-in-out;
+}
+
+.countdown-timer-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: 'Inter', 'Roboto Mono', monospace;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.timer-segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timer-val {
+    font-size: 24px;
+    line-height: 1;
+    color: #10b981;
+    /* Default Green */
+    transition: all 0.8s ease;
+    text-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-sep {
+    font-size: 18px;
+    opacity: 0.3;
+    padding-bottom: 2px;
+}
+
+.timer-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.4;
+    margin-top: 5px;
+    font-weight: 700;
+}
+
+/* States */
+.countdown-card-amber .timer-val {
+    color: #f59e0b;
+    text-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.countdown-card-amber .timeline-progress-bar {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.countdown-card-amber .countdown-glow {
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+}
+
+.countdown-card-late {
+    background: linear-gradient(135deg, rgba(153, 27, 27, 0.45), rgba(69, 10, 10, 0.6));
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.countdown-card-late .timer-val {
+    color: #ef4444;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.countdown-card-late .timeline-progress-bar {
+    background: #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+    width: 100% !important;
+}
+
+.countdown-card-late .countdown-glow {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, transparent 70%);
+}
+
+/* Animations */
+@keyframes calm-pulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: scale(0.98);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');

@@ -621,10 +621,106 @@ function startTrackerPolling(projectId) {
     }, 5000);
 }
 
+function startCountdownTimer(startDateStr, deadlineStr) {
+    if (window.trackerCountdownInterval) clearInterval(window.trackerCountdownInterval);
+
+    const card = document.getElementById('premium-countdown');
+    const daysEl = document.getElementById('timer-days');
+    const hoursEl = document.getElementById('timer-hours');
+    const minsEl = document.getElementById('timer-mins');
+    const secsEl = document.getElementById('timer-secs');
+    const progressEl = document.getElementById('timer-progress');
+    const displayEl = document.getElementById('main-timer-display');
+
+    if (!card || !hoursEl || !minsEl || !secsEl || !progressEl || !displayEl) return;
+
+    const parseProjectDate = (str, isDeadline = false) => {
+        if (!str || str === '...') return null;
+        let d = new Date(str);
+        if (isNaN(d.getTime())) {
+            const parts = str.split('/');
+            if (parts.length === 3) d = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
+        }
+        if (isNaN(d.getTime())) return null;
+
+        // If it's a deadline string like "27 Feb 2026" without time, 
+        // treat it as the END of that day (23:59:59)
+        if (isDeadline && str.length < 15) {
+            d.setHours(23, 59, 59, 999);
+        }
+        return d;
+    };
+
+    const start = parseProjectDate(startDateStr);
+    const deadline = parseProjectDate(deadlineStr, true);
+
+    if (!start || !deadline) {
+        card.style.display = 'none';
+        return;
+    }
+
+    card.style.display = 'block';
+
+    const updateTimer = () => {
+        const now = new Date();
+        const totalWorkDuration = deadline - start;
+
+        let remaining;
+        let elapsed;
+
+        card.classList.remove('countdown-card-amber', 'countdown-card-late');
+
+        if (now > deadline) {
+            // LATE State
+            clearInterval(window.trackerCountdownInterval);
+            card.classList.add('countdown-card-late');
+            if (daysEl) daysEl.textContent = "00";
+            hoursEl.textContent = "00";
+            minsEl.textContent = "00";
+            secsEl.textContent = "00";
+            progressEl.style.width = '100%';
+            return;
+        } else if (now < start) {
+            // Not started yet
+            remaining = totalWorkDuration;
+            elapsed = 0;
+        } else {
+            // In Progress
+            remaining = deadline - now;
+            elapsed = now - start;
+        }
+
+        // Segment Calculations
+        const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+
+        if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+        hoursEl.textContent = hours.toString().padStart(2, '0');
+        minsEl.textContent = mins.toString().padStart(2, '0');
+        secsEl.textContent = secs.toString().padStart(2, '0');
+
+        const progressPercent = Math.min(100, Math.max(0, (elapsed / totalWorkDuration) * 100));
+        progressEl.style.width = progressPercent.toFixed(2) + '%';
+
+        if (now >= start && days === 0 && hours < 24) {
+            card.classList.add('countdown-card-amber');
+        }
+    };
+
+    updateTimer();
+    window.trackerCountdownInterval = setInterval(updateTimer, 1000);
+}
+
 function stopTrackerPolling() {
     if (window.trackerPollInterval) {
         clearInterval(window.trackerPollInterval);
         window.trackerPollInterval = null;
+    }
+    if (window.trackerCountdownInterval) {
+        clearInterval(window.trackerCountdownInterval);
+        window.trackerCountdownInterval = null;
     }
 }
 
@@ -635,6 +731,19 @@ function populateTrackerPopup(data, skipSync = false) {
 
     // Start polling for this project
     startTrackerPolling(data.id);
+
+    // Timeline only runs when project is "In Progress"
+    const countdownCard = document.getElementById('premium-countdown');
+    if (data.status === 'progress') {
+        startCountdownTimer(data.startDate, data.deadline);
+        if (countdownCard) countdownCard.style.display = 'block';
+    } else {
+        if (countdownCard) countdownCard.style.display = 'none';
+        if (window.trackerCountdownInterval) {
+            clearInterval(window.trackerCountdownInterval);
+            window.trackerCountdownInterval = null;
+        }
+    }
 
     // Status Title and Subtitle Data
     const statusTitles = {
@@ -804,14 +913,13 @@ function populateTrackerPopup(data, skipSync = false) {
         if (el) {
             el.textContent = val;
             if (isEditMode) {
-                // Form Date (trk-start) should not be editable manually
-                if (id !== 'trk-start') {
-                    el.contentEditable = "true";
-                    el.style.outline = "1px dashed orange";
-                } else {
-                    el.contentEditable = "false";
-                    el.style.outline = "none";
-                }
+                // ALL Fields are now editable in Admin Mode
+                el.contentEditable = "true";
+                el.style.outline = "1px dashed orange";
+                el.style.minWidth = "20px";
+                el.style.display = "inline-block"; // Ensure it takes space even if empty
+                el.style.cursor = "text";
+
                 el.oninput = () => {
                     const fieldMap = {
                         'trk-id': 'id', 'trk-cost': 'cost', 'trk-client': 'client',
@@ -1704,8 +1812,17 @@ function loadUpdates() {
 
 function initGlobalCheatCode() {
     let keyBuffer = '';
-    const toggleCode = '778899a';
-    const trackerCode = '778899b';
+
+    // Obfuscated keys to prevent easy discovery in Inspect Element
+    // These are reversed Base64 strings of the actual codes
+    const _secK1 = "YTk5ODg3Nw=="; // 778899a
+    const _secK2 = "Yjk5ODg3Nw=="; // 778899b
+
+    const _getK = (s) => atob(s).split('').reverse().join('');
+
+    const toggleCode = _getK(_secK1);
+    const trackerCode = _getK(_secK2);
+
     const maxLen = 8;
     const editModeKey = 'global_edit_mode_active';
     const trackerEditModeKey = 'tracker_edit_mode_active';
@@ -2196,6 +2313,11 @@ function closePopup() {
         }
         localStorage.setItem('tracker_edit_mode_active', 'false');
         stopTrackerPolling();
+        // Force clear countdown
+        if (window.trackerCountdownInterval) {
+            clearInterval(window.trackerCountdownInterval);
+            window.trackerCountdownInterval = null;
+        }
     }
 
     const overlay = document.getElementById('popupOverlay');

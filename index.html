@@ -3661,7 +3661,7 @@
             </div>
 
             <div id="tracker-results-container"
-                style="background: white; border: 1px solid #ccc; border-radius: 12px; padding: 15px; color: black;">
+                style="background: white; border: 1px solid #ccc; border-radius: 12px; padding: 15px; color: black; position: relative; min-height: 480px; padding-bottom: 45px;">
 
                 <!-- ID & Cost -->
                 <div
@@ -3865,6 +3865,50 @@
                         <span>Pending Payment: <strong id="trk-pending" style="color: black;">...</strong></span>
                         <span>Project Delivery Date: <strong id="trk-deadline"
                                 style="color: #ef4444;">...</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premium Timeline Countdown Tracker -->
+            <div id="premium-countdown" class="premium-countdown-card">
+                <div class="timeline-progress-container">
+                    <div id="timer-progress" class="timeline-progress-bar"></div>
+                </div>
+                <div class="countdown-glow" id="timer-glow"></div>
+                <div class="countdown-content">
+                    <div class="countdown-header-row">
+                        <span class="countdown-label-top">Time Left to Deliver the work</span>
+                        <span class="late-mark"> Late</span>
+                    </div>
+                    <div class="countdown-body-row">
+                        <div class="countdown-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="countdown-timer-display" id="main-timer-display">
+                            <div class="timer-segment">
+                                <span class="timer-val" id="timer-days">00</span>
+                                <span class="timer-label">Days</span>
+                            </div>
+                            <span class="timer-sep">:</span>
+                            <div class="timer-segment">
+                                <span class="timer-val" id="timer-hours">00</span>
+                                <span class="timer-label">Hours</span>
+                            </div>
+                            <span class="timer-sep">:</span>
+                            <div class="timer-segment">
+                                <span class="timer-val" id="timer-mins">00</span>
+                                <span class="timer-label">Mins</span>
+                            </div>
+                            <span class="timer-sep">:</span>
+                            <div class="timer-segment">
+                                <span class="timer-val" id="timer-secs">00</span>
+                                <span class="timer-label">Secs</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5568,7 +5612,14 @@
         .anim-dot {
             animation: loadingDots 1.4s infinite;
             display: inline-block;
-            margin-left: 2px;
+            margin: 0 4px;
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 0;
+            vertical-align: middle;
+            position: relative;
+            top: -4px;
+            /* Move dots up slightly to align with button center */
         }
 
         .dot-2 {
