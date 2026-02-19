@@ -5,6 +5,7 @@
 
 const CONFIG = {
   SHEET_NAME: 'TrackerData',
+  FEEDBACK_SHEET_NAME: 'Feedback',
   ID_PREFIX: 'VMC',
   STARTING_ID_NUM: 125
 };
@@ -44,8 +45,14 @@ function doPost(e) {
   lock.waitLock(10000); // prevent race condition
 
   try {
-    const sheet = getSheet();
     const data = JSON.parse(e.postData.contents);
+    
+    // Handle Feedback
+    if (data.action === 'submitFeedback') {
+      return json(handleFeedback(data.feedback));
+    }
+
+    const sheet = getSheet();
     const project = data.project || data;
 
     if (!project.id) throw new Error("Missing project ID");
@@ -63,6 +70,29 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function handleFeedback(fb) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
+  
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.FEEDBACK_SHEET_NAME);
+    sheet.appendRow(["Timestamp", "Project ID", "Project Name", "Client Name", "Rating", "Message"]);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#f3f3f3");
+  }
+
+  const now = new Date();
+  sheet.appendRow([
+    Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss"),
+    fb.projectID || '',
+    fb.projectName || '',
+    fb.clientName || '',
+    fb.rating || '',
+    fb.message || ''
+  ]);
+
+  return { status: "success", message: "Feedback saved" };
 }
 
 /* ============================= */

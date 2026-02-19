@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyB93wh2WgVV5qN_82FdfFiLUmQLbWn7SMY1mnWIGhIl2AR7tuW5ig4peu7UZVcbfaG/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzkO5DZVjNDOqjXIBoetjZPCmTr5CVCKqVoUmN0I295m54bk0mJ5NGMxgWUnPb0nHtC/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyYsUL9WJ_Y8m4T94Vwmq11yFO3coBOl5Y49kUBKTyv-DnOjPesFM0sqfJhhwUMvKCMxA/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -1106,16 +1106,6 @@ function populateTrackerPopup(data, skipSync = false) {
     const printBtn = document.getElementById('btn-print');
     if (printBtn) printBtn.onclick = () => window.print();
 
-    const feedbackBtn = document.querySelector('button[onclick="openPopup(\'feedback\')"]');
-    if (feedbackBtn) {
-        feedbackBtn.onclick = function () {
-            openPopup('feedback');
-            setTimeout(() => {
-                const pInput = document.getElementById('fb-project'), cInput = document.getElementById('fb-client'), pidInput = document.getElementById('fb-pid');
-                if (pInput) pInput.value = data.project; if (cInput) cInput.value = data.client; if (pidInput) pidInput.value = data.id;
-            }, 50);
-        };
-    }
 }
 
 
@@ -3343,7 +3333,14 @@ function handleFeedbackSubmit(e) {
     e.preventDefault();
 
     const form = e.target;
-    const projectName = document.getElementById('fb-project')?.value || 'General Feedback';
+    const formContainer = form.parentElement;
+    const thankYouDiv = document.getElementById('feedback-thank-you');
+    const reviewLink = document.getElementById('feedback-review-link');
+    const submitBtn = document.getElementById('feedback-submit-btn');
+
+    // MAPPING FIX: fb-project (Visible) is the ID, fb-pid (Hidden) is the Name
+    const projectID = document.getElementById('fb-project')?.value || 'N/A';
+    const projectName = document.getElementById('fb-pid')?.value || 'General Feedback';
     const clientName = document.getElementById('fb-client')?.value || 'Website Visitor';
     const rating = form.querySelector('input[name="rating"]:checked')?.value || 'Not rated';
     const message = document.getElementById('feedback-msg')?.value || '';
@@ -3361,7 +3358,8 @@ function handleFeedbackSubmit(e) {
 📝 NEW FEEDBACK RECEIVED
 
 👤 Client: ${clientName}
-📊 Project Number: ${projectName}
+🆔 ID: ${projectID}
+📋 Project: ${projectName}
 ⭐ Rating: ${ratingEmojis[rating] || rating}/5
 
 💬 Message:
@@ -3370,6 +3368,32 @@ ${message}
 ---
 Sent via Website Feedback Form
 `;
+
+    // Show loading state on button
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Submitting <span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span class="anim-dot dot-3">.</span>';
+    }
+
+    // Prepare data for Google Sheets
+    const feedbackData = {
+        projectID: projectID,
+        projectName: projectName,
+        clientName: clientName,
+        rating: rating,
+        message: message
+    };
+
+    // Send to Google Sheets
+    fetch(TRACKER_SYNC_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+            action: 'submitFeedback',
+            feedback: feedbackData
+        })
+    }).catch(err => console.error("Feedback Sheet Sync failed:", err));
 
     // Send via Tawk.to chat (hidden)
     if (window.Tawk_API && window.Tawk_API.addEvent) {
@@ -3394,46 +3418,47 @@ Sent via Website Feedback Form
         });
     }
 
-    // Show thank you message
-    const formContainer = form.parentElement;
-    const thankYouDiv = document.getElementById('feedback-thank-you');
-    const reviewLink = document.getElementById('feedback-review-link');
-    const submitBtn = document.getElementById('feedback-submit-btn');
+    // Show thank you message (with a small delay for aesthetic)
+    setTimeout(() => {
+        if (thankYouDiv && formContainer) {
+            // Hide form inputs
+            Array.from(form.elements).forEach(el => {
+                if (el.type !== 'hidden') {
+                    el.style.display = 'none';
+                }
+            });
 
-    if (thankYouDiv && formContainer) {
-        // Hide form inputs
-        Array.from(form.elements).forEach(el => {
-            if (el.type !== 'hidden') {
-                el.style.display = 'none';
-            }
-        });
+            // Hide submit button and review link
+            if (submitBtn) submitBtn.style.display = 'none';
+            if (reviewLink) reviewLink.style.display = 'none';
 
-        // Hide submit button and review link
-        if (submitBtn) submitBtn.style.display = 'none';
-        if (reviewLink) reviewLink.style.display = 'none';
+            // Show thank you message
+            thankYouDiv.style.display = 'block';
 
-        // Show thank you message
-        thankYouDiv.style.display = 'block';
-
-        // Auto-close popup after 4 seconds
-        setTimeout(() => {
-            const closeBtn = document.querySelector('.popup-overlay.active .popup-close');
-            if (closeBtn) closeBtn.click();
-
-            // Reset form after closing
+            // Auto-close popup after 4 seconds
             setTimeout(() => {
-                form.reset();
-                Array.from(form.elements).forEach(el => {
-                    if (el.type !== 'hidden') {
-                        el.style.display = '';
+                const closeBtn = document.querySelector('.popup-overlay.active .popup-close');
+                if (closeBtn) closeBtn.click();
+
+                // Reset form after closing
+                setTimeout(() => {
+                    form.reset();
+                    Array.from(form.elements).forEach(el => {
+                        if (el.type !== 'hidden') {
+                            el.style.display = '';
+                        }
+                    });
+                    if (submitBtn) {
+                        submitBtn.style.display = '';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Submit Feedback';
                     }
-                });
-                if (submitBtn) submitBtn.style.display = '';
-                if (reviewLink) reviewLink.style.display = '';
-                thankYouDiv.style.display = 'none';
-            }, 500);
-        }, 4000);
-    }
+                    if (reviewLink) reviewLink.style.display = '';
+                    thankYouDiv.style.display = 'none';
+                }, 500);
+            }, 4000);
+        }
+    }, 800);
 
     return false;
 }
@@ -3486,13 +3511,20 @@ function openFeedbackFromTracker() {
         // Auto-fill the form fields
         const fbClient = document.getElementById('fb-client');
         const fbProject = document.getElementById('fb-project');
+        const fbPid = document.getElementById('fb-pid');
 
         if (fbClient && clientName && clientName !== '...') {
             fbClient.value = clientName;
         }
 
+        // Project Number (Visible Field) -> ID
         if (fbProject && projectId && projectId !== '...') {
             fbProject.value = projectId;
+        }
+
+        // Project Name (Hidden Field) -> Name
+        if (fbPid && projectName && projectName !== '...') {
+            fbPid.value = projectName;
         }
 
         // Initialize form if not already done
