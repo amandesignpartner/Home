@@ -232,17 +232,24 @@ function handleDownloadLog(data) {
 
 function getSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  return ss.getSheetByName(CONFIG.SHEET_NAME) || ss.getSheets()[0];
-}
-
-function updateOrInsert(sheet, project) {
+  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.getSheets()[0];
+  
+  // Auto-Repair Headers for Tracker Data
   const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(headers);
+  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "ID") {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
     sheet.setFrozenRows(1);
   }
+  
+  return sheet;
+}
 
+function updateOrInsert(sheet, project) {
+  // headers used for mapping
+  const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
+  
   const data = sheet.getDataRange().getValues();
   const cleanID = clean(project.id);
   let rowIdx = -1;
