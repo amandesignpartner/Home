@@ -81,7 +81,7 @@
 
                 // Only set src if it's currently at the blank state
                 if (iframe.src.includes('about:blank') || iframe.src === '') {
-                    iframe.src = originalSrc + "?autoplay=1&muted=0&vq=hd1080";
+                    iframe.src = originalSrc + "?autoplay=1&muted=0&vq=hd2160";
                 }
 
                 overlay360.classList.add('active');

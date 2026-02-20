@@ -1,5 +1,5 @@
 // Service Worker for 360 View Aggressive Caching
-const CACHE_NAME = '360-view-cache-v2';
+const CACHE_NAME = '360-view-cache-v3';
 const IFRAME_URL = 'https://amandesignpartner.github.io/360views/';
 
 // Install event - preload and cache the 360 view and all its resources
