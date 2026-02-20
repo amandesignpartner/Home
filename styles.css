@@ -3878,4 +3878,135 @@ body {
     }
 }
 
+/* ==========================================================================
+   Panda Animation Showcase
+   ========================================================================== */
+.panda-showcase-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    overflow: visible;
+    border-radius: inherit;
+}
+
+.panda-character {
+    position: absolute;
+    top: 60px;
+    /* Start lower, hidden by opacity */
+    left: 50%;
+    transform: translateX(-50%);
+    transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    pointer-events: auto;
+}
+
+.panda-character.visible {
+    top: -45px;
+    /* Sit on top edge of sketch note */
+    opacity: 1;
+}
+
+.panda-character.handshake {
+    transform: translateX(-50%) scale(1.15) translateY(-5px);
+}
+
+.panda-character.disappear {
+    top: 60px;
+    /* Slides back down into the note while fading */
+    opacity: 0;
+}
+
+.panda-signboard {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 320px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(210, 105, 30, 0.3);
+    border-left: 4px solid var(--primary-orange);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 130;
+    pointer-events: none;
+}
+
+.panda-signboard.visible {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.signboard-inner {
+    max-height: 280px;
+    overflow-y: hidden;
+}
+
+.sign-point {
+    margin-bottom: 12px;
+    opacity: 0;
+    transform: translateX(-15px);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 8px;
+}
+
+.sign-point:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.sign-point.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.sign-title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--primary-orange);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sign-title span {
+    font-size: 16px;
+}
+
+.sign-subtitle {
+    font-size: 11px;
+    font-weight: 300;
+    color: #555;
+    display: block;
+    line-height: 1.4;
+    padding-left: 20px;
+}
+
+@keyframes signPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');

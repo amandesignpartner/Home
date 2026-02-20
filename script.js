@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initLogoLock(); // Initialize logo lock logic
     init360Popup(); // Initialize 360 view popup
     window.initPlyr(); // Initialize all video players
+    initPandaShowcase(); // Start the panda illustration storyline sequence
 
     // Check for form success flag in URL
     checkFormSuccess();
@@ -3828,3 +3829,84 @@ window.initPlyr = function (container = document) {
 
 // Consistently initialized in main DOMContentLoaded in header
 
+// ==========================================
+// Panda Animation Showcase Sequence
+// ==========================================
+function initPandaShowcase() {
+    const pandaContainer = document.getElementById('panda-showcase-container');
+    const pandaChar = document.getElementById('panda-character');
+    const pandaSignboard = document.getElementById('panda-signboard');
+    const textContainer = document.getElementById('signboard-text-container');
+    if(!pandaContainer || !pandaChar || !pandaSignboard || !textContainer) return;
+
+    const phrases = [
+        { main: "✓ 4K Ultra HD Walkthroughs", sub: "Stunning, lifelike environments with exceptional detail." },
+        { main: "✓ AI Enhanced Rendering", sub: "Optimized visuals powered by cutting edge AI." },
+        { main: "✓ 360° VR Rendering", sub: "Immersive, interactive virtual spaces with panoramic views." },
+        { main: "✓ Interactive Walkthroughs", sub: "Control your experience online or offline with keyboard and mouse navigation." },
+        { main: "✓ 2D and 3D Interior and Exterior Design", sub: "Precise modeling and realistic rendering for interiors and exteriors." },
+        { main: "✓ 3D Walkthroughs and Animations", sub: "Engaging animations that bring spaces to life." },
+        { main: "✓ Landscape and Environment Design", sub: "Realistic 3D landscapes and natural environments." },
+        { main: "✓ 3D Floor Plans and Birds eye Views", sub: "Detailed views from all angles." },
+        { main: "✓ Realistic 3D Visualization", sub: "Turning concepts into vivid, realistic environments." }
+    ];
+
+    // Build the DOM elements for phrases
+    phrases.forEach((phrase, index) => {
+        const div = document.createElement('div');
+        div.className = 'sign-point';
+        div.id = 'sign-point-' + index;
+        // Make the checkmark look nice and separate from the title text
+        div.innerHTML = `
+            <div class="sign-title"><span>${phrase.main.charAt(0)}</span> ${phrase.main.slice(2)}</div>
+            <div class="sign-subtitle">${phrase.sub}</div>
+        `;
+        textContainer.appendChild(div);
+    });
+
+    // Sequence Choreography
+    setTimeout(() => {
+        // 1. Panda pops up (comes out of the sketch note)
+        pandaChar.classList.add('visible');
+        
+        // 2. Panda handshake
+        setTimeout(() => {
+            pandaChar.classList.add('handshake');
+        }, 2500);
+
+        // 3. Panda hides behind the sketch note
+        setTimeout(() => {
+            pandaChar.classList.remove('handshake');
+            pandaChar.classList.remove('visible');
+            pandaChar.classList.add('disappear');
+        }, 5000);
+
+        // 4. Signboard appears from behind
+        setTimeout(() => {
+            pandaSignboard.classList.add('visible');
+            
+            // 5. Animate text line by line with a smooth pop & slide
+            let i = 0;
+            const signboardInner = pandaSignboard.querySelector('.signboard-inner');
+            const interval = setInterval(() => {
+                const point = document.getElementById('sign-point-' + i);
+                if(point) {
+                    point.classList.add('active');
+                    // Ensure the newest element is visible within the scrolling container
+                    signboardInner.scrollTo({
+                        top: signboardInner.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+                i++;
+                if(i >= phrases.length) {
+                    clearInterval(interval);
+                    // Add some extra space at the bottom when done
+                    textContainer.style.paddingBottom = "15px";
+                }
+            }, 1200);
+
+        }, 6000); // Trigger board shortly after panda disappears
+
+    }, 3000); // Wait 3 seconds after page load before starting
+}

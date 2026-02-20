@@ -27,6 +27,9 @@
         content="Expert 3D Visualization & Architectural Rendering services. Specializing in Photorealistic 3D Modeling, Interior Design, and Exterior Rendering.">
     <meta property="twitter:image" content="images/slide1.webp">
 
+    <!-- Lottie & DotLottie Player -->
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json">
     {
@@ -997,6 +1000,21 @@
         <div class="sticky-content" style="padding: 0 !important; height: 100%; position: relative;">
             <img src="images/final-sketch-note.webp" alt="Architectural Project Note"
                 style="width: 100%; height: 100%; object-fit: contain; display: block;">
+
+            <!-- Panda Animation Showcase -->
+            <div id="panda-showcase-container" class="panda-showcase-wrapper">
+                <div class="panda-character" id="panda-character">
+                    <dotlottie-player id="panda-player"
+                        src="https://lottie.host/801deb96-d971-4694-8742-1e96a23b3671/8XpE8m2S0y.json"
+                        background="transparent" speed="1" style="width: 130px; height: 130px;" loop autoplay>
+                    </dotlottie-player>
+                </div>
+                <div class="panda-signboard" id="panda-signboard">
+                    <div class="signboard-inner">
+                        <div id="signboard-text-container"></div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Relocated Buttons: Nested and Locked in User-Defined Position -->
             <div class="sticky-btn-tab" id="sticky-btn-brief" data-title="Project Brief" data-popup="contact"
