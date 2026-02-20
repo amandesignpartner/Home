@@ -3835,9 +3835,10 @@ window.initPlyr = function (container = document) {
 function initPandaShowcase() {
     const pandaContainer = document.getElementById('panda-showcase-container');
     const pandaChar = document.getElementById('panda-character');
+    const pandaImg = document.getElementById('panda-img');
     const pandaSignboard = document.getElementById('panda-signboard');
     const textContainer = document.getElementById('signboard-text-container');
-    if(!pandaContainer || !pandaChar || !pandaSignboard || !textContainer) return;
+    if (!pandaContainer || !pandaChar || !pandaImg || !pandaSignboard || !textContainer) return;
 
     const phrases = [
         { main: "✓ 4K Ultra HD Walkthroughs", sub: "Stunning, lifelike environments with exceptional detail." },
@@ -3851,62 +3852,166 @@ function initPandaShowcase() {
         { main: "✓ Realistic 3D Visualization", sub: "Turning concepts into vivid, realistic environments." }
     ];
 
-    // Build the DOM elements for phrases
-    phrases.forEach((phrase, index) => {
-        const div = document.createElement('div');
-        div.className = 'sign-point';
-        div.id = 'sign-point-' + index;
-        // Make the checkmark look nice and separate from the title text
-        div.innerHTML = `
-            <div class="sign-title"><span>${phrase.main.charAt(0)}</span> ${phrase.main.slice(2)}</div>
-            <div class="sign-subtitle">${phrase.sub}</div>
+    let currentServiceIndex = 0;
+
+    // Function to render a single service in the signboard
+    function renderService(index) {
+        const phrase = phrases[index];
+        textContainer.innerHTML = `
+            <div class="sign-point active" style="border: none; margin-bottom: 0;">
+                <div style="display: flex; gap: 8px; align-items: flex-start; justify-content: center;">
+                    <span style="color: var(--primary-orange); font-size: 16px; margin-top: 2px;">${phrase.main.charAt(0)}</span>
+                    <div style="color: var(--primary-orange); font-weight: 700; font-size: 13px; line-height: 1.3; text-transform: uppercase; text-align: left;">${phrase.main.slice(2)}</div>
+                </div>
+                <div class="sign-subtitle" style="font-size: 11px; margin-top: 8px; color: #666; text-align: left; padding-left: 20px; line-height: 1.4;">${phrase.sub}</div>
+                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 6px;">
+                    ${phrases.map((_, idx) => `<div style="width: 8px; height: 8px; border-radius: 50%; transition: background 0.3s; background: ${idx === index ? 'var(--primary-orange)' : (idx < index ? '#10b981' : '#e5e7eb')}"></div>`).join('')}
+                </div>
+            </div>
         `;
-        textContainer.appendChild(div);
-    });
+    }
 
-    // Sequence Choreography
+    // Sequence Choreography using the images
     setTimeout(() => {
-        // 1. Panda pops up (comes out of the sketch note)
-        pandaChar.classList.add('visible');
-        
-        // 2. Panda handshake
-        setTimeout(() => {
-            pandaChar.classList.add('handshake');
-        }, 2500);
+        // Setup initial styles overrides
+        pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+        pandaSignboard.style.top = "25%"; // Move signboard up 
+        pandaSignboard.style.left = "65%"; // Shift right 
+        pandaSignboard.style.width = "270px";
 
-        // 3. Panda hides behind the sketch note
-        setTimeout(() => {
-            pandaChar.classList.remove('handshake');
-            pandaChar.classList.remove('visible');
-            pandaChar.classList.add('disappear');
-        }, 5000);
+        // 1. Emerging (pops up) - Bottom Right Corner
+        pandaImg.src = "images/panda-character.png";
+        pandaChar.style.top = "auto";
+        pandaChar.style.right = "20px";
+        pandaChar.style.left = "auto";
+        pandaChar.style.bottom = "0px";
+        pandaChar.style.transform = "translateY(150px) scale(0.65)"; // Hidden low
+        pandaChar.style.opacity = "0";
 
-        // 4. Signboard appears from behind
-        setTimeout(() => {
-            pandaSignboard.classList.add('visible');
-            
-            // 5. Animate text line by line with a smooth pop & slide
-            let i = 0;
-            const signboardInner = pandaSignboard.querySelector('.signboard-inner');
-            const interval = setInterval(() => {
-                const point = document.getElementById('sign-point-' + i);
-                if(point) {
-                    point.classList.add('active');
-                    // Ensure the newest element is visible within the scrolling container
-                    signboardInner.scrollTo({
-                        top: signboardInner.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                }
-                i++;
-                if(i >= phrases.length) {
-                    clearInterval(interval);
-                    // Add some extra space at the bottom when done
-                    textContainer.style.paddingBottom = "15px";
-                }
-            }, 1200);
+        // trigger reflow
+        void pandaChar.offsetWidth;
 
-        }, 6000); // Trigger board shortly after panda disappears
+        pandaChar.style.transform = "translateY(0) scale(0.65)";
+        pandaChar.style.opacity = "1";
+
+        // 2. Sitting & Waving
+        setTimeout(() => {
+            pandaImg.classList.add('panda-img-wave');
+        }, 1500);
+
+        // 3. Handshake - Sliding in
+        setTimeout(() => {
+            pandaImg.classList.remove('panda-img-wave');
+            pandaImg.src = "images/panda-handshake.png";
+
+            // Snap position, then animate in
+            pandaChar.style.transition = "none";
+            pandaChar.style.top = "auto";
+            pandaChar.style.left = "auto";
+            pandaChar.style.right = "20px";
+            pandaChar.style.bottom = "0px";
+            pandaChar.style.transform = "translateX(150px) scale(0.70)";
+            pandaChar.style.opacity = "0";
+
+            // trigger reflow
+            void pandaChar.offsetWidth;
+
+            pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+            pandaChar.style.transform = "translateX(0) scale(0.70)";
+            pandaChar.style.opacity = "1";
+
+            pandaImg.classList.add('panda-img-bounce');
+        }, 3000);
+
+        // 4. Hiding
+        setTimeout(() => {
+            pandaChar.style.opacity = "0";
+            pandaChar.style.transform = "translateY(150px) scale(0.70)";
+            pandaImg.classList.remove('panda-img-bounce');
+        }, 5500);
+
+        // 5. Signboard Loop
+        setTimeout(() => {
+            // Swap to signboard panda BEFORE coming up
+            pandaImg.src = "images/panda-signboard.png";
+            pandaImg.style.width = "100%";
+            pandaImg.style.height = "auto"; // Auto height for correct aspect ratio in fixed widget
+            pandaImg.style.objectFit = "contain";
+
+            // Setup position - Signboard over the belly
+            pandaSignboard.style.transition = "all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+            pandaSignboard.style.top = "65%";
+            pandaSignboard.style.left = "50%";
+            pandaSignboard.style.width = "250px";
+            pandaSignboard.style.transform = "translate(-50%, -50%) scale(0.85)"; // Hidden low (scaled down)
+
+            // Setup position - Panda centered, Full Height to overlap top and bottom
+            pandaChar.style.transition = "none";
+            pandaChar.style.top = "auto";
+            pandaChar.style.bottom = "-20px";
+            pandaChar.style.height = "auto";
+            pandaChar.style.width = "100%";
+            pandaChar.style.left = "0px";
+            pandaChar.style.right = "0px";
+            pandaChar.style.display = "flex";
+            pandaChar.style.justifyContent = "center";
+            pandaChar.style.alignItems = "center";
+            pandaChar.style.transform = "translateY(150px)"; // Hidden off bottom
+            pandaChar.style.opacity = "0";
+
+            // trigger reflow
+            void pandaChar.offsetWidth;
+
+            pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+
+            function cycleServices() {
+                if (currentServiceIndex >= phrases.length) return;
+
+                // Slide up from bottom
+                pandaChar.style.transform = "translateY(0%)"; // Aligns completely in bottom right corner
+                pandaChar.style.opacity = "1";
+
+                pandaChar.classList.add('panda-img-bounce');
+
+                // Update text
+                renderService(currentServiceIndex);
+
+                // Show signboard box (Animated in place)
+                setTimeout(() => {
+                    pandaSignboard.style.opacity = "1";
+                    pandaSignboard.style.transform = "translate(-50%, -50%) scale(1)"; // Sitting on belly
+                }, 400);
+
+                // Hide after 2.5s
+                setTimeout(() => {
+                    if (currentServiceIndex < phrases.length - 1) {
+                        // Pop board down and fade
+                        pandaSignboard.style.opacity = "0";
+                        pandaSignboard.style.transform = "translate(-50%, -50%) scale(0.85)";
+
+                        // Slide panda down and fade
+                        pandaChar.style.transform = "translateY(150px)";
+                        pandaChar.style.opacity = "0";
+
+                        pandaChar.classList.remove('panda-img-bounce');
+
+                        currentServiceIndex++;
+
+                        // Recursively call for next service after hiding completely (800ms)
+                        setTimeout(() => {
+                            cycleServices();
+                        }, 800);
+                    } else {
+                        // Keep the last one visible and stable
+                        currentServiceIndex++;
+                        pandaChar.classList.remove('panda-img-bounce');
+                    }
+                }, 2500);
+            }
+
+            cycleServices();
+
+        }, 6500); // Trigger board shortly after panda disappears
 
     }, 3000); // Wait 3 seconds after page load before starting
 }

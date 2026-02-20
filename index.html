@@ -1001,21 +1001,6 @@
             <img src="images/final-sketch-note.webp" alt="Architectural Project Note"
                 style="width: 100%; height: 100%; object-fit: contain; display: block;">
 
-            <!-- Panda Animation Showcase -->
-            <div id="panda-showcase-container" class="panda-showcase-wrapper">
-                <div class="panda-character" id="panda-character">
-                    <dotlottie-player id="panda-player"
-                        src="https://lottie.host/801deb96-d971-4694-8742-1e96a23b3671/8XpE8m2S0y.json"
-                        background="transparent" speed="1" style="width: 130px; height: 130px;" loop autoplay>
-                    </dotlottie-player>
-                </div>
-                <div class="panda-signboard" id="panda-signboard">
-                    <div class="signboard-inner">
-                        <div id="signboard-text-container"></div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Relocated Buttons: Nested and Locked in User-Defined Position -->
             <div class="sticky-btn-tab" id="sticky-btn-brief" data-title="Project Brief" data-popup="contact"
                 style="left: 41.7px; top: 221.6px;">
@@ -1041,6 +1026,20 @@
                     <span style="font-size: 12px; opacity: 0.8; letter-spacing: 1px;">CLICK HERE TO</span>
                     <span>SUBMIT PAYMENT</span>
                 </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Panda Animation Showcase (Detached from sketch note flow) -->
+    <div id="panda-showcase-container" class="panda-showcase-wrapper draggable">
+        <div class="panda-character drag-handle" id="panda-character" style="z-index: 125; cursor: move;">
+            <img id="panda-img" src="images/panda-character.png" alt="Panda"
+                style="width: 100px; height: auto; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); transition: opacity 0.3s; opacity: 1; pointer-events: none;">
+        </div>
+        <div class="panda-signboard" id="panda-signboard">
+            <div class="signboard-inner">
+                <div id="signboard-text-container"></div>
             </div>
         </div>
     </div>
