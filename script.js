@@ -3930,7 +3930,7 @@ function initPandaShowcase() {
         pandaSignboard.style.width = "270px";
 
         // 1. Emerging (pops up) - Initial position Left
-        pandaImg.src = "images/panda-character.png";
+        pandaImg.src = "images/panda-character.webp";
         pandaImg.style.width = "100px"; // Reset width from loop
         pandaChar.style.width = "auto"; // Reset width from loop
         pandaChar.style.display = "block"; // Reset from flex
@@ -3955,7 +3955,7 @@ function initPandaShowcase() {
         // 3. Handshake - Sliding in
         setTimeout(() => {
             pandaImg.classList.remove('panda-img-wave');
-            pandaImg.src = "images/panda-handshake.png";
+            pandaImg.src = "images/panda-handshake.webp";
 
             // Snap position, then animate in
             pandaChar.style.transition = "none";
@@ -3986,7 +3986,7 @@ function initPandaShowcase() {
         // 5. Signboard Loop
         setTimeout(() => {
             // Swap to signboard panda BEFORE coming up
-            pandaImg.src = "images/panda-signboard.png";
+            pandaImg.src = "images/panda-signboard.webp";
             pandaImg.style.width = "100%";
             pandaImg.style.height = "auto"; // Auto height for correct aspect ratio in fixed widget
             pandaImg.style.objectFit = "contain";
@@ -4113,7 +4113,7 @@ function initPandaShowcase() {
                                 pandaChar.style.transition = "none";
                                 pandaChar.style.opacity = "0";
                                 pandaChar.style.transform = "translateY(150px) scale(0.85)"; // Reset state
-                                pandaImg.src = "images/panda-character.png";
+                                pandaImg.src = "images/panda-character.webp";
 
                                 setTimeout(() => {
                                     // Slide back to the alternating origin point depending on the loop
