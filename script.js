@@ -2601,11 +2601,15 @@ window.initiatePlanChat = function (planName) {
         // Open the chat window
         Tawk_API.maximize();
 
-        // Send the actual message into the chat
+        const contextMessage = `Hi Aman, I'm interested in the ${planName}.`;
+
+        // Send the actual message into the chat with a small delay for reliability
         if (Tawk_API.sendChatMessage) {
-            Tawk_API.sendChatMessage(contextMessage, function (error) {
-                if (error) console.error("Error sending chat message:", error);
-            });
+            setTimeout(() => {
+                Tawk_API.sendChatMessage(contextMessage, function (error) {
+                    if (error) console.error("Error sending chat message:", error);
+                });
+            }, 500);
         }
 
         // Pass this context to the agent view via attributes and tags
