@@ -116,13 +116,11 @@ function checkFirstVisit() {
     });
     localStorage.setItem('stickyPositions', JSON.stringify(positions));
 
-    // Define Default MINIMIZED Elements (all except sketch, intro, profile, and projects)
     const defaultMinimized = [
         'note-contact',
         'note-collaborate',
         'note-feedback',
-        'note-pricing',
-        'btn-360'
+        'note-pricing'
     ];
 
     localStorage.setItem('minimizedElements', JSON.stringify(defaultMinimized));

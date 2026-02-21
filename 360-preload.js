@@ -41,7 +41,7 @@
         let progressInterval;
 
         // 1. OPEN: Explictly set src and show
-        open360Btn.addEventListener('click', () => {
+        const openLogic = () => {
             const iframe = document.getElementById('iframe360View');
             if (iframe && !overlay360.classList.contains('active')) {
                 console.log('360 View: Launching environment...');
@@ -103,7 +103,12 @@
                     }
                 }, 8000);
             }
-        });
+        };
+
+        // Expose globally for project section buttons
+        window.open360View = openLogic;
+
+        open360Btn.addEventListener('click', openLogic);
 
         const finishLoading = () => {
             clearInterval(progressInterval);

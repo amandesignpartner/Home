@@ -542,7 +542,7 @@
                         3D Modeling & Rendering
                     </button>
                 </div>
-                <button class="btn-premium" onclick="document.getElementById('open360Popup').click()">
+                <button class="btn-premium" onclick="if(window.open360View) window.open360View()">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -553,6 +553,8 @@
                     </svg>
                     Watch Interactive 360 Views
                 </button>
+
+
 
                 <button class="btn-premium" data-popup="project-2d-concept">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
@@ -924,6 +926,7 @@
 
         </div>
     </div>
+
 
 
 
@@ -3626,7 +3629,7 @@
                         3D Modeling & Rendering
                     </button>
                 </div>
-                <button class="btn-premium" onclick="document.getElementById('open360Popup').click()">
+                <button class="btn-premium" onclick="if(window.open360View) window.open360View()">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -3637,6 +3640,8 @@
                     </svg>
                     Watch Interactive 360 Views
                 </button>
+
+
 
                 <button class="btn-premium" data-popup="project-2d-concept">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
@@ -5728,6 +5733,8 @@
     </div>
 
     <script src="360-preload.js?v=1.3.0" defer></script>
+
+
     <script src="quick-pickup.js?v=1.3.0" defer></script>
     <script src="performance-optimization.js?v=1.3.0" defer></script>
 
