@@ -2596,44 +2596,61 @@ window.toggleMainChat = function () {
 };
 
 // Global function to initiate chat for a specific plan
+// Persistent storage for plan inquiry message
+window.tawkPendingMsg = null;
+
+// Hook into Tawk.to event for reliability
+window.Tawk_API = window.Tawk_API || {};
+window.Tawk_API.onChatMaximized = function () {
+    if (window.tawkPendingMsg && Tawk_API.sendChatMessage) {
+        Tawk_API.sendChatMessage(window.tawkPendingMsg, function (err) {
+            if (!err) {
+                console.log("Message sent via event hook");
+                window.tawkPendingMsg = null;
+            }
+        });
+    }
+};
+
 window.initiatePlanChat = function (planName) {
-    if (typeof Tawk_API !== 'undefined') {
+    if (typeof Tawk_API !== 'undefined' && Tawk_API.maximize) {
+        const msg = `Hi Aman, I'm interested in the ${planName}.`;
+        window.tawkPendingMsg = msg;
+
         // 1. Open Chat
         Tawk_API.maximize();
 
-        const msg = `Hi Aman, I'm interested in the ${planName}.`;
+        // 2. Set background attributes immediately
+        if (Tawk_API.setAttributes) {
+            Tawk_API.setAttributes({
+                'selection': planName,
+                'is_lead': 'true'
+            }, function (error) { });
+        }
 
-        // 2. Wait 2 seconds for Tawk.to to fully initialize session
-        setTimeout(() => {
-            // Send visual message
-            if (Tawk_API.sendChatMessage) {
-                Tawk_API.sendChatMessage(msg, function (error) {
-                    if (error) console.log("Chat send error:", error);
+        // 3. Try sending with multiple safety delays in case the event hook is missed
+        const attemptSend = () => {
+            if (window.tawkPendingMsg && Tawk_API.sendChatMessage) {
+                Tawk_API.sendChatMessage(window.tawkPendingMsg, function (err) {
+                    if (!err) {
+                        console.log("Message sent via timeout");
+                        window.tawkPendingMsg = null;
+                    }
                 });
             }
+        };
 
-            // Set background attributes
-            if (Tawk_API.setAttributes) {
-                Tawk_API.setAttributes({
-                    'selection': planName,
-                    'is_lead': 'true'
-                }, function (error) { });
-            }
+        setTimeout(attemptSend, 1000);
+        setTimeout(attemptSend, 3000);
 
-            // Add dashboard event
-            if (Tawk_API.addEvent) {
-                Tawk_API.addEvent('plan_inquiry', { 'plan': planName }, function (error) { });
-            }
-        }, 2000);
-
-        // 3. Close the pricing popup
+        // 4. Close the pricing popup
         const overlay = document.getElementById('popupOverlay');
         if (overlay && overlay.classList.contains('active')) {
             const closeBtn = document.querySelector('.popup-close');
             if (closeBtn) closeBtn.click();
         }
     } else {
-        alert("Chat is still loading... Please try again in 2 seconds.");
+        alert("Chat is still loading... Please try again in a moment.");
     }
 };
 
