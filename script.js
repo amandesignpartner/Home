@@ -2603,16 +2603,24 @@ window.initiatePlanChat = function (planName) {
 
         const contextMessage = `Hi Aman, I'm interested in the ${planName}.`;
 
-        // Send the actual message into the chat with a small delay for reliability
-        if (Tawk_API.sendChatMessage) {
-            setTimeout(() => {
+        // Function to attempt sending message
+        const attemptSendMessage = (retryCount) => {
+            if (Tawk_API.sendChatMessage) {
                 Tawk_API.sendChatMessage(contextMessage, function (error) {
-                    if (error) console.error("Error sending chat message:", error);
+                    if (error && retryCount < 3) {
+                        console.log(`Chat message attempt ${retryCount + 1} failed, retrying...`);
+                        setTimeout(() => attemptSendMessage(retryCount + 1), 1000);
+                    } else if (!error) {
+                        console.log("Chat message sent successfully!");
+                    }
                 });
-            }, 500);
-        }
+            }
+        };
 
-        // Pass this context to the agent view via attributes and tags
+        // Start attempts with a slightly longer initial delay
+        setTimeout(() => attemptSendMessage(0), 1000);
+
+        // Pass this context to the agent view via attributes and tags (Immediate)
         if (Tawk_API.setAttributes) {
             Tawk_API.setAttributes({
                 'interest': planName,
@@ -2620,7 +2628,6 @@ window.initiatePlanChat = function (planName) {
             }, function (error) { });
         }
 
-        // Add a specialized event
         if (Tawk_API.addEvent) {
             Tawk_API.addEvent('payment_initiation', {
                 'plan': planName,
@@ -2628,7 +2635,6 @@ window.initiatePlanChat = function (planName) {
             }, function (error) { });
         }
 
-        // Also add a Tag for filtering
         if (Tawk_API.addTags) {
             Tawk_API.addTags(['pricing_inquiry', planName], function (error) { });
         }
