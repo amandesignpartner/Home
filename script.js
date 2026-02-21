@@ -3981,7 +3981,7 @@ function initPandaShowcase() {
         // 4. Hiding
         setTimeout(() => {
             pandaChar.style.opacity = "0";
-            pandaChar.style.transform = "translate(200px, 150px) scale(1.05)";
+            pandaChar.style.transform = "translateY(150px) scale(1.35)"; // Dropping down with consistent handshake scale
             pandaImg.classList.remove('panda-img-bounce');
         }, 5500);
 
