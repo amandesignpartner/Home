@@ -2597,57 +2597,43 @@ window.toggleMainChat = function () {
 
 // Global function to initiate chat for a specific plan
 window.initiatePlanChat = function (planName) {
-    if (typeof Tawk_API !== 'undefined' && Tawk_API.maximize) {
-        // Open the chat window
+    if (typeof Tawk_API !== 'undefined') {
+        // 1. Open Chat
         Tawk_API.maximize();
 
-        const contextMessage = `Hi Aman, I'm interested in the ${planName}.`;
+        const msg = `Hi Aman, I'm interested in the ${planName}.`;
 
-        // Function to attempt sending message
-        const attemptSendMessage = (retryCount) => {
+        // 2. Wait 2 seconds for Tawk.to to fully initialize session
+        setTimeout(() => {
+            // Send visual message
             if (Tawk_API.sendChatMessage) {
-                Tawk_API.sendChatMessage(contextMessage, function (error) {
-                    if (error && retryCount < 3) {
-                        console.log(`Chat message attempt ${retryCount + 1} failed, retrying...`);
-                        setTimeout(() => attemptSendMessage(retryCount + 1), 1000);
-                    } else if (!error) {
-                        console.log("Chat message sent successfully!");
-                    }
+                Tawk_API.sendChatMessage(msg, function (error) {
+                    if (error) console.log("Chat send error:", error);
                 });
             }
-        };
 
-        // Start attempts with a slightly longer initial delay
-        setTimeout(() => attemptSendMessage(0), 1000);
+            // Set background attributes
+            if (Tawk_API.setAttributes) {
+                Tawk_API.setAttributes({
+                    'selection': planName,
+                    'is_lead': 'true'
+                }, function (error) { });
+            }
 
-        // Pass this context to the agent view via attributes and tags (Immediate)
-        if (Tawk_API.setAttributes) {
-            Tawk_API.setAttributes({
-                'interest': planName,
-                'starting_message': contextMessage
-            }, function (error) { });
-        }
+            // Add dashboard event
+            if (Tawk_API.addEvent) {
+                Tawk_API.addEvent('plan_inquiry', { 'plan': planName }, function (error) { });
+            }
+        }, 2000);
 
-        if (Tawk_API.addEvent) {
-            Tawk_API.addEvent('payment_initiation', {
-                'plan': planName,
-                'message': contextMessage
-            }, function (error) { });
-        }
-
-        if (Tawk_API.addTags) {
-            Tawk_API.addTags(['pricing_inquiry', planName], function (error) { });
-        }
-
-        // Close our popup to clear the view for the chat
+        // 3. Close the pricing popup
         const overlay = document.getElementById('popupOverlay');
         if (overlay && overlay.classList.contains('active')) {
             const closeBtn = document.querySelector('.popup-close');
             if (closeBtn) closeBtn.click();
         }
-
     } else {
-        alert("Chat widget is loading... Please wait a moment or try again.");
+        alert("Chat is still loading... Please try again in 2 seconds.");
     }
 };
 
