@@ -3933,17 +3933,20 @@ function initPandaShowcase() {
 
         // 1. Emerging (pops up) - Initial position Left
         pandaImg.src = "images/panda-character.png";
+        pandaImg.style.width = "100px"; // Reset width from loop
+        pandaChar.style.width = "auto"; // Reset width from loop
+        pandaChar.style.display = "block"; // Reset from flex
         pandaChar.style.top = "auto";
         pandaChar.style.right = "20px";
         pandaChar.style.left = "auto";
         pandaChar.style.bottom = "0px";
-        pandaChar.style.transform = "translateY(150px) scale(0.85)"; // Unified scale
+        pandaChar.style.transform = "translateY(150px) scale(1.05)"; // 20% bigger than 0.85
         pandaChar.style.opacity = "0";
 
         // trigger reflow
         void pandaChar.offsetWidth;
 
-        pandaChar.style.transform = "translateY(-40px) scale(0.85)"; // Unified scale
+        pandaChar.style.transform = "translateY(-40px) scale(1.05)"; // 20% bigger than 0.85
         pandaChar.style.opacity = "1";
 
         // 2. Sitting & Waving
@@ -3962,14 +3965,14 @@ function initPandaShowcase() {
             pandaChar.style.left = "auto";
             pandaChar.style.right = "20px";
             pandaChar.style.bottom = "0px";
-            pandaChar.style.transform = "translateX(200px) scale(0.85)"; // Unified scale
+            pandaChar.style.transform = "translateX(200px) scale(1.05)"; // 20% bigger than 0.85
             pandaChar.style.opacity = "0";
 
             // trigger reflow
             void pandaChar.offsetWidth;
 
             pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-            pandaChar.style.transform = "translate(-60px, -72px) scale(0.85)"; // Corrected position/scale
+            pandaChar.style.transform = "translate(-60px, -66px) scale(1.35)"; // Nudged up another 10% from -54px
             pandaChar.style.opacity = "1";
 
             pandaImg.classList.add('panda-img-bounce');
@@ -3978,7 +3981,7 @@ function initPandaShowcase() {
         // 4. Hiding
         setTimeout(() => {
             pandaChar.style.opacity = "0";
-            pandaChar.style.transform = "translate(200px, 150px) scale(0.85)";
+            pandaChar.style.transform = "translate(200px, 150px) scale(1.05)";
             pandaImg.classList.remove('panda-img-bounce');
         }, 5500);
 
