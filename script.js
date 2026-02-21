@@ -2614,34 +2614,23 @@ window.Tawk_API.onChatMaximized = function () {
 
 window.initiatePlanChat = function (planName) {
     if (typeof Tawk_API !== 'undefined' && Tawk_API.maximize) {
-        const msg = `Hi Aman, I'm interested in the ${planName}.`;
-        window.tawkPendingMsg = msg;
-
-        // 1. Open Chat
+        // 1. Open Chat immediately
         Tawk_API.maximize();
 
-        // 2. Set background attributes immediately
+        // 2. Attach Selection Data to the Session (Aman sees this in the dashboard sidebar)
         if (Tawk_API.setAttributes) {
             Tawk_API.setAttributes({
-                'selection': planName,
-                'is_lead': 'true'
+                'Interested_In': planName,
+                'Status': 'Pricing_Inquiry'
             }, function (error) { });
         }
 
-        // 3. Try sending with multiple safety delays in case the event hook is missed
-        const attemptSend = () => {
-            if (window.tawkPendingMsg && Tawk_API.sendChatMessage) {
-                Tawk_API.sendChatMessage(window.tawkPendingMsg, function (err) {
-                    if (!err) {
-                        console.log("Message sent via timeout");
-                        window.tawkPendingMsg = null;
-                    }
-                });
-            }
-        };
-
-        setTimeout(attemptSend, 1000);
-        setTimeout(attemptSend, 3000);
+        // 3. Fire a Dashboard Event (Aman gets a real-time notification)
+        if (Tawk_API.addEvent) {
+            Tawk_API.addEvent('Pricing Selection', {
+                'Plan': planName
+            }, function (error) { });
+        }
 
         // 4. Close the pricing popup
         const overlay = document.getElementById('popupOverlay');
@@ -2650,7 +2639,7 @@ window.initiatePlanChat = function (planName) {
             if (closeBtn) closeBtn.click();
         }
     } else {
-        alert("Chat is still loading... Please try again in a moment.");
+        alert("The chat widget is still loading. Please wait a second and try again.");
     }
 };
 
