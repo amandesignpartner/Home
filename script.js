@@ -1,5 +1,5 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfXeET-asUxc1kMLxU7uV1pAPrPmeSFOvmvwBRJyZs8lCz9Lpf8Q1w8YoG5om6tOMnKw/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbyfXeET-asUxc1kMLxU7uV1pAPrPmeSFOvmvwBRJyZs8lCz9Lpf8Q1w8YoG5om6tOMnKw/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzhCAASha5nCcPIZuPEgYyfFAjdmmObCkBHZIktU3btvQ3S-JCubl5taIbzIsNoBjYGuA/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -512,7 +512,7 @@ function initProjectTracker() {
                 errorMsg.style.cssText = 'color: #ff4d4d; font-size: 11px; margin-top: 8px; font-weight: 500; transition: all 0.3s;';
                 inputContainer.parentElement.appendChild(errorMsg);
             }
-            errorMsg.textContent = '❌ Invalid Project ID. Please check and try again.';
+            errorMsg.textContent = '❌ Invalid Project ID. Please check with Aman.';
             errorMsg.style.opacity = '1';
         } finally {
             mainTrackBtn.textContent = originalBtnText;
@@ -929,7 +929,8 @@ function populateTrackerPopup(data, skipSync = false) {
                         'trk-id': 'id', 'trk-cost': 'cost', 'trk-client': 'client',
                         'trk-project': 'project', 'trk-start': 'startDate',
                         'trk-phase': 'phase', 'trk-updated': 'lastUpdated', 'trk-deadline': 'deadline',
-                        'trk-milestone': 'nextMilestone', 'trk-pending': 'pendingAmount'
+                        'trk-milestone': 'nextMilestone', 'trk-pending': 'pendingAmount',
+                        'trk-amount-pay': 'amountToPay'
                     };
                     if (fieldMap[id]) {
                         data[fieldMap[id]] = el.textContent.trim();
@@ -960,6 +961,7 @@ function populateTrackerPopup(data, skipSync = false) {
     setSafe('trk-deadline', cleanDate(data.deadline));
     setSafe('trk-milestone', data.nextMilestone);
     setSafe('trk-pending', data.pendingAmount);
+    setSafe('trk-amount-pay', data.amountToPay);
 
     // Status Highlighting
     const statuses = ['awaiting', 'progress', 'waiting', 'completed'];
@@ -1700,7 +1702,7 @@ function openPopup(id, isBack = false, options = {}) {
 
                         if (formClientName) formClientName.value = project.client || '';
                         if (formProjectTitle) formProjectTitle.value = project.project || '';
-                        if (formAmount) formAmount.value = project.cost || '';
+                        if (formAmount) formAmount.value = project.amountToPay || '';
 
                         // Scroll to Western Union section
                         setTimeout(() => {
@@ -1712,7 +1714,7 @@ function openPopup(id, isBack = false, options = {}) {
                 } catch (err) {
                     console.error("Payment Unlock Error:", err);
                     errorMsg.style.display = 'block';
-                    errorMsg.textContent = '❌ Invalid Project ID. Please ensure it matches your ID in the Tracker.';
+                    errorMsg.textContent = '❌ Invalid Project ID. Please check with Aman.';
                     orderInput.style.borderColor = '#ff4d4d';
 
                     // Simple shake for feedback

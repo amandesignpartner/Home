@@ -235,7 +235,7 @@ function getSheet() {
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.getSheets()[0];
   
   // Auto-Repair Headers for Tracker Data
-  const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
+  const headers = ["ID", "Client", "Project", "Cost", "Amount to Pay", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
   if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "ID") {
     sheet.insertRowBefore(1);
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -248,7 +248,7 @@ function getSheet() {
 
 function updateOrInsert(sheet, project) {
   // headers used for mapping
-  const headers = ["ID", "Client", "Project", "Cost", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
+  const headers = ["ID", "Client", "Project", "Cost", "Amount to Pay", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
   
   const data = sheet.getDataRange().getValues();
   const cleanID = clean(project.id);
@@ -266,10 +266,10 @@ function updateOrInsert(sheet, project) {
   const now = new Date();
   const row = [
     project.id, project.client || '', project.project || '', project.cost || '',
-    project.status || 'progress', project.startDate || '', project.phase || '',
-    Utilities.formatDate(now, "GMT+5", "d MMM yyyy"), project.deadline || '',
-    project.nextMilestone || '', project.pendingAmount || '', project.downloadLink || '#',
-    project.whatsappLink || '', version
+    project.amountToPay || '', project.status || 'progress', project.startDate || '', 
+    project.phase || '', Utilities.formatDate(now, "GMT+5", "d MMM yyyy"), 
+    project.deadline || '', project.nextMilestone || '', project.pendingAmount || '',
+    project.downloadLink || '#', project.whatsappLink || '', version
   ];
 
   if (rowIdx !== -1) {
@@ -311,16 +311,17 @@ function mapRow(row) {
     client: row[1],
     project: row[2],
     cost: row[3],
-    status: row[4],
-    startDate: row[5],
-    phase: row[6],
-    lastUpdated: formatDate(row[7]),
-    deadline: row[8],
-    nextMilestone: row[9],
-    pendingAmount: row[10],
-    downloadLink: row[11],
-    whatsappLink: row[12],
-    version: row[13] || 1
+    amountToPay: row[4],
+    status: row[5],
+    startDate: row[6],
+    phase: row[7],
+    lastUpdated: formatDate(row[8]),
+    deadline: row[9],
+    nextMilestone: row[10],
+    pendingAmount: row[11],
+    downloadLink: row[12],
+    whatsappLink: row[13],
+    version: row[14] || 1
   };
 }
 

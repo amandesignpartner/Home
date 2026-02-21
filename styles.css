@@ -3280,14 +3280,14 @@ body {
 }
 
 .qp-option-item input:checked~.qp-option-checkbox::after {
-    content: '?';
+    content: '\2713';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     color: #ff8c00;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .qp-option-item input:checked~.qp-option-radio {

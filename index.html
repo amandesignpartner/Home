@@ -1107,7 +1107,7 @@
                         <input type="text" id="orderNumberInput" placeholder="Enter Project ID...">
                     </div>
                     <button class="tracker-btn-title" id="btnUnlockPayment" style="width: 100%; margin-top: 15px;">
-                        Unlock Payment Section
+                        Proceed to Pay
                     </button>
                     <p id="paymentError"
                         style="color: #ff6b6b; font-size: 13px; margin-top: 12px; display: none; padding: 10px; background: rgba(255, 107, 107, 0.1); border-radius: 6px; border: 1px solid rgba(255, 107, 107, 0.2); width: 100%; text-align: center;">
@@ -1200,12 +1200,21 @@
 
                         <div class="accordion-details"
                             style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                            <details style="cursor: pointer;">
+                            <style>
+                                .info-accordion summary svg {
+                                    transition: transform 0.3s ease;
+                                    transform: rotate(180deg);
+                                }
+
+                                .info-accordion[open] summary svg {
+                                    transform: rotate(0deg);
+                                }
+                            </style>
+                            <details class="info-accordion" style="cursor: pointer;">
                                 <summary
                                     style="color: var(--primary-orange); font-size: 13px; font-weight: 500; list-style: none; display: flex; align-items: center; justify-content: space-between;">
-                                    View Additional Information <svg viewBox="0 0 24 24" width="14" height="14"
-                                        stroke="currentColor" stroke-width="2" fill="none"
-                                        style="transition: transform 0.3s ease;">
+                                    Click here to View Additional Information <svg viewBox="0 0 24 24" width="14"
+                                        height="14" stroke="currentColor" stroke-width="2" fill="none">
                                         <polyline points="6 9 12 15 18 9"></polyline>
                                     </svg>
                                 </summary>
@@ -1291,7 +1300,7 @@
                             <input type="file" name="payment_proof" id="paymentProofInput"
                                 style="color: var(--text-light); font-size: 12px;">
                             <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Optional: Attach a
-                                scan or file of your receipt (Max 10MB)</p>
+                                screenshot or file of your receipt (Max 10MB)</p>
                         </div>
 
                         <button type="submit" class="btn-submit" style="width: 100%; margin-top: 10px;">
@@ -3150,7 +3159,15 @@
                                     <input type="checkbox" name="Services[]" value="3D Interactive Walkthrough">
                                     <div class="qp-option-checkbox"></div>
                                     <div class="qp-text">
-                                        <strong>👋 3D Interactive Walkthrough</strong>
+                                        <strong><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                                                stroke-width="2" fill="none"
+                                                style="vertical-align: middle; margin-right: 4px;">
+                                                <path
+                                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                                </path>
+                                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                                            </svg> 3D Interactive Walkthrough</strong>
                                         <button type="button" class="qp-view-example-btn-mini"
                                             data-popup="portfolio-examples"
                                             style="display: inline-flex; align-items: center; gap: 6px;">
@@ -3161,7 +3178,14 @@
                                     <input type="checkbox" name="Services[]" value="Conceptual Presentation">
                                     <div class="qp-option-checkbox"></div>
                                     <div class="qp-text">
-                                        <strong>📊 Conceptual Presentation</strong>
+                                        <strong><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                                                stroke-width="2" fill="none"
+                                                style="vertical-align: middle; margin-right: 4px;">
+                                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                                <path
+                                                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z">
+                                                </path>
+                                            </svg> Conceptual Presentation</strong>
                                         <button type="button" class="qp-view-example-btn-mini"
                                             data-popup="portfolio-examples"
                                             style="display: inline-flex; align-items: center; gap: 6px;">
@@ -3172,7 +3196,14 @@
                                     <input type="checkbox" name="Services[]" value="Mood Board">
                                     <div class="qp-option-checkbox"></div>
                                     <div class="qp-text">
-                                        <strong>🎨 Mood Board</strong>
+                                        <strong><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                                                stroke-width="2" fill="none"
+                                                style="vertical-align: middle; margin-right: 4px;">
+                                                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                                <path d="M2 2l7.5 1.5"></path>
+                                                <path d="M14 11l5 5"></path>
+                                            </svg> Mood Board</strong>
                                         <button type="button" class="qp-view-example-btn-mini"
                                             data-popup="portfolio-examples"
                                             style="display: inline-flex; align-items: center; gap: 6px;">
@@ -3183,7 +3214,13 @@
                                     <input type="checkbox" name="Services[]" value="Purchasing Source (with Concept)">
                                     <div class="qp-option-checkbox"></div>
                                     <div class="qp-text">
-                                        <strong>🛒 Purchasing Source (with Concept)</strong>
+                                        <strong><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                                                stroke-width="2" fill="none"
+                                                style="vertical-align: middle; margin-right: 4px;">
+                                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                                                <path d="M3 6h18"></path>
+                                                <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                            </svg> Purchasing Source (with Concept)</strong>
                                         <button type="button" class="qp-view-example-btn-mini"
                                             data-popup="portfolio-examples"
                                             style="display: inline-flex; align-items: center; gap: 6px;">
@@ -3194,7 +3231,13 @@
                                     <input type="checkbox" name="Services[]" value="Layouts for Permit">
                                     <div class="qp-option-checkbox"></div>
                                     <div class="qp-text">
-                                        <strong>📄 Layouts for Permit</strong>
+                                        <strong><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                                                stroke-width="2" fill="none"
+                                                style="vertical-align: middle; margin-right: 4px;">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+                                                </path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                            </svg> Layouts for Permit</strong>
                                         <button type="button" class="qp-view-example-btn-mini"
                                             data-popup="portfolio-examples"
                                             style="display: inline-flex; align-items: center; gap: 6px;">
@@ -3736,20 +3779,20 @@
                         <circle cx="8.5" cy="8.5" r="1.5"></circle>
                         <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    Project Gallery
+                    PROJECT GALLERY
                 </button>
                 <div class="premium-btn-grid">
                     <button class="btn-premium" data-popup="videos">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
                             <path d="M8 5v14l11-7z"></path>
                         </svg>
-                        Watch Videos
+                        WATCH VIDEOS
                     </button>
                     <button class="btn-premium" data-popup="3d-comparison">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none">
                             <path d="M8 5v14l11-7z"></path>
                         </svg>
-                        3D Modeling & Rendering
+                        3D MODELING & RENDERING
                     </button>
                 </div>
                 <button class="btn-premium" onclick="if(window.open360View) window.open360View()">
@@ -3761,18 +3804,16 @@
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                         <line x1="12" y1="22.08" x2="12" y2="12"></line>
                     </svg>
-                    Watch Interactive 360 Views
+                    WATCH INTERACTIVE 360 VIEWS
                 </button>
 
-
-
                 <button class="btn-premium" data-popup="proposals-presentations">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                     </svg>
-                    Proposals and Presentations
+                    PROPOSALS AND PRESENTATIONS
                 </button>
 
                 <button class="btn-premium" data-popup="project-2d-concept">
@@ -3781,7 +3822,7 @@
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
-                    View 2D Architecture Layouts
+                    VIEW 2D ARCHITECTURE LAYOUTS
                 </button>
             </div>
 
@@ -3847,21 +3888,27 @@
 
                 <!-- ID & Cost -->
                 <div
-                    style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px;">
-                    <div>
-                        <span style="color: black; font-size: 10px; display: block;">PROJ ID</span>
-                        <strong id="trk-id" style="font-size: 14px; color: #10b981;">...</strong>
+                    style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 40px;">
+                        <div>
+                            <span style="color: black; font-size: 10px; display: block;">PROJ ID</span>
+                            <strong id="trk-id" style="font-size: 14px; color: #10b981;">...</strong>
+                        </div>
+                        <div>
+                            <span style="color: black; font-size: 10px; display: block;">TOTAL COST</span>
+                            <strong id="trk-cost" style="font-size: 14px; color: #10b981;">...</strong>
+                        </div>
                     </div>
                     <div style="text-align: right;">
-                        <span style="color: black; font-size: 10px; display: block;">TOTAL COST</span>
-                        <strong id="trk-cost" style="font-size: 14px; color: #10b981;">...</strong>
+                        <span style="color: black; font-size: 10px; display: block;">AMOUNT TO PAY (DEPOSIT)</span>
+                        <strong id="trk-amount-pay" style="font-size: 14px; color: #10b981;">...</strong>
                     </div>
                 </div>
 
                 <!-- Status Display Area (New) -->
                 <div id="status-display-area" style="margin-bottom: 15px; text-align: center;">
                     <!-- Form Logo: Main Style Orange Gold -->
-                    <div style="margin-top: -48px; margin-bottom: 25px; text-align: center;">
+                    <div style="margin-top: -15px; margin-bottom: 25px; text-align: center;">
                         <!-- Vector SVG Logo for Perfect Print Sharpness -->
                         <img src="images/logo-aman.webp" class="tracker-form-logo-img" alt="AMAN Logo"
                             style="width: 100%; max-width: 140px; height: auto; display: block; margin: 0 auto;">
@@ -4723,27 +4770,36 @@
     <template id="popup-pricing-masterpiece">
         <div class="popup-inner">
             <h2 data-edit-id="edit_0">Masterpiece Scope</h2>
-            <div class="coming-soon-placeholder"
-                style="margin-bottom: 25px; background: rgba(210, 105, 30, 0.05); border: 2px dashed rgba(210, 105, 30, 0.3); border-radius: 16px; padding: 40px 20px; text-align: center; position: relative; overflow: hidden;">
-                <div style="position: relative; z-index: 2;">
-                    <div
-                        style="width: 60px; height: 60px; background: rgba(210, 105, 30, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: var(--primary-orange);">
-                        <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" stroke-width="2"
-                            fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                    </div>
-                    <h3
-                        style="font-family: 'Raleway', sans-serif; font-size: 20px; color: var(--primary-orange); margin-bottom: 25px; display: flex; align-items: center; justify-content: center;">
-                        PDF Files Are Loading<span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span
-                            class="anim-dot dot-3">.</span>
-                    </h3>
-                </div>
-                <!-- Subtle background animation/decoration -->
-                <div
-                    style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: radial-gradient(circle, rgba(210,105,30,0.1) 0%, transparent 70%);">
-                </div>
+            <div style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                <button
+                    onclick="openPDFPopup('pdf/View Mood Board +3D Rendering + Floor Plan.pdf', 'Mood Board, 3D Rendering & Floor Plan')"
+                    class="btn-submit"
+                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 25px; width: 100%; max-width: 450px; height: auto; justify-content: center; text-transform: uppercase;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Mood Board + 3D Rendering + Floor Plan
+                </button>
+
+                <button
+                    onclick="openPDFPopup('pdf/View Conceptual Presenataion (Purchasing Source).pdf', 'Conceptual Presentation (Purchasing Source)')"
+                    class="btn-submit"
+                    style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 25px; width: 100%; max-width: 450px; height: auto; justify-content: center; text-transform: uppercase;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Conceptual Presentation (Purchasing Source)
+                </button>
             </div>
 
             <div class="project-scope"
@@ -4901,7 +4957,7 @@
                             <td style="vertical-align: top;">
                                 <div style="margin-bottom: 8px; font-size: 11px; font-weight: 700;">FULL PACKAGE +
                                     PRESENTATION + LIST</div>
-                                <button class="btn-outline compact" data-popup="pricing-masterpiece"
+                                <button class="btn-outline compact" data-popup="proposals-presentations"
                                     style="width: 100%; margin-top: 5px; background: transparent; border: 1px solid rgba(255,140,0,0.4); padding: 8px 16px; font-size: 15px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #ff8c00; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">
                                     View Example
                                 </button>
