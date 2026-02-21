@@ -158,6 +158,11 @@ function initDraggableElements() {
             return;
         }
 
+        // Handle panda locking logic
+        if (this.id === 'panda-showcase-container' && (window.pandaLocked === undefined || window.pandaLocked)) {
+            return;
+        }
+
         // Only allow left-click drag (button 0)
         if (e.type === 'mousedown' && e.button !== 0) return;
 
@@ -3840,6 +3845,37 @@ function initPandaShowcase() {
     const textContainer = document.getElementById('signboard-text-container');
     if (!pandaContainer || !pandaChar || !pandaImg || !pandaSignboard || !textContainer) return;
 
+    // Default state: Always Locked on page load unless specifically unlocked in localStorage
+    window.pandaLocked = localStorage.getItem('pandaLocked') !== 'false';
+    pandaChar.style.cursor = window.pandaLocked ? 'default' : 'move';
+
+    let lastPandaRightClick = 0;
+    const pandaDoubleClickThreshold = 500; // ms
+
+    pandaContainer.addEventListener('contextmenu', (e) => {
+        const now = Date.now();
+        if (now - lastPandaRightClick < pandaDoubleClickThreshold) {
+            e.preventDefault(); // Prevent context menu
+            window.pandaLocked = !window.pandaLocked;
+
+            // Save state
+            localStorage.setItem('pandaLocked', window.pandaLocked);
+
+            // Update UI cursor
+            pandaChar.style.cursor = window.pandaLocked ? 'default' : 'move';
+
+            // Visual feedback
+            if (window.pandaLocked) {
+                pandaContainer.style.filter = 'none';
+            } else {
+                pandaContainer.style.filter = 'drop-shadow(0 0 15px rgba(210, 105, 30, 0.4))';
+            }
+        } else {
+            e.preventDefault();
+        }
+        lastPandaRightClick = now;
+    });
+
     const phrases = [
         { main: "✓ 4K Ultra HD Walkthroughs", sub: "Stunning, lifelike environments with exceptional detail." },
         { main: "✓ AI Enhanced Rendering", sub: "Optimized visuals powered by cutting edge AI." },
@@ -3849,49 +3885,65 @@ function initPandaShowcase() {
         { main: "✓ 3D Walkthroughs and Animations", sub: "Engaging animations that bring spaces to life." },
         { main: "✓ Landscape and Environment Design", sub: "Realistic 3D landscapes and natural environments." },
         { main: "✓ 3D Floor Plans and Birds eye Views", sub: "Detailed views from all angles." },
-        { main: "✓ Realistic 3D Visualization", sub: "Turning concepts into vivid, realistic environments." }
+        { main: "✓ Realistic 3D Visualization", sub: "Turning concepts into vivid, realistic environments." },
+        { main: "✓ Expertise You Can Trust", sub: "700+ successfully completed projects in diverse categories." },
+        { main: "✓ Versatile Portfolio", sub: "From homes and apartments to airports and data centers, I've got you covered." },
+        { main: "✓ Fast Turnaround", sub: "Whether it's a long-term project or a tight deadline, I deliver results." },
+        { main: "✓ Proposal & Presentations", sub: "Clear and professional proposals that communicate ideas effectively." },
+        { main: "✓ Permit Layouts", sub: "Accurate layouts prepared to meet approval requirements." },
+        { main: "✓ Concept Plans", sub: "Creative and functional plans tailored to project needs." },
+        { main: "✓ Real Time Project Tracking", sub: "Daily updates with the latest files shared at every stage." }
     ];
 
     let currentServiceIndex = 0;
+    let pandaLoopCount = 0;
 
     // Function to render a single service in the signboard
     function renderService(index) {
         const phrase = phrases[index];
+        // Only apply tighter margins for the specific long phrases that overlap the border
+        const needsAdjustment = [3, 4, 5, 6].includes(index);
+        const paddingTop = needsAdjustment ? '8px' : '0px';
+        const dotsStyle = needsAdjustment
+            ? 'margin-top: 5px; transform: translateY(-5px);'
+            : 'margin-top: 15px; transform: translateY(0);';
+
         textContainer.innerHTML = `
-            <div class="sign-point active" style="border: none; margin-bottom: 0;">
-                <div style="display: flex; gap: 8px; align-items: flex-start; justify-content: center;">
-                    <span style="color: var(--primary-orange); font-size: 16px; margin-top: 2px;">${phrase.main.charAt(0)}</span>
-                    <div style="color: var(--primary-orange); font-weight: 700; font-size: 13px; line-height: 1.3; text-transform: uppercase; text-align: left;">${phrase.main.slice(2)}</div>
+            <div class="sign-point active" style="border: none; margin-bottom: 0; padding-top: ${paddingTop};">
+                <div style="text-align: center; margin-bottom: 8px; padding: 0 10px;">
+                    <div style="color: var(--primary-orange); font-weight: 700; font-size: 13px; line-height: 1.4; text-transform: uppercase; display: inline;">
+                        <span style="font-size: 15px; margin-right: 2px;">${phrase.main.charAt(0)}</span> ${phrase.main.slice(2)}
+                    </div>
                 </div>
-                <div class="sign-subtitle" style="font-size: 11px; margin-top: 8px; color: #666; text-align: left; padding-left: 20px; line-height: 1.4;">${phrase.sub}</div>
-                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 6px;">
-                    ${phrases.map((_, idx) => `<div style="width: 8px; height: 8px; border-radius: 50%; transition: background 0.3s; background: ${idx === index ? 'var(--primary-orange)' : (idx < index ? '#10b981' : '#e5e7eb')}"></div>`).join('')}
+                <div class="sign-subtitle" style="font-size: 11.5px; margin-top: 8px; color: #ffffff; text-align: center; padding: 0 15px; line-height: 1.4;">${phrase.sub}</div>
+                <div style="${dotsStyle} display: flex; justify-content: center; gap: 6px;">
+                    ${phrases.map((_, idx) => `<div onclick="if(window.jumpToPandaSlide) window.jumpToPandaSlide(${idx});" style="width: 8px; height: 8px; border-radius: 50%; cursor: pointer; transition: background 0.3s, transform 0.2s; background: ${idx === index ? 'var(--primary-orange)' : (idx < index ? '#10b981' : '#e5e7eb')}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`).join('')}
                 </div>
             </div>
         `;
     }
 
     // Sequence Choreography using the images
-    setTimeout(() => {
+    function runPandaSequence() {
         // Setup initial styles overrides
         pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
         pandaSignboard.style.top = "25%"; // Move signboard up 
         pandaSignboard.style.left = "65%"; // Shift right 
         pandaSignboard.style.width = "270px";
 
-        // 1. Emerging (pops up) - Bottom Right Corner
+        // 1. Emerging (pops up) - Initial position Left
         pandaImg.src = "images/panda-character.png";
         pandaChar.style.top = "auto";
         pandaChar.style.right = "20px";
         pandaChar.style.left = "auto";
         pandaChar.style.bottom = "0px";
-        pandaChar.style.transform = "translateY(150px) scale(0.65)"; // Hidden low
+        pandaChar.style.transform = "translateY(150px) scale(0.85)"; // Unified scale
         pandaChar.style.opacity = "0";
 
         // trigger reflow
         void pandaChar.offsetWidth;
 
-        pandaChar.style.transform = "translateY(0) scale(0.65)";
+        pandaChar.style.transform = "translateY(-40px) scale(0.85)"; // Unified scale
         pandaChar.style.opacity = "1";
 
         // 2. Sitting & Waving
@@ -3910,14 +3962,14 @@ function initPandaShowcase() {
             pandaChar.style.left = "auto";
             pandaChar.style.right = "20px";
             pandaChar.style.bottom = "0px";
-            pandaChar.style.transform = "translateX(150px) scale(0.70)";
+            pandaChar.style.transform = "translateX(200px) scale(0.85)"; // Unified scale
             pandaChar.style.opacity = "0";
 
             // trigger reflow
             void pandaChar.offsetWidth;
 
             pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-            pandaChar.style.transform = "translateX(0) scale(0.70)";
+            pandaChar.style.transform = "translate(-60px, -72px) scale(0.85)"; // Corrected position/scale
             pandaChar.style.opacity = "1";
 
             pandaImg.classList.add('panda-img-bounce');
@@ -3926,7 +3978,7 @@ function initPandaShowcase() {
         // 4. Hiding
         setTimeout(() => {
             pandaChar.style.opacity = "0";
-            pandaChar.style.transform = "translateY(150px) scale(0.70)";
+            pandaChar.style.transform = "translate(200px, 150px) scale(0.85)";
             pandaImg.classList.remove('panda-img-bounce');
         }, 5500);
 
@@ -3956,7 +4008,7 @@ function initPandaShowcase() {
             pandaChar.style.display = "flex";
             pandaChar.style.justifyContent = "center";
             pandaChar.style.alignItems = "center";
-            pandaChar.style.transform = "translateY(150px)"; // Hidden off bottom
+            pandaChar.style.transform = "translateY(150px) scale(0.85)"; // Unified scale
             pandaChar.style.opacity = "0";
 
             // trigger reflow
@@ -3964,11 +4016,19 @@ function initPandaShowcase() {
 
             pandaChar.style.transition = "all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
 
-            function cycleServices() {
-                if (currentServiceIndex >= phrases.length) return;
+            let isHovered = false;
 
+            pandaContainer.addEventListener('mouseenter', () => {
+                isHovered = true;
+            });
+
+            pandaContainer.addEventListener('mouseleave', () => {
+                isHovered = false;
+            });
+
+            function cycleServices() {
                 // Slide up from bottom
-                pandaChar.style.transform = "translateY(0%)"; // Aligns completely in bottom right corner
+                pandaChar.style.transform = "translateY(0%) scale(0.85)"; // Unified scale
                 pandaChar.style.opacity = "1";
 
                 pandaChar.classList.add('panda-img-bounce');
@@ -3980,38 +4040,108 @@ function initPandaShowcase() {
                 setTimeout(() => {
                     pandaSignboard.style.opacity = "1";
                     pandaSignboard.style.transform = "translate(-50%, -50%) scale(1)"; // Sitting on belly
+                    pandaSignboard.style.pointerEvents = "auto";
                 }, 400);
 
-                // Hide after 2.5s
-                setTimeout(() => {
-                    if (currentServiceIndex < phrases.length - 1) {
-                        // Pop board down and fade
-                        pandaSignboard.style.opacity = "0";
-                        pandaSignboard.style.transform = "translate(-50%, -50%) scale(0.85)";
+                // Wait 8.5s then hide, but pause timer if hovered
+                let elapsed = 0;
+                const checkInterval = 200;
+                const displayDuration = 8500;
+                let checkTimerId;
+                let isInterrupting = false;
 
-                        // Slide panda down and fade
-                        pandaChar.style.transform = "translateY(150px)";
-                        pandaChar.style.opacity = "0";
-
-                        pandaChar.classList.remove('panda-img-bounce');
-
-                        currentServiceIndex++;
-
-                        // Recursively call for next service after hiding completely (800ms)
-                        setTimeout(() => {
-                            cycleServices();
-                        }, 800);
-                    } else {
-                        // Keep the last one visible and stable
-                        currentServiceIndex++;
-                        pandaChar.classList.remove('panda-img-bounce');
+                function checkTime() {
+                    if (isInterrupting) return;
+                    if (!isHovered) {
+                        elapsed += checkInterval;
                     }
-                }, 2500);
+                    if (elapsed >= displayDuration) {
+                        hideAndNext();
+                    } else {
+                        checkTimerId = setTimeout(checkTime, checkInterval);
+                    }
+                }
+                checkTimerId = setTimeout(checkTime, checkInterval);
+
+                // Global jump hook for pagination dots
+                window.jumpToPandaSlide = function (idx) {
+                    if (isInterrupting || idx === currentServiceIndex) return;
+                    isInterrupting = true;
+                    clearTimeout(checkTimerId);
+
+                    // Manually assign index 1 step backward since hideAndNext() instantly increments it forward
+                    currentServiceIndex = idx - 1;
+                    hideAndNext();
+                };
+
+                function hideAndNext() {
+                    // Pop board down and fade
+                    pandaSignboard.style.opacity = "0";
+                    pandaSignboard.style.transform = "translate(-50%, -50%) scale(0.85)";
+                    pandaSignboard.style.pointerEvents = "none";
+
+                    // Slide panda down and fade
+                    pandaChar.style.transform = "translateY(150px) scale(0.85)";
+                    pandaChar.style.opacity = "0";
+
+                    pandaChar.classList.remove('panda-img-bounce');
+
+                    // Increment and loop
+                    currentServiceIndex++;
+                    if (currentServiceIndex >= phrases.length) {
+                        currentServiceIndex = 0; // Loop back around
+                        pandaLoopCount++;
+                        // If loop count is 1, 3... we just finished a LEFT loop, so exit LEFT and enter RIGHT
+                        const exitedLeft = pandaLoopCount % 2 !== 0;
+
+                        // Wait for signboard to fully hide (800ms), then do an overarching slide transition
+                        setTimeout(() => {
+                            const exitTransform = exitedLeft ? "translateX(-100vw)" : "translateX(100vw)";
+                            const enterTransform = exitedLeft ? "translateX(100vw)" : "translateX(-100vw)";
+                            const targetTransform = exitedLeft ? "translateX(584px)" : "translateX(0)";
+
+                            pandaContainer.style.transition = "transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                            pandaContainer.style.transform = exitTransform;
+
+                            setTimeout(() => {
+                                // Teleport to the opposite edge
+                                pandaContainer.style.transition = "none";
+                                pandaContainer.style.transform = enterTransform;
+
+                                // Reset internal panda visuals for a fresh start
+                                pandaChar.style.transition = "none";
+                                pandaChar.style.opacity = "0";
+                                pandaChar.style.transform = "translateY(150px) scale(0.85)"; // Reset state
+                                pandaImg.src = "images/panda-character.png";
+
+                                setTimeout(() => {
+                                    // Slide back to the alternating origin point depending on the loop
+                                    pandaContainer.style.transition = "transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+                                    pandaContainer.style.transform = targetTransform;
+
+                                    setTimeout(() => {
+                                        runPandaSequence();
+                                    }, 1500); // Start the animation sequences again once returned to center
+                                }, 50);
+                            }, 1500); // Wait for the slide out to finish
+                        }, 800);
+                        return; // Halt inner cycle to restart outer sequence
+                    }
+
+                    // Recursively call for next service after hiding completely (800ms)
+                    setTimeout(() => {
+                        cycleServices();
+                    }, 800);
+                }
             }
 
             cycleServices();
 
         }, 6500); // Trigger board shortly after panda disappears
 
+    }
+
+    setTimeout(() => {
+        runPandaSequence();
     }, 3000); // Wait 3 seconds after page load before starting
 }
