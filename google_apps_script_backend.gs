@@ -33,13 +33,20 @@ function doGet(e) {
 
   if (params.action === 'getAll') return json({ status: "success", data: getAllProjects(getSheet()) });
 
+  if (params.action === 'getYears') {
+    return json({ status: "success", years: getAvailableYears() });
+  }
+
   if (params.action === 'getPublicBriefs') {
-    const briefs = getAllBriefs().map(b => ({
-      rowId: b.rowId,
-      projectTitle: b.projectTitle,
-      status: b.status,
-      year: extractYear(b.timestamp)
-    }));
+    const year = params.year || new Date().getFullYear().toString();
+    const briefs = getAllBriefs()
+      .filter(b => extractYear(b.timestamp) === year)
+      .map(b => ({
+        rowId: b.rowId,
+        projectTitle: b.projectTitle,
+        status: b.status,
+        year: year
+      }));
     return json({ status: "success", data: briefs });
   }
 
@@ -99,22 +106,40 @@ function doPost(e) {
       return json(markBriefAsRead(data.rowId));
     }
 
-    // Default: Tracker Data Synchronization
+    // Default: Tracker Data Synchronization (Requires project.id)
     const sheet = getSheet();
     const project = data.project || data;
-    if (!project.id) {
-       // If no action matched and no project ID, it's an invalid request
-       return json({ status: "error", message: "Invalid action or missing project ID" });
+    if (project && project.id) {
+       const result = updateOrInsert(sheet, project);
+       return json({ status: "success", message: result.message, version: result.version });
     }
 
-    const result = updateOrInsert(sheet, project);
-    return json({ status: "success", message: result.message, version: result.version });
+    return json({ status: "error", message: "No valid action matched and missing project ID" });
 
   } catch (err) {
     return json({ status: "error", message: err.toString() });
   } finally {
     lock.releaseLock();
   }
+}
+
+function getAvailableYears() {
+  const years = new Set();
+  const allBriefs = getAllBriefs();
+  
+  // Add current, past and future years from 2006-2026 as per user request (specifically mentioned '06')
+  const range = [];
+  for (let y = 2026; y >= 2006; y--) {
+    range.push(y.toString());
+  }
+  range.forEach(y => years.add(y));
+  
+  allBriefs.forEach(b => {
+    const y = extractYear(b.timestamp);
+    if (y) years.add(y);
+  });
+  
+  return Array.from(years).sort().reverse();
 }
 
 function extractYear(timestamp) {

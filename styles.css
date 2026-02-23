@@ -440,7 +440,7 @@ body {
 }
 
 .sticky-note.wide {
-    max-width: 380px;
+    max-width: 420px;
 }
 
 /* When an element is being dragged, it jumps to the front of this layer */

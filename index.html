@@ -873,7 +873,8 @@
     </div>
 
     <!-- Sticky Note: Client Brief's -->
-    <div class="sticky-note draggable" id="note-briefs" data-title="Client Brief's" style="left: 100px; top: 460px;">
+    <div class="sticky-note wide draggable" id="note-briefs" data-title="Client Brief's"
+        style="left: 100px; top: 460px; width: 420px;">
         <div class="sticky-header">
             <span class="header-title">📋 Client Brief's</span>
             <div class="header-controls">
@@ -890,6 +891,15 @@
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"
                         stroke-linecap="round" stroke-linejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                <button class="fullscreen-btn" title="Toggle Fullscreen" onclick="toggleNoteFullScreen('note-briefs')"
+                    style="background: none; border: none; padding: 0; margin-right: 8px; color: var(--text-muted); cursor: pointer; transition: color 0.2s;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                        </path>
                     </svg>
                 </button>
                 <div class="drag-handle">

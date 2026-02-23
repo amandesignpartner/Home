@@ -4269,14 +4269,23 @@ function toggleAdminUI(isLoggedIn) {
 
 async function fetchBriefs(forceAdmin = false) {
     const container = document.getElementById('briefListContainer');
+    if (container && container.innerHTML.includes('Synchronizing')) return;
+
     if (container) container.innerHTML = '<p style="font-size: 11px; text-align: center; color: var(--primary-orange); padding: 20px;">Synchronizing Workspace...</p>';
 
+    const defaultYears = [];
+    for (let y = 2026; y >= 2006; y--) defaultYears.push(y.toString());
+
     try {
+        const yearsRes = await fetch(`${TRACKER_SYNC_URL}?action=getYears&t=${Date.now()}`);
+        const yearsData = await yearsRes.json();
+        const availableYears = yearsData.status === "success" ? yearsData.years : defaultYears;
+
         let url;
         if (adminCredentials && (forceAdmin || adminCredentials)) {
             url = `${TRACKER_SYNC_URL}?action=getBriefs&user=${encodeURIComponent(adminCredentials.user)}&pass=${encodeURIComponent(adminCredentials.pass)}&t=${Date.now()}`;
         } else {
-            url = `${TRACKER_SYNC_URL}?action=getPublicBriefs&t=${Date.now()}`;
+            url = `${TRACKER_SYNC_URL}?action=getPublicBriefs&year=${currentYearFilter}&t=${Date.now()}`;
         }
 
         const response = await fetch(url);
@@ -4284,94 +4293,130 @@ async function fetchBriefs(forceAdmin = false) {
 
         if (result.status === "success") {
             currentBriefs = result.data;
-            renderBriefs(currentBriefs);
+            renderBriefs(currentBriefs, availableYears);
         } else {
-            // Fallback to public if admin fails
-            if (container) container.innerHTML = `<p style="font-size: 10px; color: #ff4444; padding: 10px;">Connection Interrupted. Showing cached list.</p>`;
+            renderBriefs([], availableYears);
         }
     } catch (e) {
-        if (container) container.innerHTML = `<p style="font-size: 10px; color: #ff4444; padding: 10px;">Offline Mode Active.</p>`;
+        renderBriefs([], defaultYears);
     }
 }
+
+window.toggleNoteFullScreen = function (noteId) {
+    const note = document.getElementById(noteId);
+    if (!note) return;
+
+    const isFull = note.classList.toggle('fullscreen-note');
+    if (isFull) {
+        note.style.width = "90vw";
+        note.style.height = "85vh";
+        note.style.position = "fixed";
+        note.style.top = "7.5vh";
+        note.style.left = "5vw";
+        note.style.zIndex = "10000";
+        note.style.transition = "all 0.3s ease";
+        const content = note.querySelector('.sticky-content');
+        if (content) {
+            content.style.maxHeight = "none";
+            const briefList = document.getElementById('briefListContainer');
+            if (briefList) briefList.style.maxHeight = "calc(85vh - 150px)";
+        }
+    } else {
+        note.style.width = "";
+        note.style.height = "";
+        note.style.position = "";
+        note.style.top = "460px";
+        note.style.left = "100px";
+        note.style.zIndex = "";
+        const briefList = document.getElementById('briefListContainer');
+        if (briefList) briefList.style.maxHeight = "200px";
+    }
+};
 
 function generateSimulatedData(year) {
     const projects = [];
     const seed = parseInt(year);
-    // Deterministic number of projects based on year for consistency
-    const count = (seed % 15) + 10;
+    const count = (seed % 15) + 12; // 12-27 projects
 
     for (let i = 0; i < count; i++) {
         const titleIdx = (seed + i) % SIMULATED_TITLES.length;
         projects.push({
             rowId: `sim_${year}_${i}`,
-            projectTitle: SIMULATED_TITLES[titleIdx] + (i % 3 === 0 ? " (Phase 2)" : ""),
-            status: (seed + i) % 5 === 0 ? 'Unread' : 'Read',
+            projectTitle: SIMULATED_TITLES[titleIdx],
+            status: (seed + i) % 7 === 0 ? 'Unread' : 'Read',
             year: year.toString(),
-            isSimulated: true
+            isSimulated: true,
+            clientName: "Archived Record"
         });
     }
     return projects;
 }
 
-function renderBriefs(briefs) {
+function renderBriefs(briefs, yearsList = []) {
     const container = document.getElementById('briefListContainer');
     if (!container) return;
 
-    // Filter real briefs by year and mix with simulated data
-    const years = ["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"];
+    const currentYears = yearsList.length > 0 ? yearsList : ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008", "2007", "2006"];
 
+    // Premium Dropdown Header
     let html = `
-        <div class="brief-year-tabs" style="display: flex; gap: 4px; overflow-x: auto; padding: 5px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); scrollbar-width: none;">
-            ${years.map(y => `
-                <button onclick="setBriefYear('${y}')" class="year-tab ${currentYearFilter === y ? 'active' : ''}" 
-                    style="font-size: 10px; padding: 4px 8px; border-radius: 4px; border: 1px solid ${currentYearFilter === y ? 'var(--primary-orange)' : 'rgba(255,255,255,0.1)'}; background: ${currentYearFilter === y ? 'rgba(210,105,30,0.2)' : 'transparent'}; color: ${currentYearFilter === y ? 'var(--primary-orange)' : 'var(--text-muted)'}; cursor: pointer; white-space: nowrap; transition: 0.2s;">
-                    ${y}
-                </button>
-            `).join('')}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 5px 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                 <label style="font-size: 10px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Archive:</label>
+                 <select onchange="setBriefYear(this.value)" 
+                    style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.4); border: 1px solid rgba(210,105,30,0.5); color: var(--primary-orange); font-size: 12px; padding: 6px 12px; border-radius: 6px; outline: none; cursor: pointer; font-family: inherit; font-weight: 700;">
+                    ${currentYears.map(y => `<option value="${y}" ${currentYearFilter === y ? 'selected' : ''}>${y === '2006' ? '06 Historical' : 'Year ' + y}</option>`).join('')}
+                </select>
+            </div>
         </div>
     `;
 
-    // Process briefs for current year
+    // Mix real and simulated
     const realBriefs = briefs.filter(b => b.year === currentYearFilter);
-    const simulatedBriefs = generateSimulatedData(currentYearFilter);
+    const simulatedBriefs = (realBriefs.length < 5) ? generateSimulatedData(currentYearFilter) : [];
 
-    // Combine (Simulated only shows if real is empty for past years, or mix for current)
-    const displayList = [...realBriefs, ...simulatedBriefs].slice(0, 30);
+    const displayList = [...realBriefs, ...simulatedBriefs].slice(0, 50);
 
-    html += '<div style="display: flex; flex-direction: column; gap: 8px; padding: 5px; max-height: 250px; overflow-y: auto;">';
+    html += '<div style="display: flex; flex-direction: column; gap: 10px; padding: 2px;">';
     displayList.forEach(b => {
         const isRead = b.status === 'Read';
         html += `
             <div class="brief-item" onclick="viewBriefDetails('${b.rowId}')"
-                style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'var(--primary-orange)'}; border-radius: 6px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;">
-                <div style="min-width: 0; flex: 1;">
-                    <p style="font-size: 11px; font-weight: 500; margin: 0; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.projectTitle}</p>
-                    <p style="font-size: 9px; color: ${b.isSimulated ? '#666' : 'var(--text-muted)'}; margin-top: 2px;">${b.isSimulated ? 'Archived Record' : (b.clientName || 'Recent Inquiry')}</p>
+                style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(210,105,30,0.4)'}; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
+                <div style="min-width: 0; flex: 1; padding-right: 25px;">
+                    <p style="font-size: 13px; font-weight: 600; margin: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.projectTitle}</p>
+                    <p style="font-size: 9.5px; color: ${b.isSimulated ? '#555' : 'var(--text-muted)'}; margin-top: 5px; letter-spacing: 0.5px;">${b.isSimulated ? 'HISTORICAL ASSET' : (b.clientName || 'LIVE INQUIRY')}</p>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                     <span style="font-size: 8px; padding: 2px 5px; border-radius: 3px; background: ${isRead ? 'rgba(34,197,94,0.1)' : 'rgba(210,105,30,0.1)'}; color: ${isRead ? '#22c55e' : 'var(--primary-orange)'}; border: 1px solid ${isRead ? '#22c55e33' : '#d2691e33'};">
-                        ${b.status.toUpperCase()}
+                <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                     <span style="font-size: 9px; padding: 3px 8px; border-radius: 4px; background: ${isRead ? 'rgba(34,197,94,0.1)' : 'rgba(210,105,30,0.1)'}; color: ${isRead ? '#22c55e' : 'var(--primary-orange)'}; border: 1px solid ${isRead ? 'rgba(34,197,94,0.3)' : 'rgba(210,105,30,0.3)'}; font-weight: 800; text-transform: uppercase;">
+                        ${b.status}
                     </span>
-                    <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3">
-                        <path d="M9 18l6-6-6-6"></path>
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3">
+                        <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
             </div>
         `;
     });
+
+    if (displayList.length === 0) {
+        html += `<p style="font-size: 10px; color: var(--text-muted); text-align: center; padding: 20px;">No records synced for ${currentYearFilter}.</p>`;
+    }
+
     html += '</div>';
     container.innerHTML = html;
 }
 
 window.setBriefYear = function (year) {
     currentYearFilter = year;
-    renderBriefs(currentBriefs);
+    fetchBriefs();
 };
 
 window.viewBriefDetails = function (rowId) {
     if (!adminCredentials) {
-        showToast("Login required for full project brief details", "info");
-        // Focus login
+        showToast("Login to view full real-time brief from sheet", "info");
+        const loginSection = document.getElementById('adminLoginForm');
+        if (loginSection) loginSection.scrollIntoView({ behavior: 'smooth' });
         const userField = document.getElementById('adminUser');
         if (userField) userField.focus();
         return;
