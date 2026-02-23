@@ -291,20 +291,31 @@ function getAllBriefs() {
   return results.reverse();
 }
 
+/**
+ * Checks admin credentials against the AdminConfig sheet.
+ * This allows you to easily change your password in the Google Sheet.
+ */
 function checkAdminAuth(user, pass) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.ADMIN_SHEET_NAME);
   
-  // Auto-create if doesn't exist
+  // Auto-create if doesn't exist (Hidden by default)
   if (!sheet) {
     sheet = ss.insertSheet(CONFIG.ADMIN_SHEET_NAME);
     sheet.appendRow(["Username", "Password"]);
     sheet.appendRow(["aman_admin", "Tijarah@2024"]);
     sheet.hideSheet();
+    
+    // Set protection so only you can edit
+    try {
+      const protection = sheet.protect().setDescription('Admin Credentials Protection');
+      protection.removeEditors(protection.getEditors());
+      if (protection.canDomainEdit()) protection.setDomainEdit(false);
+    } catch(e) {}
   }
   
   const data = sheet.getDataRange().getValues();
-  // Check against row 2 (first account)
+  // Check against row 2 (index 1)
   return (user === data[1][0] && pass === data[1][1]);
 }
 
