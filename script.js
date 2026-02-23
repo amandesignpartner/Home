@@ -2595,31 +2595,43 @@ window.toggleMainChat = function () {
     }
 };
 
-// Global function to initiate plan inquiry via WhatsApp (reliable) + Tawk.to (secondary)
+// Global function to initiate plan inquiry — copies message & opens Tawk.to direct chat
 window.initiatePlanChat = function (planName) {
-    const waNumber = '923010003011';
-    const msg = encodeURIComponent(`Hi Aman! I'm interested in the ${planName}. Could you please provide more details?`);
-    const waUrl = `https://wa.me/${waNumber}?text=${msg}`;
+    const tawkDirectLink = 'https://tawk.to/chat/69521e4d9053fb197ca4566d/1jdkccoel';
+    const message = `Hi Aman! I'm interested in the ${planName}. Could you please provide more details?`;
 
-    // 1. Open WhatsApp with the pre-filled message (always works, cross-platform)
-    window.open(waUrl, '_blank');
+    function doLegacyCopy(text) {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+        document.body.appendChild(el);
+        el.focus(); el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        showToast('📋 Message copied! Paste it in the chat (Ctrl+V)');
+    }
 
-    // 2. Also notify Aman via Tawk.to dashboard silently (additional channel)
+    // 1. Copy the plan message to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(message).then(() => {
+            showToast('📋 Message copied! Paste it in the chat (Ctrl+V)');
+        }).catch(() => doLegacyCopy(message));
+    } else {
+        doLegacyCopy(message);
+    }
+
+    // 2. Open the Tawk.to direct chat link in a new tab
+    window.open(tawkDirectLink, '_blank');
+
+    // 3. Also silently tag the Tawk.to session
     try {
         if (typeof Tawk_API !== 'undefined') {
-            if (Tawk_API.setAttributes) {
-                Tawk_API.setAttributes({
-                    'Interested_In': planName,
-                    'Status': 'Pricing_Inquiry'
-                }, function () { });
-            }
-            if (Tawk_API.addEvent) {
-                Tawk_API.addEvent('Pricing Selection', { 'Plan': planName }, function () { });
-            }
+            if (Tawk_API.setAttributes) Tawk_API.setAttributes({ 'Interested_In': planName, 'Status': 'Pricing_Inquiry' }, function () { });
+            if (Tawk_API.addEvent) Tawk_API.addEvent('Pricing Selection', { 'Plan': planName }, function () { });
         }
     } catch (e) { }
 
-    // 3. Close the pricing popup
+    // 4. Close the pricing popup
     const overlay = document.getElementById('popupOverlay');
     if (overlay && overlay.classList.contains('active')) {
         const closeBtn = document.querySelector('.popup-close');
