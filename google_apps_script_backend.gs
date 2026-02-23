@@ -227,7 +227,7 @@ function handleBrief(brief) {
     brief.billingType || "", brief.budget || brief.budgetCustom || "",
     brief.timeline || brief.timelineCustom || "", brief.message || "",
     attachmentUrl, brief.fileLink || "",
-    "Unread"
+    "Not Viewed"
   ];
   
   sheet.appendRow(rowData);
@@ -284,7 +284,7 @@ function getAllBriefs() {
         message: data[i][16],
         attachment: data[i][17],
         fileLink: data[i][18],
-        status: data[i][19] || "Unread"
+        status: data[i][19] || "Not Viewed"
       });
     }
   }
@@ -314,7 +314,7 @@ function markBriefAsRead(rowId) {
   if (!sheet) return { status: "error" };
   
   // Column 20 is Status (T) due to Year column shift
-  sheet.getRange(rowId, 20).setValue("Read");
+  sheet.getRange(rowId, 20).setValue("Viewed");
   return { status: "success" };
 }
 

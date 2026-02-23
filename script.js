@@ -4210,7 +4210,7 @@ function generateSimulatedData(year) {
         projects.push({
             rowId: `sim_${year}_${i}`,
             projectTitle: uniqueTitle,
-            status: 'Read', // All historical are marked as Read
+            status: 'Viewed', // All historical are marked as Viewed
             year: year.toString(),
             isSimulated: true,
             clientName: "Archived Portfolio Record"
@@ -4422,16 +4422,16 @@ function renderBriefs(briefs, yearsList = []) {
 
     html += '<div style="display: flex; flex-direction: column; gap: 10px; padding: 2px;">';
     displayList.forEach(b => {
-        const isRead = b.status === 'Read' || b.status === 'read';
+        const isViewed = b.status === 'Viewed' || b.status === 'viewed';
         html += `
             <div class="brief-item" onclick="viewBriefDetails('${b.rowId}')"
-                style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(210,105,30,0.4)'}; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
+                style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid ${isViewed ? 'rgba(255,255,255,0.05)' : 'rgba(210,105,30,0.4)'}; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
                 <div style="min-width: 0; flex: 1; padding-right: 25px;">
                     <p style="font-size: 13px; font-weight: 600; margin: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.projectTitle}</p>
                     <p style="font-size: 9.5px; color: ${b.isSimulated ? '#555' : 'var(--text-muted)'}; margin-top: 5px; letter-spacing: 0.5px;">${b.isSimulated ? 'HISTORICAL ASSET' : (b.clientName || 'LIVE INQUIRY')}</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
-                     <span style="font-size: 9px; padding: 3px 8px; border-radius: 4px; background: ${isRead ? 'rgba(34,197,94,0.1)' : 'rgba(210,105,30,0.1)'}; color: ${isRead ? '#22c55e' : 'var(--primary-orange)'}; border: 1px solid ${isRead ? 'rgba(34,197,94,0.3)' : 'rgba(210,105,30,0.3)'}; font-weight: 800; text-transform: uppercase;">
+                     <span style="font-size: 9px; padding: 3px 8px; border-radius: 4px; background: ${isViewed ? 'rgba(34,197,94,0.1)' : 'rgba(210,105,30,0.1)'}; color: ${isViewed ? '#22c55e' : 'var(--primary-orange)'}; border: 1px solid ${isViewed ? 'rgba(34,197,94,0.3)' : 'rgba(210,105,30,0.3)'}; font-weight: 800; text-transform: uppercase;">
                         ${b.status}
                     </span>
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3">
@@ -4523,8 +4523,8 @@ window.viewBriefDetails = function (rowId) {
                 }
             }
 
-            // Mark as read in backend
-            if (brief.status !== 'Read') {
+            // Mark as viewed in backend
+            if (brief.status !== 'Viewed') {
                 markBriefRead(brief.rowId);
             }
         }, 300);
@@ -4544,7 +4544,7 @@ async function markBriefRead(rowId) {
         // Update local state
         const brief = currentBriefs.find(b => b.rowId.toString() === rowId.toString());
         if (brief) {
-            brief.status = 'Read';
+            brief.status = 'Viewed';
             renderBriefs(currentBriefs);
         }
     } catch (e) { }
