@@ -2595,48 +2595,35 @@ window.toggleMainChat = function () {
     }
 };
 
-// Global function to initiate plan inquiry — copies message & opens Tawk.to direct chat
+// Global function to initiate plan inquiry — opens chat on CURRENT page so triggers fire correctly
 window.initiatePlanChat = function (planName) {
-    const tawkDirectLink = 'https://tawk.to/chat/69521e4d9053fb197ca4566d/1jdkccoel';
-    const message = `Hi Aman! I'm interested in the ${planName}. Could you please provide more details?`;
+    // 1. Temporarily add ?plan= to the page URL so Tawk.to Trigger conditions can match it
+    const originalUrl = window.location.href;
+    const planKey = planName.split(' ')[0]; // Extract keyword e.g. "Foundation", "Structure"
+    const newUrl = window.location.pathname + '?plan=' + encodeURIComponent(planKey);
+    history.replaceState(null, '', newUrl);
 
-    function doLegacyCopy(text) {
-        const el = document.createElement('textarea');
-        el.value = text;
-        el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
-        document.body.appendChild(el);
-        el.focus(); el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        showToast('📋 Message copied! Paste it in the chat (Ctrl+V)');
-    }
-
-    // 1. Copy the plan message to clipboard
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message).then(() => {
-            showToast('📋 Message copied! Paste it in the chat (Ctrl+V)');
-        }).catch(() => doLegacyCopy(message));
-    } else {
-        doLegacyCopy(message);
-    }
-
-    // 2. Open the Tawk.to direct chat link in a new tab
-    window.open(tawkDirectLink, '_blank');
-
-    // 3. Also silently tag the Tawk.to session
-    try {
-        if (typeof Tawk_API !== 'undefined') {
-            if (Tawk_API.setAttributes) Tawk_API.setAttributes({ 'Interested_In': planName, 'Status': 'Pricing_Inquiry' }, function () { });
-            if (Tawk_API.addEvent) Tawk_API.addEvent('Pricing Selection', { 'Plan': planName }, function () { });
-        }
-    } catch (e) { }
-
-    // 4. Close the pricing popup
+    // 2. Close the pricing popup first
     const overlay = document.getElementById('popupOverlay');
     if (overlay && overlay.classList.contains('active')) {
         const closeBtn = document.querySelector('.popup-close');
         if (closeBtn) closeBtn.click();
     }
+
+    // 3. Open the embedded Tawk.to chat widget on this page (Tawk.to reads the current URL for triggers)
+    try {
+        if (typeof Tawk_API !== 'undefined') {
+            if (Tawk_API.setAttributes) {
+                Tawk_API.setAttributes({ 'Interested_In': planName, 'Status': 'Pricing_Inquiry' }, function () { });
+            }
+            if (Tawk_API.maximize) Tawk_API.maximize();
+        }
+    } catch (e) { }
+
+    // 4. Restore the original URL after 3 seconds (after trigger has had time to fire)
+    setTimeout(() => {
+        history.replaceState(null, '', originalUrl);
+    }, 3000);
 };
 
 // ===== Quick Pick Logic (Global) =====
