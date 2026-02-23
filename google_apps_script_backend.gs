@@ -33,6 +33,16 @@ function doGet(e) {
 
   if (params.action === 'getAll') return json({ status: "success", data: getAllProjects(getSheet()) });
 
+  if (params.action === 'getPublicBriefs') {
+    const briefs = getAllBriefs().map(b => ({
+      rowId: b.rowId,
+      projectTitle: b.projectTitle,
+      status: b.status,
+      year: extractYear(b.timestamp)
+    }));
+    return json({ status: "success", data: briefs });
+  }
+
   if (params.action === 'getBriefs') {
     if (!checkAdminAuth(params.user, params.pass)) return json({ status: "error", message: "Unauthorized" });
     return json({ status: "success", data: getAllBriefs() });
@@ -71,23 +81,31 @@ function doPost(e) {
 
   try {
     const data = JSON.parse(e.postData.contents);
+    const action = data.action;
     
-    if (data.action === 'submitFeedback') return json(handleFeedback(data.feedback));
-    if (data.action === 'submitBrief') return json(handleBrief(data.brief));
-    if (data.action === 'submitPayment') return json(handlePayment(data));
-    if (data.action === 'logDownload') return json(handleDownloadLog(data));
-    if (data.action === 'adminLogin') {
+    // Explicit cases with direct returns to prevent falling through to tracker logic
+    if (action === 'submitFeedback') return json(handleFeedback(data.feedback));
+    if (action === 'submitBrief') return json(handleBrief(data.brief));
+    if (action === 'submitPayment') return json(handlePayment(data));
+    if (action === 'logDownload') return json(handleDownloadLog(data));
+    
+    if (action === 'adminLogin') {
       const isValid = checkAdminAuth(data.user, data.pass);
       return json(isValid ? { status: "success" } : { status: "error", message: "Invalid credentials" });
     }
-    if (data.action === 'markBriefRead') {
+    
+    if (action === 'markBriefRead') {
       if (!checkAdminAuth(data.user, data.pass)) return json({ status: "error", message: "Unauthorized" });
       return json(markBriefAsRead(data.rowId));
     }
 
+    // Default: Tracker Data Synchronization
     const sheet = getSheet();
     const project = data.project || data;
-    if (!project.id) throw new Error("Missing project ID");
+    if (!project.id) {
+       // If no action matched and no project ID, it's an invalid request
+       return json({ status: "error", message: "Invalid action or missing project ID" });
+    }
 
     const result = updateOrInsert(sheet, project);
     return json({ status: "success", message: result.message, version: result.version });
@@ -97,6 +115,13 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function extractYear(timestamp) {
+  if (!timestamp) return new Date().getFullYear().toString();
+  const dateStr = timestamp.toString();
+  const match = dateStr.match(/\d{4}/);
+  return match ? match[0] : new Date().getFullYear().toString();
 }
 
 function handleFeedback(fb) {
