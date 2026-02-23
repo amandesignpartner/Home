@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check for form success flag in URL
     checkFormSuccess();
 
+    // Deep-link: auto-open popup from ?popup= URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const popupParam = urlParams.get('popup');
+    if (popupParam) {
+        setTimeout(() => {
+            if (typeof openPopup === 'function') openPopup(popupParam);
+        }, 600); // Small delay to let page fully render first
+    }
+
     // CRITICAL: Signal to loader that all UI components and tab positions are settled
     // This allows the website to reveal itself immediately without waiting for heavy external assets
     if (window.triggerManualLoadComplete) {
@@ -1169,6 +1178,7 @@ function initMinimize() {
             // 4. Don't minimize if it's PINNED
             if (el.id === activeId) return;
             if (el.id === 'note-sketch-image' || el.id === 'logo') return;
+            if (el.id === 'btn-360') return; // Never auto-minimize 360 into the bar
             if (el.classList.contains('minimized')) return;
             if (el.classList.contains('pinned')) return;
 
@@ -1178,6 +1188,7 @@ function initMinimize() {
 
     function minimizeElement(el) {
         const id = el.id;
+        if (id === 'btn-360') return; // Never add 360 to the minimized bar
         const title = el.dataset.title || el.querySelector('.header-title')?.textContent || 'Tab';
 
         // Hide the element
@@ -1541,6 +1552,12 @@ function openPopup(id, isBack = false, options = {}) {
     // IMMEDIATE VISIBILITY: Show overlay first to provide instant feedback
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Update URL to reflect current popup (deep-link support)
+    const skipUrlPopups = ['confirm-close', 'pdf-viewer'];
+    if (!skipUrlPopups.includes(id)) {
+        history.replaceState({ popup: id }, '', window.location.pathname + '?popup=' + encodeURIComponent(id));
+    }
 
     // CRITICAL: Save brief data BEFORE we overwrite the innerHTML
     if (!isBack && popupStack.length > 0) {
@@ -2399,6 +2416,9 @@ function closePopup() {
         if (overlay) {
             overlay.classList.remove('active');
             document.body.style.overflow = '';
+
+            // Restore clean URL when popup closes
+            history.replaceState(null, '', window.location.pathname);
 
             // CRITICAL: Clear content to stop all background media/videos
             const content = document.getElementById('popupContent');
