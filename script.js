@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfXeET-asUxc1kMLxU7uV1pAPrPmeSFOvmvwBRJyZs8lCz9Lpf8Q1w8YoG5om6tOMnKw/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzhCAASha5nCcPIZuPEgYyfFAjdmmObCkBHZIktU3btvQ3S-JCubl5taIbzIsNoBjYGuA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysauQgAlIVSxE4xXSbFgyTTlsfln2szdRqrqbszkHJNKZsQxl_Ua1eQy-e9JJXqK70FQ/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbysauQgAlIVSxE4xXSbFgyTTlsfln2szdRqrqbszkHJNKZsQxl_Ua1eQy-e9JJXqK70FQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
