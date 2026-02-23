@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     init360Popup(); // Initialize 360 view popup
     window.initPlyr(); // Initialize all video players
     initPandaShowcase(); // Start the panda illustration storyline sequence
+    initBriefAdmin(); // Initialize Admin Briefs access logic
 
     // Check for form success flag in URL
     checkFormSuccess();
@@ -2617,20 +2618,24 @@ window.toggleMainChat = function () {
 
 // Global function to initiate plan inquiry — opens chat on CURRENT page so triggers fire correctly
 window.initiatePlanChat = function (planName) {
-    // 1. Temporarily add ?plan= to the page URL so Tawk.to Trigger conditions can match it
+    // 1. Close the pricing popup first
+    // This is CRITICAL because closePopup() clears the URL parameters
+    const overlay = document.getElementById('popupOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+        if (typeof closePopup === 'function') {
+            closePopup();
+        }
+    }
+
+    // 2. Temporarily add ?plan= to the page URL so Tawk.to Trigger conditions can match it
     const originalUrl = window.location.href;
     const planKey = planName.split(' ')[0]; // Extract keyword e.g. "Foundation", "Structure"
     const newUrl = window.location.pathname + '?plan=' + encodeURIComponent(planKey);
+
+    // Use replaceState twice to ensure Tawk.to's watcher detects the change
     history.replaceState(null, '', newUrl);
 
-    // 2. Close the pricing popup first
-    const overlay = document.getElementById('popupOverlay');
-    if (overlay && overlay.classList.contains('active')) {
-        const closeBtn = document.querySelector('.popup-close');
-        if (closeBtn) closeBtn.click();
-    }
-
-    // 3. Open the embedded Tawk.to chat widget on this page (Tawk.to reads the current URL for triggers)
+    // 3. Open the embedded Tawk.to chat widget on this page
     try {
         if (typeof Tawk_API !== 'undefined') {
             if (Tawk_API.setAttributes) {
@@ -2640,10 +2645,13 @@ window.initiatePlanChat = function (planName) {
         }
     } catch (e) { }
 
-    // 4. Restore the original URL after 3 seconds (after trigger has had time to fire)
+    // 4. Restore the original URL after 5 seconds (more time for trigger to fire)
     setTimeout(() => {
-        history.replaceState(null, '', originalUrl);
-    }, 3000);
+        // Only restore if the current URL still contains our plan parameter (to avoid overwriting new navigations)
+        if (window.location.search.includes('plan=')) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+    }, 5000);
 };
 
 // ===== Quick Pick Logic (Global) =====
@@ -4156,4 +4164,234 @@ function initPandaShowcase() {
     setTimeout(() => {
         runPandaSequence();
     }, 3000); // Wait 3 seconds after page load before starting
+}
+
+// ===== Client Brief Admin Logic =====
+let adminCredentials = null;
+let currentBriefs = [];
+
+function initBriefAdmin() {
+    const loginBtn = document.getElementById('adminLoginBtn');
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    const refreshBtn = document.getElementById('adminRefreshBtn');
+
+    if (loginBtn) loginBtn.addEventListener('click', loginAdmin);
+    if (logoutBtn) logoutBtn.addEventListener('click', logoutAdmin);
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchBriefs);
+
+    // Initial check for session
+    const saved = localStorage.getItem('aman_admin_session');
+    if (saved) {
+        try {
+            adminCredentials = JSON.parse(saved);
+            toggleAdminUI(true);
+            fetchBriefs();
+        } catch (e) {
+            localStorage.removeItem('aman_admin_session');
+        }
+    }
+}
+
+async function loginAdmin() {
+    const user = document.getElementById('adminUser').value;
+    const pass = document.getElementById('adminPass').value;
+    const errorEl = document.getElementById('adminLoginError');
+    const loginBtn = document.getElementById('adminLoginBtn');
+
+    if (!user || !pass) {
+        if (errorEl) {
+            errorEl.textContent = "Please enter credentials";
+            errorEl.style.display = "block";
+        }
+        return;
+    }
+
+    loginBtn.textContent = "Authenticating...";
+    loginBtn.disabled = true;
+
+    try {
+        const result = await adminAuthFetch('adminLogin', { user, pass });
+
+        if (result.status === "success") {
+            adminCredentials = { user, pass };
+            localStorage.setItem('aman_admin_session', JSON.stringify(adminCredentials));
+            toggleAdminUI(true);
+            fetchBriefs();
+            showToast("Logged in successfully");
+            if (errorEl) errorEl.style.display = "none";
+        } else {
+            if (errorEl) {
+                errorEl.textContent = result.message || "Invalid Username or Password";
+                errorEl.style.display = "block";
+            }
+        }
+    } catch (error) {
+        console.error("Login error:", error);
+    } finally {
+        loginBtn.textContent = "Login to View Briefs";
+        loginBtn.disabled = false;
+    }
+}
+
+function logoutAdmin() {
+    adminCredentials = null;
+    localStorage.removeItem('aman_admin_session');
+    toggleAdminUI(false);
+    document.getElementById('briefListContainer').innerHTML = `
+        <p style="font-size: 11px; text-align: center; color: var(--text-muted); padding: 20px;">
+            Please login to view project briefs.
+        </p>
+    `;
+    showToast("Logged out");
+}
+
+function toggleAdminUI(isLoggedIn) {
+    const loginForm = document.getElementById('adminLoginForm');
+    const logoutSection = document.getElementById('adminLogoutSection');
+    if (loginForm) loginForm.style.display = isLoggedIn ? 'none' : 'block';
+    if (logoutSection) logoutSection.style.display = isLoggedIn ? 'block' : 'none';
+}
+
+async function fetchBriefs() {
+    if (!adminCredentials) return;
+
+    const container = document.getElementById('briefListContainer');
+    if (container) container.innerHTML = '<p style="font-size: 11px; text-align: center; color: var(--primary-orange); padding: 20px;">Fetching briefs...</p>';
+
+    try {
+        const url = `${TRACKER_SYNC_URL}?action=getBriefs&user=${encodeURIComponent(adminCredentials.user)}&pass=${encodeURIComponent(adminCredentials.pass)}&t=${Date.now()}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.status === "success") {
+            currentBriefs = result.data;
+            renderBriefs(currentBriefs);
+        } else {
+            if (container) container.innerHTML = `<p style="font-size: 10px; color: #ff4444; padding: 10px;">Error: ${result.message}</p>`;
+        }
+    } catch (e) {
+        if (container) container.innerHTML = `<p style="font-size: 10px; color: #ff4444; padding: 10px;">Failed to connect to sheet.</p>`;
+    }
+}
+
+function renderBriefs(briefs) {
+    const container = document.getElementById('briefListContainer');
+    if (!container) return;
+
+    if (!briefs || briefs.length === 0) {
+        container.innerHTML = '<p style="font-size: 11px; text-align: center; color: var(--text-muted); padding: 20px;">No briefs found yet.</p>';
+        return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 8px; padding: 5px;">';
+    briefs.forEach(b => {
+        const isRead = b.status === 'Read';
+        html += `
+            <div class="brief-item" onclick="viewBriefDetails('${b.rowId}')"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'var(--primary-orange)'}; border-radius: 6px; cursor: pointer; transition: 0.2s;">
+                <div style="min-width: 0; flex: 1;">
+                    <p style="font-size: 12px; font-weight: 500; margin: 0; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.projectTitle || 'Untitled Project'}</p>
+                    <p style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">${b.clientName} • ${b.timestamp}</p>
+                </div>
+                <span style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: ${isRead ? 'rgba(255,255,255,0.05)' : 'var(--primary-orange)'}; color: ${isRead ? 'var(--text-muted)' : 'black'}; font-weight: 700;">
+                    ${b.status.toUpperCase()}
+                </span>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+window.viewBriefDetails = function (rowId) {
+    const brief = currentBriefs.find(b => b.rowId.toString() === rowId.toString());
+    if (!brief) return;
+
+    // Open detail popup
+    if (typeof openPopup === 'function') {
+        openPopup('brief-detail');
+
+        // Give template time to inject
+        setTimeout(() => {
+            const detailContainer = document.getElementById('briefDetailContent');
+            if (!detailContainer) return;
+
+            // Fill details
+            if (document.getElementById('detail-name')) document.getElementById('detail-name').textContent = brief.clientName || "N/A";
+            if (document.getElementById('detail-email')) document.getElementById('detail-email').textContent = brief.email || "N/A";
+            if (document.getElementById('detail-phone')) document.getElementById('detail-phone').textContent = brief.phone || "N/A";
+            if (document.getElementById('detail-project-title')) document.getElementById('detail-project-title').textContent = brief.projectTitle || "N/A";
+            if (document.getElementById('detail-services')) document.getElementById('detail-services').textContent = brief.services || "None";
+            if (document.getElementById('detail-work-type')) document.getElementById('detail-work-type').textContent = brief.workType || "N/A";
+            if (document.getElementById('detail-interior')) document.getElementById('detail-interior').textContent = (brief.interiorItems || "") + (brief.interiorOther ? " (" + brief.interiorOther + ")" : "");
+            if (document.getElementById('detail-exterior')) document.getElementById('detail-exterior').textContent = (brief.exteriorItems || "") + (brief.exteriorOther ? " (" + brief.exteriorOther + ")" : "");
+            if (document.getElementById('detail-billing')) document.getElementById('detail-billing').textContent = brief.billingType || "N/A";
+            if (document.getElementById('detail-budget')) document.getElementById('detail-budget').textContent = brief.budget || "N/A";
+            if (document.getElementById('detail-timeline')) document.getElementById('detail-timeline').textContent = brief.timeline || "N/A";
+            if (document.getElementById('detail-message')) document.getElementById('detail-message').textContent = brief.message || "No description provided.";
+
+            // Links
+            const attachLink = document.getElementById('detail-attachment');
+            const noAttach = document.getElementById('no-attachment');
+            if (attachLink && noAttach) {
+                if (brief.attachment && brief.attachment !== "" && brief.attachment !== "Error saving file:") {
+                    attachLink.href = brief.attachment;
+                    attachLink.style.display = "inline";
+                    noAttach.style.display = "none";
+                } else {
+                    attachLink.style.display = "none";
+                    noAttach.style.display = "inline";
+                }
+            }
+
+            const extLink = document.getElementById('detail-external-link');
+            const noExt = document.getElementById('no-external-link');
+            if (extLink && noExt) {
+                if (brief.fileLink && brief.fileLink !== "") {
+                    extLink.href = brief.fileLink;
+                    extLink.style.display = "inline";
+                    noExt.style.display = "none";
+                } else {
+                    extLink.style.display = "none";
+                    noExt.style.display = "inline";
+                }
+            }
+
+            // Mark as read in backend
+            if (brief.status !== 'Read') {
+                markBriefRead(brief.rowId);
+            }
+        }, 300);
+    }
+};
+
+async function markBriefRead(rowId) {
+    if (!adminCredentials) return;
+
+    try {
+        await adminAuthFetch('markBriefRead', {
+            user: adminCredentials.user,
+            pass: adminCredentials.pass,
+            rowId: rowId
+        });
+
+        // Update local state and UI
+        const brief = currentBriefs.find(b => b.rowId.toString() === rowId.toString());
+        if (brief) {
+            brief.status = 'Read';
+            renderBriefs(currentBriefs);
+        }
+    } catch (e) {
+        console.error("Error marking read:", e);
+    }
+}
+
+// Special fetch helper for POST actions to GAS
+async function adminAuthFetch(action, data) {
+    const response = await fetch(TRACKER_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: action, ...data })
+    });
+    return await response.json();
 }

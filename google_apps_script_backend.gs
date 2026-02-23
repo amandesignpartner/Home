@@ -10,6 +10,7 @@ const CONFIG = {
   SHEET_NAME: 'TrackerData',
   FEEDBACK_SHEET_NAME: 'Feedback',
   SUBMISSIONS_SHEET_NAME: 'Submissions',
+  ADMIN_SHEET_NAME: 'AdminConfig',
   PAYMENTS_SHEET_NAME: 'Payments',
   ATTACHMENTS_FOLDER_ID: '10QQIt6fSRgTzxIZU7KdzDoLGlfAausCT',
   NOTIFICATION_EMAIL: 'aman.designpartner@gmail.com',
@@ -31,6 +32,11 @@ function doGet(e) {
   }
 
   if (params.action === 'getAll') return json({ status: "success", data: getAllProjects(getSheet()) });
+
+  if (params.action === 'getBriefs') {
+    if (!checkAdminAuth(params.user, params.pass)) return json({ status: "error", message: "Unauthorized" });
+    return json({ status: "success", data: getAllBriefs() });
+  }
 
   if (params.action === 'getFeedback') {
     const fbSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
@@ -70,6 +76,14 @@ function doPost(e) {
     if (data.action === 'submitBrief') return json(handleBrief(data.brief));
     if (data.action === 'submitPayment') return json(handlePayment(data));
     if (data.action === 'logDownload') return json(handleDownloadLog(data));
+    if (data.action === 'adminLogin') {
+      const isValid = checkAdminAuth(data.user, data.pass);
+      return json(isValid ? { status: "success" } : { status: "error", message: "Invalid credentials" });
+    }
+    if (data.action === 'markBriefRead') {
+      if (!checkAdminAuth(data.user, data.pass)) return json({ status: "error", message: "Unauthorized" });
+      return json(markBriefAsRead(data.rowId));
+    }
 
     const sheet = getSheet();
     const project = data.project || data;
@@ -141,7 +155,8 @@ function handleBrief(brief) {
     (brief.exteriorItems || []).join(", "), brief.exteriorCustom || "",
     brief.billingType || "", brief.budget || brief.budgetCustom || "",
     brief.timeline || brief.timelineCustom || "", brief.message || "",
-    attachmentUrl, brief.fileLink || ""
+    attachmentUrl, brief.fileLink || "",
+    "Unread" // Default Status
   ]);
 
   try {
@@ -150,6 +165,72 @@ function handleBrief(brief) {
   } catch(e) {}
 
   return { status: "success", message: "Brief received", attachmentUrl };
+}
+
+function getAllBriefs() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const results = [];
+  
+  // Headers are: Timestamp, Name, Email, Phone, Project Title, Services, Other Service, Work Type, Interior Items, Interior Other, Exterior Items, Exterior Other, Billing Type, Budget, Timeline, Message, Attachment Link, External File Link, Read_Status
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4]) { // If Project Title exists
+      results.push({
+        rowId: i + 1,
+        timestamp: data[i][0],
+        clientName: data[i][1],
+        email: data[i][2],
+        phone: data[i][3],
+        projectTitle: data[i][4],
+        services: data[i][5],
+        otherService: data[i][6],
+        workType: data[i][7],
+        interiorItems: data[i][8],
+        interiorOther: data[i][9],
+        exteriorItems: data[i][10],
+        exteriorOther: data[i][11],
+        billingType: data[i][12],
+        budget: data[i][13],
+        timeline: data[i][14],
+        message: data[i][15],
+        attachment: data[i][16],
+        fileLink: data[i][17],
+        status: data[i][18] || "Unread"
+      });
+    }
+  }
+  return results.reverse();
+}
+
+function checkAdminAuth(user, pass) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.ADMIN_SHEET_NAME);
+  
+  // Auto-create if doesn't exist
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.ADMIN_SHEET_NAME);
+    sheet.appendRow(["Username", "Password"]);
+    sheet.appendRow(["aman_admin", "Tijarah@2024"]);
+    sheet.hideSheet();
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  // Check against row 2 (first account)
+  return (user === data[1][0] && pass === data[1][1]);
+}
+
+function markBriefAsRead(rowId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  if (!sheet) return { status: "error" };
+  
+  // Column 19 is Read_Status (S)
+  sheet.getRange(rowId, 19).setValue("Read");
+  return { status: "success" };
 }
 
 function handlePayment(data) {
