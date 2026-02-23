@@ -2595,51 +2595,35 @@ window.toggleMainChat = function () {
     }
 };
 
-// Global function to initiate chat for a specific plan
-// Persistent storage for plan inquiry message
-window.tawkPendingMsg = null;
-
-// Hook into Tawk.to event for reliability
-window.Tawk_API = window.Tawk_API || {};
-window.Tawk_API.onChatMaximized = function () {
-    if (window.tawkPendingMsg && Tawk_API.sendChatMessage) {
-        Tawk_API.sendChatMessage(window.tawkPendingMsg, function (err) {
-            if (!err) {
-                console.log("Message sent via event hook");
-                window.tawkPendingMsg = null;
-            }
-        });
-    }
-};
-
+// Global function to initiate plan inquiry via WhatsApp (reliable) + Tawk.to (secondary)
 window.initiatePlanChat = function (planName) {
-    if (typeof Tawk_API !== 'undefined' && Tawk_API.maximize) {
-        // 1. Open Chat immediately
-        Tawk_API.maximize();
+    const waNumber = '923010003011';
+    const msg = encodeURIComponent(`Hi Aman! I'm interested in the ${planName}. Could you please provide more details?`);
+    const waUrl = `https://wa.me/${waNumber}?text=${msg}`;
 
-        // 2. Attach Selection Data to the Session (Aman sees this in the dashboard sidebar)
-        if (Tawk_API.setAttributes) {
-            Tawk_API.setAttributes({
-                'Interested_In': planName,
-                'Status': 'Pricing_Inquiry'
-            }, function (error) { });
-        }
+    // 1. Open WhatsApp with the pre-filled message (always works, cross-platform)
+    window.open(waUrl, '_blank');
 
-        // 3. Fire a Dashboard Event (Aman gets a real-time notification)
-        if (Tawk_API.addEvent) {
-            Tawk_API.addEvent('Pricing Selection', {
-                'Plan': planName
-            }, function (error) { });
+    // 2. Also notify Aman via Tawk.to dashboard silently (additional channel)
+    try {
+        if (typeof Tawk_API !== 'undefined') {
+            if (Tawk_API.setAttributes) {
+                Tawk_API.setAttributes({
+                    'Interested_In': planName,
+                    'Status': 'Pricing_Inquiry'
+                }, function () { });
+            }
+            if (Tawk_API.addEvent) {
+                Tawk_API.addEvent('Pricing Selection', { 'Plan': planName }, function () { });
+            }
         }
+    } catch (e) { }
 
-        // 4. Close the pricing popup
-        const overlay = document.getElementById('popupOverlay');
-        if (overlay && overlay.classList.contains('active')) {
-            const closeBtn = document.querySelector('.popup-close');
-            if (closeBtn) closeBtn.click();
-        }
-    } else {
-        alert("The chat widget is still loading. Please wait a second and try again.");
+    // 3. Close the pricing popup
+    const overlay = document.getElementById('popupOverlay');
+    if (overlay && overlay.classList.contains('active')) {
+        const closeBtn = document.querySelector('.popup-close');
+        if (closeBtn) closeBtn.click();
     }
 };
 
