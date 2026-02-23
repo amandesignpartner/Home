@@ -28,7 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     init360Popup(); // Initialize 360 view popup
     window.initPlyr(); // Initialize all video players
     initPandaShowcase(); // Start the panda illustration storyline sequence
-    initBriefAdmin(); // Initialize Admin Briefs access logic
+    try {
+        initBriefAdmin(); // Initialize Admin Briefs access logic
+    } catch (e) {
+        console.error("Dashboard Init Error:", e);
+    }
 
     // Check for form success flag in URL
     checkFormSuccess();
@@ -4278,40 +4282,50 @@ function toggleAdminUI(isLoggedIn) {
 
 async function fetchBriefs(forceAdmin = false) {
     const container = document.getElementById('briefListContainer');
-    if (container) container.innerHTML = '<p style="font-size: 11px; text-align: center; color: var(--primary-orange); padding: 20px;">Synchronizing Workspace...</p>';
+    if (!container) return;
+
+    // Show initial sync state
+    container.innerHTML = '<div style="text-align: center; padding: 30px;"><div class="loading-dots" style="margin-bottom: 10px;"><span>.</span><span>.</span><span>.</span></div><p style="font-size: 11px; color: var(--primary-orange); letter-spacing: 1px;">Synchronizing Workspace...</p></div>';
 
     const defaultYears = [];
+    const currentYear = new Date().getFullYear().toString();
     for (let y = 2026; y >= 2006; y--) defaultYears.push(y.toString());
 
-    try {
-        console.log("Syncing years from:", TRACKER_SYNC_URL);
-        const yearsRes = await fetch(`${TRACKER_SYNC_URL}?action=getYears&t=${Date.now()}`);
-        const yearsData = await yearsRes.json();
-        const availableYears = (yearsData && yearsData.status === "success" && Array.isArray(yearsData.years)) ? yearsData.years : defaultYears;
+    // Ensure filter is initialized
+    if (!currentYearFilter) currentYearFilter = currentYear;
 
-        let url;
+    try {
+        console.log(`[Sync] Starting fetch for ${currentYearFilter}. URL: ${TRACKER_SYNC_URL}`);
+
+        // Parallel fetch for years and briefs for speed
         const isAdmin = adminCredentials && (forceAdmin || adminCredentials);
+        const yearsJob = fetch(`${TRACKER_SYNC_URL}?action=getYears&t=${Date.now()}`).then(r => r.json()).catch(() => ({ status: "error" }));
+
+        let dataUrl;
         if (isAdmin) {
-            url = `${TRACKER_SYNC_URL}?action=getBriefs&user=${encodeURIComponent(adminCredentials.user)}&pass=${encodeURIComponent(adminCredentials.pass)}&t=${Date.now()}`;
+            dataUrl = `${TRACKER_SYNC_URL}?action=getBriefs&user=${encodeURIComponent(adminCredentials.user)}&pass=${encodeURIComponent(adminCredentials.pass)}&t=${Date.now()}`;
         } else {
-            url = `${TRACKER_SYNC_URL}?action=getPublicBriefs&year=${currentYearFilter}&t=${Date.now()}`;
+            dataUrl = `${TRACKER_SYNC_URL}?action=getPublicBriefs&year=${currentYearFilter}&t=${Date.now()}`;
         }
 
-        console.log("Fetching briefs from:", url);
-        const response = await fetch(url);
-        const result = await response.json();
+        const dataJob = fetch(dataUrl).then(r => r.json());
+
+        const [yearsData, result] = await Promise.all([yearsJob, dataJob]);
+        const availableYears = (yearsData && yearsData.status === "success" && Array.isArray(yearsData.years)) ? yearsData.years : defaultYears;
 
         if (result && result.status === "success") {
             currentBriefs = result.data || [];
-            console.log(`Successfully synced ${currentBriefs.length} briefs for ${currentYearFilter}`);
+            console.log(`[Sync] Success: ${currentBriefs.length} briefs retrieved.`);
             renderBriefs(currentBriefs, availableYears);
         } else {
-            console.warn("Backend returned non-success status:", result);
+            console.warn("[Sync] Server returned error status:", result);
             renderBriefs([], availableYears);
         }
     } catch (e) {
-        console.error("Critical Brief Sync Error:", e);
+        console.error("[Sync] Critical Failure:", e);
+        // Fallback to simulated mode so UI isn't blank
         renderBriefs([], defaultYears);
+        showToast("Synchronization delayed. Showing local archives.", "info");
     }
 }
 
