@@ -133,28 +133,22 @@ function doPost(e) {
 }
 
 function getAvailableYears() {
-  const years = new Set();
-  const allBriefs = getAllBriefs();
-  
-  // Add current, past and future years from 2016-2050
-  const range = [];
-  for (let y = 2050; y >= 2016; y--) {
-    range.push(y.toString());
+  const years = [];
+  // Strictly enforce 2016-2026 range only
+  for (let y = 2026; y >= 2016; y--) {
+    years.push(y.toString());
   }
-  range.forEach(y => years.add(y));
-  
-  allBriefs.forEach(b => {
-    if (b.year) years.add(b.year.toString());
-  });
-  
-  return Array.from(years).sort().reverse();
-}
-
-function extractYear(timestamp) {
+  return years;
+}function extractYear(timestamp) {
   if (!timestamp) return new Date().getFullYear().toString();
   const dateStr = timestamp.toString();
   const match = dateStr.match(/\d{4}/);
-  return match ? match[0] : new Date().getFullYear().toString();
+  const year = match ? match[0] : new Date().getFullYear().toString();
+  // Valid range check
+  const yNum = parseInt(year);
+  if (yNum < 2016) return "2016";
+  if (yNum > 2026) return "2026";
+  return year;
 }
 
 function handleFeedback(fb) {

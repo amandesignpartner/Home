@@ -205,11 +205,13 @@ function initDraggableElements() {
             if (e.target.closest('button') ||
                 e.target.closest('a') ||
                 e.target.closest('input') ||
+                e.target.closest('select') ||
                 e.target.closest('textarea') ||
                 e.target.closest('.sticky-btn-tab') ||
                 e.target.tagName === 'BUTTON' ||
                 e.target.tagName === 'A' ||
                 e.target.tagName === 'INPUT' ||
+                e.target.tagName === 'SELECT' ||
                 e.target.tagName === 'TEXTAREA') return;
         }
 
@@ -4289,7 +4291,7 @@ async function fetchBriefs(forceAdmin = false) {
 
     const defaultYears = [];
     const currentYear = new Date().getFullYear().toString();
-    for (let y = 2050; y >= 2016; y--) defaultYears.push(y.toString());
+    for (let y = 2026; y >= 2016; y--) defaultYears.push(y.toString());
 
     // Ensure filter is initialized
     if (!currentYearFilter) currentYearFilter = currentYear;
@@ -4311,7 +4313,13 @@ async function fetchBriefs(forceAdmin = false) {
         const dataJob = fetch(dataUrl).then(r => r.json());
 
         const [yearsData, result] = await Promise.all([yearsJob, dataJob]);
-        const availableYears = (yearsData && yearsData.status === "success" && Array.isArray(yearsData.years)) ? yearsData.years : defaultYears;
+
+        // Final strict safety filter for frontend dropdown
+        let availableYears = (yearsData && yearsData.status === "success" && Array.isArray(yearsData.years)) ? yearsData.years : defaultYears;
+        availableYears = availableYears.filter(y => {
+            const yNum = parseInt(y);
+            return yNum >= 2016 && yNum <= 2026;
+        });
 
         if (result && result.status === "success") {
             currentBriefs = result.data || [];
@@ -4386,7 +4394,7 @@ function renderBriefs(briefs, yearsList = []) {
     // Generate dynamic fallback if yearsList is empty
     const currentYears = yearsList.length > 0 ? yearsList : [];
     if (currentYears.length === 0) {
-        for (let y = 2050; y >= 2016; y--) currentYears.push(y.toString());
+        for (let y = 2026; y >= 2016; y--) currentYears.push(y.toString());
     }
 
     // Update global filter if not set
@@ -4397,9 +4405,9 @@ function renderBriefs(briefs, yearsList = []) {
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 5px 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; gap: 15px;">
             <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                  <label style="font-size: 10px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Archive:</label>
-                 <select onchange="setBriefYear(this.value)" 
-                    style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.4); border: 1px solid rgba(210,105,30,0.5); color: var(--primary-orange); font-size: 12px; padding: 6px 12px; border-radius: 6px; outline: none; cursor: pointer; font-family: inherit; font-weight: 700;">
-                    ${currentYears.map(y => `<option value="${y}" ${currentYearFilter === y ? 'selected' : ''}>${y === '2016' ? '16 Historical' : 'Year ' + y}</option>`).join('')}
+                  <select onchange="setBriefYear(this.value)" 
+                     style="flex: 1; min-width: 120px; background: #000; border: 1px solid rgba(210,105,30,0.5); color: var(--primary-orange); font-size: 12px; padding: 6px 12px; border-radius: 6px; outline: none; cursor: pointer; font-family: inherit; font-weight: 700;">
+                    ${currentYears.map(y => `<option value="${y}" style="background: #000; color: var(--primary-orange);" ${currentYearFilter === y ? 'selected' : ''}>${y === '2016' ? '16 Historical' : 'Year ' + y}</option>`).join('')}
                 </select>
             </div>
         </div>
