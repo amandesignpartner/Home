@@ -40,7 +40,7 @@ function doGet(e) {
   if (params.action === 'getPublicBriefs') {
     const year = params.year || new Date().getFullYear().toString();
     const briefs = getAllBriefs()
-      .filter(b => extractYear(b.timestamp) === year)
+      .filter(b => b.year && b.year.toString() === year.toString())
       .map(b => ({
         rowId: b.rowId,
         projectTitle: b.projectTitle,
@@ -136,16 +136,15 @@ function getAvailableYears() {
   const years = new Set();
   const allBriefs = getAllBriefs();
   
-  // Add current, past and future years from 2006-2026 as per user request (specifically mentioned '06')
+  // Add current, past and future years from 2016-2050
   const range = [];
-  for (let y = 2026; y >= 2006; y--) {
+  for (let y = 2050; y >= 2016; y--) {
     range.push(y.toString());
   }
   range.forEach(y => years.add(y));
   
   allBriefs.forEach(b => {
-    const y = extractYear(b.timestamp);
-    if (y) years.add(y);
+    if (b.year) years.add(b.year.toString());
   });
   
   return Array.from(years).sort().reverse();
@@ -189,7 +188,7 @@ function handleBrief(brief) {
   const sheetName = CONFIG.SUBMISSIONS_SHEET_NAME;
   let sheet = ss.getSheetByName(sheetName);
   
-  // Robust check: find sheet case-insensitively if not found by exact name
+  // Robust check: find sheet case-insensitively
   if (!sheet) {
     const sheets = ss.getSheets();
     for (let s of sheets) {
@@ -201,7 +200,7 @@ function handleBrief(brief) {
   }
 
   const headers = [
-    "Timestamp", "Name", "Email", "Phone", "Project Title", 
+    "Year", "Timestamp", "Name", "Email", "Phone", "Project Title", 
     "Services", "Other Service", "Work Type", 
     "Interior Items", "Interior Other", "Exterior Items", "Exterior Other",
     "Billing Type", "Budget", "Timeline", "Message", 
@@ -214,9 +213,9 @@ function handleBrief(brief) {
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#8B5A2B").setColor("white");
     sheet.setFrozenRows(1);
   } else {
-    // Check if Status column (19) exists
-    if (sheet.getLastColumn() < 19) {
-      sheet.getRange(1, 19).setValue("Status").setFontWeight("bold").setBackground("#8B5A2B").setColor("white");
+    // Check if Status column (20) exists now due to shift
+    if (sheet.getLastColumn() < 20) {
+      sheet.getRange(1, 20).setValue("Status").setFontWeight("bold").setBackground("#8B5A2B").setColor("white");
     }
   }
 
@@ -225,7 +224,8 @@ function handleBrief(brief) {
 
   const now = new Date();
   const rowData = [
-    Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss"),
+    now.getFullYear().toString(), // Column A: Year
+    Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss"), // Column B: Timestamp
     brief.name || "", brief.email || "", brief.phone || "", brief.projectTitle || "",
     (brief.services || []).join(", "), brief.otherService || "", brief.workType || "",
     (brief.interiorItems || []).join(", "), brief.interiorCustom || "",
@@ -250,7 +250,6 @@ function getAllBriefs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
   if (!sheet) {
-     // Check case-insensitive
      const sheets = ss.getSheets();
      for (let s of sheets) {
        if (s.getName().toLowerCase() === CONFIG.SUBMISSIONS_SHEET_NAME.toLowerCase()) {
@@ -265,40 +264,33 @@ function getAllBriefs() {
   const results = [];
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][4]) { // Project Title
-      const ts = data[i][0];
-      let yearStr = new Date().getFullYear().toString();
-      try {
-        if (ts instanceof Date) {
-          yearStr = ts.getFullYear().toString();
-        } else if (ts) {
-          const match = ts.toString().match(/\d{4}/);
-          if (match) yearStr = match[0];
-        }
-      } catch(e) {}
-
+    // If Year is in A (0) and Project Title is in F (5)
+    if (data[i][5] || data[i][4]) { 
+      const yearVal = data[i][0] ? data[i][0].toString() : "";
+      const ts = data[i][1];
+      
       results.push({
         rowId: i + 1,
         timestamp: ts,
-        year: yearStr,
-        clientName: data[i][1],
-        email: data[i][2],
-        phone: data[i][3],
-        projectTitle: data[i][4],
-        services: data[i][5],
-        otherService: data[i][6],
-        workType: data[i][7],
-        interiorItems: data[i][8],
-        interiorOther: data[i][9],
-        exteriorItems: data[i][10],
-        exteriorOther: data[i][11],
-        billingType: data[i][12],
-        budget: data[i][13],
-        timeline: data[i][14],
-        message: data[i][15],
-        attachment: data[i][16],
-        fileLink: data[i][17],
-        status: data[i][18] || "Unread"
+        year: yearVal || extractYear(ts),
+        clientName: data[i][2],
+        email: data[i][3],
+        phone: data[i][4],
+        projectTitle: data[i][5],
+        services: data[i][6],
+        otherService: data[i][7],
+        workType: data[i][8],
+        interiorItems: data[i][9],
+        interiorOther: data[i][10],
+        exteriorItems: data[i][11],
+        exteriorOther: data[i][12],
+        billingType: data[i][13],
+        budget: data[i][14],
+        timeline: data[i][15],
+        message: data[i][16],
+        attachment: data[i][17],
+        fileLink: data[i][18],
+        status: data[i][19] || "Unread"
       });
     }
   }
@@ -327,8 +319,8 @@ function markBriefAsRead(rowId) {
   const sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
   if (!sheet) return { status: "error" };
   
-  // Column 19 is Read_Status (S)
-  sheet.getRange(rowId, 19).setValue("Read");
+  // Column 20 is Status (T) due to Year column shift
+  sheet.getRange(rowId, 20).setValue("Read");
   return { status: "success" };
 }
 

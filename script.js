@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbKz79wyhTI9qm3OkeZLdzAt1ooYDBN-ZR6vGKGShYV5_MSfI3rMP_nCVT0GssHl8CdA/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwbKz79wyhTI9qm3OkeZLdzAt1ooYDBN-ZR6vGKGShYV5_MSfI3rMP_nCVT0GssHl8CdA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKnHiR5nAeKrdLsZTwUqCaXgN5SkpmIa3DW4POQWKoja8OqEaHxGQVN0fxCFR23ImR3g/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzKnHiR5nAeKrdLsZTwUqCaXgN5SkpmIa3DW4POQWKoja8OqEaHxGQVN0fxCFR23ImR3g/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -4289,7 +4289,7 @@ async function fetchBriefs(forceAdmin = false) {
 
     const defaultYears = [];
     const currentYear = new Date().getFullYear().toString();
-    for (let y = 2026; y >= 2006; y--) defaultYears.push(y.toString());
+    for (let y = 2050; y >= 2016; y--) defaultYears.push(y.toString());
 
     // Ensure filter is initialized
     if (!currentYearFilter) currentYearFilter = currentYear;
@@ -4383,7 +4383,11 @@ function renderBriefs(briefs, yearsList = []) {
     const container = document.getElementById('briefListContainer');
     if (!container) return;
 
-    const currentYears = yearsList.length > 0 ? yearsList : ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008", "2007", "2006"];
+    // Generate dynamic fallback if yearsList is empty
+    const currentYears = yearsList.length > 0 ? yearsList : [];
+    if (currentYears.length === 0) {
+        for (let y = 2050; y >= 2016; y--) currentYears.push(y.toString());
+    }
 
     // Update global filter if not set
     if (!currentYearFilter) currentYearFilter = new Date().getFullYear().toString();
@@ -4395,7 +4399,7 @@ function renderBriefs(briefs, yearsList = []) {
                  <label style="font-size: 10px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Archive:</label>
                  <select onchange="setBriefYear(this.value)" 
                     style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.4); border: 1px solid rgba(210,105,30,0.5); color: var(--primary-orange); font-size: 12px; padding: 6px 12px; border-radius: 6px; outline: none; cursor: pointer; font-family: inherit; font-weight: 700;">
-                    ${currentYears.map(y => `<option value="${y}" ${currentYearFilter === y ? 'selected' : ''}>${y === '2006' ? '06 Historical' : 'Year ' + y}</option>`).join('')}
+                    ${currentYears.map(y => `<option value="${y}" ${currentYearFilter === y ? 'selected' : ''}>${y === '2016' ? '16 Historical' : 'Year ' + y}</option>`).join('')}
                 </select>
             </div>
         </div>
