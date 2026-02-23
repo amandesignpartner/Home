@@ -537,3 +537,48 @@ function json(obj) {
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/**
+ * RUN THIS ONCE from the GAS Editor toolbar to populate your sheet with 900+ historical records.
+ */
+function seedHistoricalData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  if (!sheet) return "Error: Submissions sheet not found.";
+  
+  const PREFIXES = ["Modern", "Luxury", "Minimalist", "Classic", "Premium", "Industrial", "Sustainable", "Zen", "Contemporary", "Smart", "Compact", "Grand", "Urban", "Rustic", "Vintage", "Futuristic", "Nordic", "Elite", "High-End", "Eco", "Boutique", "Majestic", "Sleek", "Cozy", "Grandiose"];
+  const TYPES = ["2D Floor Plan Layout", "3D Interior Design Visualization", "Exterior Architectural Rendering", "3D Walkthrough Animation", "VR 360 Virtual Reality Tour", "Full Permit & Planning Layout", "Schematic Concept Design", "Detailed 3D Modeling", "Landscape & Garden Design", "Structural Layout", "BIM Environment Model", "Photorealistic Rendering"];
+  const AREAS = ["Home Gym Section", "Executive Private Office", "Master Suite Wing", "Luxury Penthouse", "Duplex Family Villa", "Backyard Studio", "Suburban Farmhouse", "Commercial Retail Shop", "Urban Coffee Bar", "Open-Plan Living Space", "Designer Kitchen", "Rooftop Terrace", "Base Suite", "Industrial Loft", "Media Room", "Spa Area", "Community Hub", "High-Tech Lab", "Art Lounge", "Smart Garage"];
+
+  const allRows = [];
+  
+  // 2016-2025: 92 projects each
+  for (let year = 2016; year <= 2025; year++) {
+    for (let i = 0; i < 92; i++) {
+      const pIdx = (i + year * 7) % PREFIXES.length;
+      const tIdx = (i + year * 3) % TYPES.length;
+      const aIdx = (i + year * 11) % AREAS.length;
+      const title = `${PREFIXES[pIdx]} ${AREAS[aIdx]} - ${TYPES[tIdx]}`;
+      
+      allRows.push([
+        year.toString(), new Date(year, 0, 1).toISOString(), "Historical Record",
+        "archive@aman.design", "N/A", title, "Visualization", "", "Residential",
+        "", "", "", "", "Fixed", "N/A", "Completed", "Portfolio asset.", "", "", "Viewed"
+      ]);
+    }
+  }
+
+  // 2026: 4 projects
+  for (let i = 0; i < 4; i++) {
+     allRows.push([
+        "2026", new Date().toISOString(), "Active Client", "client@example.com", 
+        "N/A", `Current Project ${i+1} - Premium Design`, "Consultation", "", 
+        "Commercial", "", "", "", "", "Hourly", "N/A", "Active", "Live inquiry.", "", "", "Viewed"
+      ]);
+  }
+
+  if (allRows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, allRows.length, allRows[0].length).setValues(allRows);
+  }
+  return "Successfully added " + allRows.length + " historical records!";
+}

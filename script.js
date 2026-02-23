@@ -4422,7 +4422,10 @@ function renderBriefs(briefs, yearsList = []) {
 
     html += '<div style="display: flex; flex-direction: column; gap: 10px; padding: 2px;">';
     displayList.forEach(b => {
-        const isViewed = b.status === 'Viewed' || b.status === 'viewed';
+        // Normalize status for display to support legacy "Read/Unread" data
+        const statusDisplay = (b.status === 'Read' || b.status === 'read' || b.status === 'Viewed' || b.status === 'viewed') ? 'Viewed' : 'Not Viewed';
+        const isViewed = statusDisplay === 'Viewed';
+
         html += `
             <div class="brief-item" onclick="viewBriefDetails('${b.rowId}')"
                 style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid ${isViewed ? 'rgba(255,255,255,0.05)' : 'rgba(210,105,30,0.4)'}; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
@@ -4432,7 +4435,7 @@ function renderBriefs(briefs, yearsList = []) {
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
                      <span style="font-size: 9px; padding: 3px 8px; border-radius: 4px; background: ${isViewed ? 'rgba(34,197,94,0.1)' : 'rgba(210,105,30,0.1)'}; color: ${isViewed ? '#22c55e' : 'var(--primary-orange)'}; border: 1px solid ${isViewed ? 'rgba(34,197,94,0.3)' : 'rgba(210,105,30,0.3)'}; font-weight: 800; text-transform: uppercase;">
-                        ${b.status}
+                        ${statusDisplay}
                     </span>
                     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3">
                         <polyline points="9 18 15 12 9 6"></polyline>
@@ -4459,7 +4462,7 @@ window.setBriefYear = function (year) {
 
 window.viewBriefDetails = function (rowId) {
     if (!adminCredentials) {
-        showToast("Login to view full real-time brief from sheet", "info");
+        showToast("Login to view full real-time brief", "info");
         const loginSection = document.getElementById('adminLoginForm');
         if (loginSection) loginSection.scrollIntoView({ behavior: 'smooth' });
         const userField = document.getElementById('adminUser');
