@@ -4186,21 +4186,39 @@ let adminCredentials = null;
 let currentBriefs = [];
 let currentYearFilter = new Date().getFullYear().toString();
 
-const SIMULATED_TITLES = [
-    "Modern Villa Interior Visualization", "Architectural Rendering - City Hub",
-    "3D Walkthrough for Luxury Apartments", "Minimalist Studio Design Concept",
-    "Commercial Complex Exterior View", "Residential 3D Modeling Project",
-    "Photorealistic Kitchen Rendering", "Executive Office Space Visualization",
-    "Eco-Friendly Home Concept Design", "Skyrise Penthouse Walkthrough",
-    "Traditional Heritage Site Restoration 3D", "Contemporary Art Gallery Rendering",
-    "Lush Landscape & Garden 3D Plan", "Smart City Infrastructure Model",
-    "Hotel Lobby Interior Design", "Modern Farmhouse Concept Walkthrough",
-    "Industrial Warehouse 3D Plan", "Urban Playground Visualization",
-    "Co-working Space Interior Rendering", "Coastal Beach Resort Concept",
-    "Sustainable School Architecture 3D", "Fitness Center Interior Modeling",
-    "Boutique Retail Store Visualization", "High-Tech Lab Concept Rendering",
-    "Public Library 3D Walkthrough", "Airport Terminal Expansion Model"
-];
+// Combinatorial arrays for unique project generation
+const TITLE_PREFIXES = ["Modern", "Luxury", "Minimalist", "Classic", "Premium", "Industrial", "Sustainable", "Zen", "Contemporary", "Smart", "Compact", "Grand", "Urban", "Rustic", "Vintage", "Futuristic", "Nordic", "Elite", "High-End", "Eco", "Boutique", "Majestic", "Sleek", "Cozy", "Grandiose"];
+const TITLE_TYPES = ["2D Floor Plan Layout", "3D Interior Design Visualization", "Exterior Architectural Rendering", "3D Walkthrough Animation", "VR 360 virtual Reality Tour", "Full Permit & Planning Layout", "Schematic Concept Design", "Detailed 3D Modeling", "Landscape & Garden Design", "Structural Layout", "BIM Environment Model", "Photorealistic Rendering"];
+const TITLE_AREAS = ["Home Gym Section", "Executive Private Office", "Master Suite Wing", "Luxury Penthouse", "Duplex Family Villa", "Backyard Studio", "Suburban Farmhouse", "Commercial Retail Shop", "Urban Coffee Bar", "Open-Plan Living Space", "Designer Kitchen", "Rooftop Terrace", "Basement Guest Suite", "Industrial Loft", "Media & Cinema Room", "Spa & Wellness Area", "Community Hub", "High-Tech Lab", "Art Gallery Lounge", "Smart Garage Layout"];
+
+function generateSimulatedData(year) {
+    const projects = [];
+    const yearInt = parseInt(year);
+
+    // 2026 has only 4 projects. 2016-2025 have 92 projects each.
+    const count = (yearInt === 2026) ? 4 : 92;
+
+    for (let i = 0; i < count; i++) {
+        // Use math to ensure uniqueness across years and indices
+        // index i combined with yearInt creates a unique "recipe" for each title
+        const pIdx = (i + yearInt * 7) % TITLE_PREFIXES.length;
+        const tIdx = (i + yearInt * 3) % TITLE_TYPES.length;
+        const aIdx = (i + yearInt * 11) % TITLE_AREAS.length;
+
+        const uniqueTitle = `${TITLE_PREFIXES[pIdx]} ${TITLE_AREAS[aIdx]} - ${TITLE_TYPES[tIdx]}`;
+
+        projects.push({
+            rowId: `sim_${year}_${i}`,
+            projectTitle: uniqueTitle,
+            status: 'Read', // All historical are marked as Read
+            year: year.toString(),
+            isSimulated: true,
+            clientName: "Archived Portfolio Record"
+        });
+    }
+    return projects;
+}
+
 
 function initBriefAdmin() {
     const loginBtn = document.getElementById('adminLoginBtn');
@@ -4368,24 +4386,7 @@ window.toggleNoteFullScreen = function (noteId) {
     }
 };
 
-function generateSimulatedData(year) {
-    const projects = [];
-    const seed = parseInt(year);
-    const count = (seed % 15) + 12; // 12-27 projects
-
-    for (let i = 0; i < count; i++) {
-        const titleIdx = (seed + i) % SIMULATED_TITLES.length;
-        projects.push({
-            rowId: `sim_${year}_${i}`,
-            projectTitle: SIMULATED_TITLES[titleIdx],
-            status: (seed + i) % 7 === 0 ? 'Unread' : 'Read',
-            year: year.toString(),
-            isSimulated: true,
-            clientName: "Archived Record"
-        });
-    }
-    return projects;
-}
+// generateSimulatedData logic has been moved up to use combinatorial generator
 
 function renderBriefs(briefs, yearsList = []) {
     const container = document.getElementById('briefListContainer');
