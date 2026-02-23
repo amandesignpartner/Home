@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysauQgAlIVSxE4xXSbFgyTTlsfln2szdRqrqbszkHJNKZsQxl_Ua1eQy-e9JJXqK70FQ/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbysauQgAlIVSxE4xXSbFgyTTlsfln2szdRqrqbszkHJNKZsQxl_Ua1eQy-e9JJXqK70FQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbKz79wyhTI9qm3OkeZLdzAt1ooYDBN-ZR6vGKGShYV5_MSfI3rMP_nCVT0GssHl8CdA/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwbKz79wyhTI9qm3OkeZLdzAt1ooYDBN-ZR6vGKGShYV5_MSfI3rMP_nCVT0GssHl8CdA/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -2246,19 +2246,28 @@ document.addEventListener('submit', async (e) => {
             console.log("SENDING UNIFIED BRIEF DATA:", formData.Project_Title);
 
             // Using await here to ensure we know it's SENT before showing success
-            await fetch(TRACKER_SYNC_URL, {
+            const response = await fetch(TRACKER_SYNC_URL, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(briefSyncData)
             });
 
-            console.log("UNIFIED HUB DISPATCHED");
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.status !== 'success') {
+                throw new Error(result.message || "Failed to save brief to sheet");
+            }
+
+            console.log("UNIFIED HUB DISPATCHED SUCCESSFULLY");
 
             if (statusEl) {
                 statusEl.textContent = '✅ Success! Your brief has been delivered. Aman will contact you soon.';
                 statusEl.style.color = '#4ade80';
             }
+            showToast("Project Brief Delivered Successfully!", "success");
 
             form.reset();
             window.savedContactFormData = null;
@@ -4269,35 +4278,39 @@ function toggleAdminUI(isLoggedIn) {
 
 async function fetchBriefs(forceAdmin = false) {
     const container = document.getElementById('briefListContainer');
-    if (container && container.innerHTML.includes('Synchronizing')) return;
-
     if (container) container.innerHTML = '<p style="font-size: 11px; text-align: center; color: var(--primary-orange); padding: 20px;">Synchronizing Workspace...</p>';
 
     const defaultYears = [];
     for (let y = 2026; y >= 2006; y--) defaultYears.push(y.toString());
 
     try {
+        console.log("Syncing years from:", TRACKER_SYNC_URL);
         const yearsRes = await fetch(`${TRACKER_SYNC_URL}?action=getYears&t=${Date.now()}`);
         const yearsData = await yearsRes.json();
-        const availableYears = yearsData.status === "success" ? yearsData.years : defaultYears;
+        const availableYears = (yearsData && yearsData.status === "success" && Array.isArray(yearsData.years)) ? yearsData.years : defaultYears;
 
         let url;
-        if (adminCredentials && (forceAdmin || adminCredentials)) {
+        const isAdmin = adminCredentials && (forceAdmin || adminCredentials);
+        if (isAdmin) {
             url = `${TRACKER_SYNC_URL}?action=getBriefs&user=${encodeURIComponent(adminCredentials.user)}&pass=${encodeURIComponent(adminCredentials.pass)}&t=${Date.now()}`;
         } else {
             url = `${TRACKER_SYNC_URL}?action=getPublicBriefs&year=${currentYearFilter}&t=${Date.now()}`;
         }
 
+        console.log("Fetching briefs from:", url);
         const response = await fetch(url);
         const result = await response.json();
 
-        if (result.status === "success") {
-            currentBriefs = result.data;
+        if (result && result.status === "success") {
+            currentBriefs = result.data || [];
+            console.log(`Successfully synced ${currentBriefs.length} briefs for ${currentYearFilter}`);
             renderBriefs(currentBriefs, availableYears);
         } else {
+            console.warn("Backend returned non-success status:", result);
             renderBriefs([], availableYears);
         }
     } catch (e) {
+        console.error("Critical Brief Sync Error:", e);
         renderBriefs([], defaultYears);
     }
 }
@@ -4358,6 +4371,9 @@ function renderBriefs(briefs, yearsList = []) {
 
     const currentYears = yearsList.length > 0 ? yearsList : ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008", "2007", "2006"];
 
+    // Update global filter if not set
+    if (!currentYearFilter) currentYearFilter = new Date().getFullYear().toString();
+
     // Premium Dropdown Header
     let html = `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 5px 12px 5px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; gap: 15px;">
@@ -4372,14 +4388,14 @@ function renderBriefs(briefs, yearsList = []) {
     `;
 
     // Mix real and simulated
-    const realBriefs = briefs.filter(b => b.year === currentYearFilter);
+    const realBriefs = Array.isArray(briefs) ? briefs.filter(b => b.year.toString() === currentYearFilter.toString()) : [];
     const simulatedBriefs = (realBriefs.length < 5) ? generateSimulatedData(currentYearFilter) : [];
 
     const displayList = [...realBriefs, ...simulatedBriefs].slice(0, 50);
 
     html += '<div style="display: flex; flex-direction: column; gap: 10px; padding: 2px;">';
     displayList.forEach(b => {
-        const isRead = b.status === 'Read';
+        const isRead = b.status === 'Read' || b.status === 'read';
         html += `
             <div class="brief-item" onclick="viewBriefDetails('${b.rowId}')"
                 style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid ${isRead ? 'rgba(255,255,255,0.05)' : 'rgba(210,105,30,0.4)'}; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
@@ -4408,7 +4424,9 @@ function renderBriefs(briefs, yearsList = []) {
 }
 
 window.setBriefYear = function (year) {
+    if (currentYearFilter === year) return;
     currentYearFilter = year;
+    showToast(`Loading archives for ${year}...`, "info");
     fetchBriefs();
 };
 

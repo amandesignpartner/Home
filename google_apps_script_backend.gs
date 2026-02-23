@@ -87,10 +87,19 @@ function doPost(e) {
   lock.waitLock(10000); 
 
   try {
-    const data = JSON.parse(e.postData.contents);
+    let data;
+    try {
+      if (!e.postData || !e.postData.contents) {
+        return json({ status: "error", message: "No post data received" });
+      }
+      data = JSON.parse(e.postData.contents);
+    } catch (parseErr) {
+      return json({ status: "error", message: "Invalid JSON format: " + parseErr.toString() });
+    }
+
     const action = data.action;
     
-    // Explicit cases with direct returns to prevent falling through to tracker logic
+    // Explicit cases with direct returns
     if (action === 'submitFeedback') return json(handleFeedback(data.feedback));
     if (action === 'submitBrief') return json(handleBrief(data.brief));
     if (action === 'submitPayment') return json(handlePayment(data));
@@ -109,15 +118,15 @@ function doPost(e) {
     // Default: Tracker Data Synchronization (Requires project.id)
     const sheet = getSheet();
     const project = data.project || data;
-    if (project && project.id) {
+    if (project && (project.id || project.rowId)) {
        const result = updateOrInsert(sheet, project);
        return json({ status: "success", message: result.message, version: result.version });
     }
 
-    return json({ status: "error", message: "No valid action matched and missing project ID" });
+    return json({ status: "error", message: "Action '" + action + "' not recognized or missing ID" });
 
   } catch (err) {
-    return json({ status: "error", message: err.toString() });
+    return json({ status: "error", message: "System Error: " + err.toString() });
   } finally {
     lock.releaseLock();
   }
@@ -177,27 +186,45 @@ function handleFeedback(fb) {
 
 function handleBrief(brief) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  const sheetName = CONFIG.SUBMISSIONS_SHEET_NAME;
+  let sheet = ss.getSheetByName(sheetName);
+  
+  // Robust check: find sheet case-insensitively if not found by exact name
+  if (!sheet) {
+    const sheets = ss.getSheets();
+    for (let s of sheets) {
+      if (s.getName().toLowerCase() === sheetName.toLowerCase()) {
+        sheet = s;
+        break;
+      }
+    }
+  }
+
   const headers = [
     "Timestamp", "Name", "Email", "Phone", "Project Title", 
     "Services", "Other Service", "Work Type", 
     "Interior Items", "Interior Other", "Exterior Items", "Exterior Other",
     "Billing Type", "Budget", "Timeline", "Message", 
-    "Attachment Link", "External File Link"
+    "Attachment Link", "External File Link", "Status"
   ];
 
-  if (!sheet) sheet = ss.insertSheet(CONFIG.SUBMISSIONS_SHEET_NAME);
-  if (sheet.getLastRow() === 0) {
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
     sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#8B5A2B").setColor("white");
     sheet.setFrozenRows(1);
+  } else {
+    // Check if Status column (19) exists
+    if (sheet.getLastColumn() < 19) {
+      sheet.getRange(1, 19).setValue("Status").setFontWeight("bold").setBackground("#8B5A2B").setColor("white");
+    }
   }
 
   let attachmentUrl = "";
   if (brief.attachment && brief.attachment.data) attachmentUrl = saveFileToDrive(brief.attachment);
 
   const now = new Date();
-  sheet.appendRow([
+  const rowData = [
     Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss"),
     brief.name || "", brief.email || "", brief.phone || "", brief.projectTitle || "",
     (brief.services || []).join(", "), brief.otherService || "", brief.workType || "",
@@ -206,8 +233,10 @@ function handleBrief(brief) {
     brief.billingType || "", brief.budget || brief.budgetCustom || "",
     brief.timeline || brief.timelineCustom || "", brief.message || "",
     attachmentUrl, brief.fileLink || "",
-    "Unread" // Default Status
-  ]);
+    "Unread"
+  ];
+  
+  sheet.appendRow(rowData);
 
   try {
     const emailBody = `🚀 NEW PROJECT BRIEF\n\nClient: ${brief.name}\nProject: ${brief.projectTitle}\nPhone: ${brief.phone}\nLink: ${attachmentUrl || 'No attachment'}\n\nFull details in Google Sheets.`;
@@ -219,19 +248,39 @@ function handleBrief(brief) {
 
 function getAllBriefs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  let sheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET_NAME);
+  if (!sheet) {
+     // Check case-insensitive
+     const sheets = ss.getSheets();
+     for (let s of sheets) {
+       if (s.getName().toLowerCase() === CONFIG.SUBMISSIONS_SHEET_NAME.toLowerCase()) {
+         sheet = s;
+         break;
+       }
+     }
+  }
   if (!sheet) return [];
   
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
   const results = [];
   
-  // Headers are: Timestamp, Name, Email, Phone, Project Title, Services, Other Service, Work Type, Interior Items, Interior Other, Exterior Items, Exterior Other, Billing Type, Budget, Timeline, Message, Attachment Link, External File Link, Read_Status
   for (let i = 1; i < data.length; i++) {
-    if (data[i][4]) { // If Project Title exists
+    if (data[i][4]) { // Project Title
+      const ts = data[i][0];
+      let yearStr = new Date().getFullYear().toString();
+      try {
+        if (ts instanceof Date) {
+          yearStr = ts.getFullYear().toString();
+        } else if (ts) {
+          const match = ts.toString().match(/\d{4}/);
+          if (match) yearStr = match[0];
+        }
+      } catch(e) {}
+
       results.push({
         rowId: i + 1,
-        timestamp: data[i][0],
+        timestamp: ts,
+        year: yearStr,
         clientName: data[i][1],
         email: data[i][2],
         phone: data[i][3],
