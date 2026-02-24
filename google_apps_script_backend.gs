@@ -389,8 +389,8 @@ function handleDownloadLog(data) {
   
   for (let i = 1; i < rows.length; i++) {
     if (clean(rows[i][0]) === cleanID) {
-      // Column 15 is "Client View Status"
-      sheet.getRange(i + 1, 15).setValue("Viewed on " + timestamp);
+      // Column 16 is "Client View Status"
+      sheet.getRange(i + 1, 16).setValue("Viewed on " + timestamp);
       
       try {
         const emailBody = `👀 CLIENT ALERT\n\nClient: ${rows[i][1]}\nProject: ${rows[i][2]} (${rows[i][0]})\nStatus: Opened/Downloaded project files.\nTime: ${timestamp}`;
@@ -412,8 +412,8 @@ function getSheet() {
   const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.getSheets()[0];
   
   // Auto-Repair Headers for Tracker Data
-  const headers = ["ID", "Client", "Project", "Cost", "Amount to Pay", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
-  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "ID") {
+  const headers = ["Project ID", "Client Name", "Project Name", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
+  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "Project ID") {
     sheet.insertRowBefore(1);
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
@@ -425,7 +425,7 @@ function getSheet() {
 
 function updateOrInsert(sheet, project) {
   // headers used for mapping
-  const headers = ["ID", "Client", "Project", "Cost", "Amount to Pay", "Status", "Start Date", "Phase", "Last Updated", "Deadline", "Next Milestone", "Pending", "Download", "WhatsApp", "Version", "Client View Status"];
+  const headers = ["Project ID", "Client Name", "Project Name", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
   
   const data = sheet.getDataRange().getValues();
   const cleanID = clean(project.id);
@@ -435,7 +435,7 @@ function updateOrInsert(sheet, project) {
   for (let i = 1; i < data.length; i++) {
     if (clean(data[i][0]) === cleanID) {
       rowIdx = i + 1;
-      version = (data[i][13] || 0) + 1;
+      version = (data[i][14] || 0) + 1;
       break;
     }
   }
