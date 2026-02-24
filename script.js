@@ -122,7 +122,7 @@ function checkFirstVisit() {
     // Clear saved positions to use HTML defaults
     // Only keep positions for elements that should maintain their user-defined positions
     const positions = JSON.parse(localStorage.getItem('stickyPositions') || '{}');
-    const defaultElements = ['note-sketch-image', 'note-intro', 'profile-card', 'note-projects'];
+    const defaultElements = ['note-sketch-image', 'note-intro', 'profile-card', 'note-projects', 'note-briefs'];
 
     // Remove default elements from saved positions so they use HTML defaults
     defaultElements.forEach(id => {
@@ -134,7 +134,8 @@ function checkFirstVisit() {
         'note-contact',
         'note-collaborate',
         'note-feedback',
-        'note-pricing'
+        'note-pricing',
+        'note-briefs'
     ];
 
     localStorage.setItem('minimizedElements', JSON.stringify(defaultMinimized));
