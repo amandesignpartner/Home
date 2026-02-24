@@ -822,13 +822,16 @@ function populateTrackerPopup(data, skipSync = false) {
             statusSelect.style.display = 'block';
             statusSelect.value = data.status || "";
             statusSelect.onchange = (e) => {
+                const oldStatus = data.status;
                 const newStatus = e.target.value;
                 data.status = newStatus;
 
-                // AUTO-START DATE: If status changes to progress and no date set, set today locally for immediate UI update
-                if (newStatus === 'progress' && !data.startDate) {
+                // AUTO-START DATE: If status changes TO progress, set today's date (fixes immediate update issue)
+                if (newStatus === 'progress' && oldStatus !== 'progress') {
                     const todayFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                     data.startDate = todayFormatted;
+
+                    // Update the text field in UI immediately
                     const startEl = document.getElementById('trk-start');
                     if (startEl) startEl.textContent = todayFormatted;
                 }
@@ -1016,8 +1019,22 @@ function populateTrackerPopup(data, skipSync = false) {
             if (isEditMode) {
                 el.style.cursor = 'pointer';
                 el.onclick = () => {
-                    data.status = status;
+                    const oldStatus = data.status;
+                    const newStatus = status;
+
+                    // Update local data
+                    data.status = newStatus;
+
+                    // AUTO-START DATE: Update to today if switching TO progress (even if date already exists)
+                    if (newStatus === 'progress' && oldStatus !== 'progress') {
+                        const todayFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                        data.startDate = todayFormatted;
+                    }
+
+                    // Refresh popup UI with new state
                     populateTrackerPopup(data);
+
+                    // Sync to Google Sheet
                     if (!skipSync) syncProjectToSheet(data);
                 };
             }
@@ -3712,7 +3729,7 @@ function openFeedbackFromTracker() {
             fbProject.value = projectId;
         }
 
-        // Project Name (Hidden Field) -> Name
+        // Project Title (Hidden Field) -> Name
         if (fbPid && projectName && projectName !== '...') {
             fbPid.value = projectName;
         }

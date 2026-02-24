@@ -154,7 +154,7 @@ function getAvailableYears() {
 function handleFeedback(fb) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.FEEDBACK_SHEET_NAME);
-  const headers = ["Timestamp", "Project ID", "Project Name", "Client Name", "Rating", "Message"];
+  const headers = ["Timestamp", "Project ID", "Project Title", "Client Name", "Rating", "Message"];
   
   if (!sheet) sheet = ss.insertSheet(CONFIG.FEEDBACK_SHEET_NAME);
   if (sheet.getLastRow() === 0) {
@@ -332,7 +332,7 @@ function markBriefAsRead(rowId) {
 function handlePayment(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(CONFIG.PAYMENTS_SHEET_NAME);
-  const headers = ["Timestamp", "Client Name", "Project ID", "Project Name", "Amount", "Currency", "MTCN / Reference", "Status", "Proof Link"];
+  const headers = ["Timestamp", "Client Name", "Project ID", "Project Title", "Amount", "Currency", "MTCN / Reference", "Status", "Proof Link"];
   
   if (!sheet) sheet = ss.insertSheet(CONFIG.PAYMENTS_SHEET_NAME);
   if (sheet.getLastRow() === 0) {
@@ -409,15 +409,27 @@ function handleDownloadLog(data) {
 
 function getSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEET_NAME) || ss.getSheets()[0];
+  let sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   
-  // Auto-Repair Headers for Tracker Data
-  const headers = ["Project ID", "Client Name", "Project Name", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
-  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== "Project ID") {
-    sheet.insertRowBefore(1);
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
-    sheet.setFrozenRows(1);
+  // If TrackerData is missing, create it to avoid guessing/overwriting other sheets
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEET_NAME);
+  }
+  
+  const headers = ["Project ID", "Client Name", "Project Title", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
+  
+  // Get existing A1 value to check if headers are already set
+  const firstCell = sheet.getRange(1, 1).getValue().toString().trim();
+  
+  // Only inject/repair if the sheet is completely empty OR A1 is clearly wrong (not matching new or old header)
+  if (sheet.getLastRow() === 0 || (firstCell !== "Project ID" && firstCell !== "ID")) {
+    // Final guard: If A1 already says "Project ID", do NOT insert again
+    if (firstCell !== "Project ID") {
+      sheet.insertRowBefore(1);
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+      sheet.setFrozenRows(1);
+    }
   }
   
   return sheet;
@@ -425,7 +437,7 @@ function getSheet() {
 
 function updateOrInsert(sheet, project) {
   // headers used for mapping
-  const headers = ["Project ID", "Client Name", "Project Name", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
+  const headers = ["Project ID", "Client Name", "Project Title", "Total Cost", "Amount to Pay (Deposit)", "Project Status", "Project Started Date", "Current Phase", "Last Updated", "Project Delivery Date", "Total Project Milestones", "Pending Payment", "Download Link", "WhatsApp Link", "Version", "Client View Status"];
   
   const data = sheet.getDataRange().getValues();
   const cleanID = clean(project.id);
@@ -437,8 +449,8 @@ function updateOrInsert(sheet, project) {
       rowIdx = i + 1;
       version = (data[i][14] || 0) + 1;
       
-      // AUTO-START DATE: If status changes to progress and no date set, set today
-      if (project.status === 'progress' && data[i][5] !== 'progress' && !project.startDate) {
+      // AUTO-START DATE: If status changes to progress, set today's date
+      if (project.status === 'progress' && data[i][5] !== 'progress') {
         project.startDate = Utilities.formatDate(new Date(), "GMT+5", "d MMM yyyy");
       }
       break;
@@ -446,7 +458,7 @@ function updateOrInsert(sheet, project) {
   }
 
   // If new project and status is progress, set start date
-  if (rowIdx === -1 && project.status === 'progress' && !project.startDate) {
+  if (rowIdx === -1 && project.status === 'progress') {
     project.startDate = Utilities.formatDate(new Date(), "GMT+5", "d MMM yyyy");
   }
 
@@ -456,7 +468,8 @@ function updateOrInsert(sheet, project) {
     project.amountToPay || '', project.status || 'progress', project.startDate || '', 
     project.phase || '', Utilities.formatDate(now, "GMT+5", "d MMM yyyy"), 
     project.deadline || '', project.nextMilestone || '', project.pendingAmount || '',
-    project.downloadLink || '#', project.whatsappLink || '', version
+    project.downloadLink || '#', project.whatsappLink || '', version,
+    project.clientViewStatus || ''
   ];
 
   if (rowIdx !== -1) {
