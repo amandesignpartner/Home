@@ -825,7 +825,15 @@ function populateTrackerPopup(data, skipSync = false) {
                 const newStatus = e.target.value;
                 data.status = newStatus;
 
-                // Update UI immediately
+                // AUTO-START DATE: If status changes to progress and no date set, set today locally for immediate UI update
+                if (newStatus === 'progress' && !data.startDate) {
+                    const todayFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    data.startDate = todayFormatted;
+                    const startEl = document.getElementById('trk-start');
+                    if (startEl) startEl.textContent = todayFormatted;
+                }
+
+                // Update UI immediately (Title / Subtitle)
                 const info = statusTitles[newStatus];
                 if (titleEl) {
                     titleEl.textContent = info.title;
@@ -1100,21 +1108,20 @@ function populateTrackerPopup(data, skipSync = false) {
 
                     // Calculate Dates
                     const now = new Date();
-                    const formDate = now.toLocaleDateString('en-GB');
                     const updateDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
                     const deliveryDateObj = new Date();
                     deliveryDateObj.setDate(now.getDate() + 7);
-                    const deliveryDate = deliveryDateObj.toLocaleDateString('en-GB');
+                    const deliveryDateFormat = deliveryDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
                     const baseSetup = window.projectData && window.projectData["AMAN00Z"] ? window.projectData["AMAN00Z"] : {};
 
                     const resetData = {
                         ...baseSetup,
                         id: newID,
-                        startDate: formDate,
+                        startDate: updateDate,
                         lastUpdated: updateDate,
-                        deadline: deliveryDate,
+                        deadline: deliveryDateFormat,
                         status: "progress",
                     };
 

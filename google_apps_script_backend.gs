@@ -436,8 +436,18 @@ function updateOrInsert(sheet, project) {
     if (clean(data[i][0]) === cleanID) {
       rowIdx = i + 1;
       version = (data[i][14] || 0) + 1;
+      
+      // AUTO-START DATE: If status changes to progress and no date set, set today
+      if (project.status === 'progress' && data[i][5] !== 'progress' && !project.startDate) {
+        project.startDate = Utilities.formatDate(new Date(), "GMT+5", "d MMM yyyy");
+      }
       break;
     }
+  }
+
+  // If new project and status is progress, set start date
+  if (rowIdx === -1 && project.status === 'progress' && !project.startDate) {
+    project.startDate = Utilities.formatDate(new Date(), "GMT+5", "d MMM yyyy");
   }
 
   const now = new Date();
@@ -490,15 +500,16 @@ function mapRow(row) {
     cost: row[3],
     amountToPay: row[4],
     status: row[5],
-    startDate: row[6],
+    startDate: formatDate(row[6]),
     phase: row[7],
     lastUpdated: formatDate(row[8]),
-    deadline: row[9],
+    deadline: formatDate(row[9]),
     nextMilestone: row[10],
     pendingAmount: row[11],
     downloadLink: row[12],
     whatsappLink: row[13],
-    version: row[14] || 1
+    version: row[14] || 1,
+    clientViewStatus: row[15] || ''
   };
 }
 
