@@ -4896,15 +4896,23 @@ async function submitZoomBooking(e) {
 /* ========================================= */
 
 function initVisitorTracking() {
-    // Only log the visitor once per session to avoid spamming the sheet on every reload
-    if (sessionStorage.getItem('visitor_logged')) {
-        setupSessionDurationTracking();
-        return;
+    // Only log the visitor once every hour to avoid spam on reloads, but catch returning visitors
+    const now = Date.now();
+    const lastSessionStr = localStorage.getItem('visitor_last_logged_time');
+
+    if (lastSessionStr) {
+        const lastSession = parseInt(lastSessionStr, 10);
+        const oneHour = 60 * 60 * 1000; // 1 hour elapsed time check
+
+        if (now - lastSession < oneHour) {
+            setupSessionDurationTracking();
+            return;
+        }
     }
 
-    // Set the flag immediately to prevent double-firing in strict environments
-    sessionStorage.setItem('visitor_logged', 'true');
-    sessionStorage.setItem('session_start_time', Date.now().toString());
+    // Set the flag immediately to prevent double-firing
+    localStorage.setItem('visitor_last_logged_time', now.toString());
+    sessionStorage.setItem('session_start_time', now.toString());
 
     // Gather basic client data immediately
     const gatherBasicData = () => {
