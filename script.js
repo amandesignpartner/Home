@@ -4897,10 +4897,11 @@ async function submitZoomBooking(e) {
 
 function initVisitorTracking() {
     // Only log the visitor once per session to avoid spamming the sheet on every reload
-    if (sessionStorage.getItem('visitor_logged')) {
-        setupSessionDurationTracking();
-        return;
-    }
+    // [TEMPORARILY DISABLED for testing] 
+    // if (sessionStorage.getItem('visitor_logged')) {
+    //     setupSessionDurationTracking();
+    //     return;
+    // }
 
     // Set the flag immediately to prevent double-firing in strict environments
     sessionStorage.setItem('visitor_logged', 'true');
@@ -4908,19 +4909,19 @@ function initVisitorTracking() {
 
     // Gather basic client data immediately
     const gatherBasicData = () => {
-        const parser = new UAParser(); // Fallback if not loaded
         let browser = 'Unknown';
         let os = 'Unknown';
         let device = 'Desktop';
 
-        if (typeof UAParser !== 'undefined') {
+        if (typeof window.UAParser !== 'undefined') {
+            const parser = new window.UAParser();
             const result = parser.getResult();
             browser = `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim();
             os = `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim();
             device = result.device.type === 'mobile' ? 'Mobile' : (result.device.type === 'tablet' ? 'Tablet' : 'Desktop');
         } else {
             // Very rudimentary fallback
-            browser = navigator.userAgent;
+            browser = navigator.userAgent.substring(0, 50) + '...';
             if (/Mobi|Android/i.test(navigator.userAgent)) device = 'Mobile';
         }
 
