@@ -4897,11 +4897,10 @@ async function submitZoomBooking(e) {
 
 function initVisitorTracking() {
     // Only log the visitor once per session to avoid spamming the sheet on every reload
-    // [TEMPORARILY DISABLED for testing] 
-    // if (sessionStorage.getItem('visitor_logged')) {
-    //     setupSessionDurationTracking();
-    //     return;
-    // }
+    if (sessionStorage.getItem('visitor_logged')) {
+        setupSessionDurationTracking();
+        return;
+    }
 
     // Set the flag immediately to prevent double-firing in strict environments
     sessionStorage.setItem('visitor_logged', 'true');
@@ -4920,9 +4919,24 @@ function initVisitorTracking() {
             os = `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim();
             device = result.device.type === 'mobile' ? 'Mobile' : (result.device.type === 'tablet' ? 'Tablet' : 'Desktop');
         } else {
-            // Very rudimentary fallback
-            browser = navigator.userAgent.substring(0, 50) + '...';
-            if (/Mobi|Android/i.test(navigator.userAgent)) device = 'Mobile';
+            // Robust Native Fallback
+            const ua = navigator.userAgent;
+
+            if (ua.includes("Firefox")) browser = "Firefox";
+            else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
+            else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+            else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
+            else if (ua.includes("Chrome")) browser = "Chrome";
+            else if (ua.includes("Safari")) browser = "Safari";
+            else browser = ua.substring(0, 50) + '...';
+
+            if (ua.includes("Win")) os = "Windows";
+            else if (ua.includes("Mac")) os = "MacOS";
+            else if (ua.includes("Linux")) os = "Linux";
+            else if (ua.includes("Android")) os = "Android";
+            else if (ua.includes("like Mac")) os = "iOS";
+
+            if (/Mobi|Android|iPhone|iPad/i.test(ua)) device = 'Mobile';
         }
 
         return {
@@ -4938,20 +4952,28 @@ function initVisitorTracking() {
 
     const visitorData = gatherBasicData();
 
-    // Fetch IP and Geo Location using a free public API (ipapi.co is generous, but has rate limits)
-    // We fetch this async, and whether it succeeds or fails, we log what we have.
-    fetch('https://ipapi.co/json/')
+    // Fetch IP and Geo Location using a free public API (geojs is reliable and has no strict CORS blocks)
+    fetch('https://get.geojs.io/v1/ip/geo.json')
         .then(response => response.json())
         .then(data => {
             visitorData.ip = data.ip || 'Unknown';
-            visitorData.location = `${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country_name || 'Unknown'}`;
+            visitorData.location = `${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country || 'Unknown'}`;
             sendVisitorLogToSheet(visitorData);
         })
         .catch(err => {
-            console.warn("GeoIP fetch failed. Logging basic data.", err);
-            visitorData.ip = 'Unavailable';
-            visitorData.location = 'Unavailable';
-            sendVisitorLogToSheet(visitorData);
+            console.warn("GeoJS fetch failed. Trying fallback...", err);
+            // Fallback to simple ipify if geo breaks
+            fetch('https://api.ipify.org?format=json')
+                .then(r => r.json())
+                .then(d => {
+                    visitorData.ip = d.ip || 'Unavailable';
+                    visitorData.location = 'Unavailable';
+                    sendVisitorLogToSheet(visitorData);
+                }).catch(() => {
+                    visitorData.ip = 'Unavailable';
+                    visitorData.location = 'Unavailable';
+                    sendVisitorLogToSheet(visitorData);
+                });
         });
 
     setupSessionDurationTracking();
