@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIC_yfrrty2zHoeQ-kCL6MfkJA1b_ofJsNb3T-w1JNvn3kVpipHpp30S0LsVdi6vVICg/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwIC_yfrrty2zHoeQ-kCL6MfkJA1b_ofJsNb3T-w1JNvn3kVpipHpp30S0LsVdi6vVICg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuydV9K2wdysWurnQau3rwXDIQIlOKPVJ5GVZNzMNSWA5ies0VRWQrgboViEaPDWZjVQ/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzuydV9K2wdysWurnQau3rwXDIQIlOKPVJ5GVZNzMNSWA5ies0VRWQrgboViEaPDWZjVQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -12,6 +12,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
 document.addEventListener('DOMContentLoaded', () => {
     // Check for first visit and set default layout
     checkFirstVisit();
+    initVisitorTracking();
     initGlobalPersistence();
 
     initDraggableElements();
@@ -4887,5 +4888,97 @@ async function submitZoomBooking(e) {
             confirmBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> Confirm Meeting';
         }
         showToast('\u274C Booking failed. Please try again.');
+    }
+}
+
+/* ========================================= */
+/* ===== VISITOR TRACKING & LOGGING ======== */
+/* ========================================= */
+
+function initVisitorTracking() {
+    // Only log the visitor once per session to avoid spamming the sheet on every reload
+    if (sessionStorage.getItem('visitor_logged')) {
+        setupSessionDurationTracking();
+        return;
+    }
+
+    // Set the flag immediately to prevent double-firing in strict environments
+    sessionStorage.setItem('visitor_logged', 'true');
+    sessionStorage.setItem('session_start_time', Date.now().toString());
+
+    // Gather basic client data immediately
+    const gatherBasicData = () => {
+        const parser = new UAParser(); // Fallback if not loaded
+        let browser = 'Unknown';
+        let os = 'Unknown';
+        let device = 'Desktop';
+
+        if (typeof UAParser !== 'undefined') {
+            const result = parser.getResult();
+            browser = `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim();
+            os = `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim();
+            device = result.device.type === 'mobile' ? 'Mobile' : (result.device.type === 'tablet' ? 'Tablet' : 'Desktop');
+        } else {
+            // Very rudimentary fallback
+            browser = navigator.userAgent;
+            if (/Mobi|Android/i.test(navigator.userAgent)) device = 'Mobile';
+        }
+
+        return {
+            browser: browser,
+            os: os,
+            device: device,
+            pageUrl: window.location.href,
+            referrer: document.referrer || 'Direct / None',
+            screenResolution: `${window.screen.width}x${window.screen.height}`,
+            language: navigator.language || navigator.userLanguage || 'Unknown'
+        };
+    };
+
+    const visitorData = gatherBasicData();
+
+    // Fetch IP and Geo Location using a free public API (ipapi.co is generous, but has rate limits)
+    // We fetch this async, and whether it succeeds or fails, we log what we have.
+    fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+            visitorData.ip = data.ip || 'Unknown';
+            visitorData.location = `${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country_name || 'Unknown'}`;
+            sendVisitorLogToSheet(visitorData);
+        })
+        .catch(err => {
+            console.warn("GeoIP fetch failed. Logging basic data.", err);
+            visitorData.ip = 'Unavailable';
+            visitorData.location = 'Unavailable';
+            sendVisitorLogToSheet(visitorData);
+        });
+
+    setupSessionDurationTracking();
+}
+
+function sendVisitorLogToSheet(visitorData) {
+    const payload = {
+        action: 'logVisitor',
+        ...visitorData,
+        sessionDuration: 'Active/Ongoing' // Will technically only be this unless we do complex heartbeats
+    };
+
+    fetch(TRACKER_SYNC_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    }).catch(err => console.error("Could not sync visitor log to Google Sheet", err));
+}
+
+function setupSessionDurationTracking() {
+    // We could capture session duration on 'beforeunload' and send an update, 
+    // but without a strict tracking ID logic on the Sheet side, it's complex to 'edit' an existing row.
+    // Given the constraints, the best, lightweight approach is an initial timestamp and a purely informational baseline.
+    // For advanced tracking, a dedicated tool like Google Analytics is historically recommended.
+
+    // For now we just record start time, you can view the 'last active' in local storage if needed.
+    if (!sessionStorage.getItem('session_start_time')) {
+        sessionStorage.setItem('session_start_time', Date.now().toString());
     }
 }

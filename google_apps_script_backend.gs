@@ -110,6 +110,7 @@ function doPost(e) {
     if (action === 'submitPayment') return json(handlePayment(data));
     if (action === 'logDownload') return json(handleDownloadLog(data));
     if (action === 'submitZoomMeeting') return json(handleZoomMeeting(data));
+    if (action === 'logVisitor') return json(handleVisitorLog(data));
     
     if (action === 'adminLogin') {
       const isValid = checkAdminAuth(data.user, data.pass);
@@ -802,5 +803,140 @@ function getZoomMeetingById(bookingId) {
     return { status: "error", message: "No Zoom meeting found for Booking ID: " + bookingId };
   } catch (err) {
     return { status: "error", message: "Error fetching Zoom meeting: " + err.toString() };
+  }
+}
+
+/* ============================= */
+/* ===== VISITOR LOG SYNC ====== */
+/* ============================= */
+
+function getVisitorLogSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const VISITOR_SHEET_NAME = 'Website Visitor Logs';
+  let sheet = ss.getSheetByName(VISITOR_SHEET_NAME);
+
+  const headers = [
+    "Timestamp (PKT)", 
+    "IP Address", 
+    "Browser & Version", 
+    "Device Type", 
+    "Operating System", 
+    "Country / Region / City", 
+    "Page URL visited", 
+    "Referrer URL", 
+    "Session Duration",
+    "Screen Resolution",
+    "Language"
+  ];
+
+  if (!sheet) {
+    sheet = ss.insertSheet(VISITOR_SHEET_NAME);
+    sheet.appendRow(headers);
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight("bold").setBackground("#2c3e50").setFontColor("white");
+    sheet.setFrozenRows(1);
+    // Set some basic column widths
+    sheet.setColumnWidth(1, 150); // Timestamp
+    sheet.setColumnWidth(2, 120); // IP
+    sheet.setColumnWidth(6, 200); // Geo
+    sheet.setColumnWidth(7, 250); // Page URL
+  } else {
+    // Ensure header row exists
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#2c3e50").setFontColor("white");
+      sheet.setFrozenRows(1);
+    }
+  }
+
+  return sheet;
+}
+
+function handleVisitorLog(data) {
+  try {
+    const sheet = getVisitorLogSheet();
+    const now = new Date();
+    const timestamp = Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss");
+
+    const rowData = [
+      timestamp,
+      data.ip || 'Unknown',
+      data.browser || 'Unknown',
+      data.device || 'Desktop',
+      data.os || 'Unknown',
+      data.location || 'Unknown',
+      data.pageUrl || '',
+      data.referrer || 'Direct / None',
+      data.sessionDuration || 'N/A',
+      data.screenResolution || 'Unknown',
+      data.language || 'Unknown'
+    ];
+
+    sheet.appendRow(rowData);
+
+    try {
+      const emailBody = `Aman You Got New Visitor\n\n` +
+        `Time: ${timestamp}\n` +
+        `Location: ${data.location || 'Unknown'}\n` +
+        `Device: ${data.device || 'Desktop'}\n` +
+        `OS: ${data.os || 'Unknown'}\n` +
+        `Browser: ${data.browser || 'Unknown'}\n` +
+        `IP Address: ${data.ip || 'Unknown'}\n` +
+        `Page Visited: ${data.pageUrl || ''}\n` +
+        `Referrer: ${data.referrer || 'Direct / None'}\n` +
+        `Language: ${data.language || 'Unknown'}\n` +
+        `Resolution: ${data.screenResolution || 'Unknown'}`;
+        
+      GmailApp.sendEmail('aman.designpartner@gmail.com', 'Aman You Got New Visitor', emailBody);
+    } catch(e) {
+      console.error('Visitor Email failed:', e);
+    }
+
+    return { status: "success", message: "Visitor logged successfully" };
+  } catch (err) {
+    return { status: "error", message: "Error logging visitor: " + err.toString() };
+  }
+}
+
+/**
+ * Automatically delete visitor logs older than 30 days.
+ * This function should be set up with a Time-driven trigger (e.g., daily) in Google Apps Script.
+ */
+function deleteOldVisitorLogs() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Website Visitor Logs');
+  if (!sheet) return;
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return; // Only headers or empty
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+  // Loop backwards to safely delete rows without affecting subsequent indices
+  for (let i = data.length - 1; i > 0; i--) {
+    const timestampStr = data[i][0];
+    if (timestampStr) {
+      let rowDate = new Date(timestampStr);
+      
+      // Fallback parsing if string format is not recognized by JS Date object directly
+      if (isNaN(rowDate.getTime()) && typeof timestampStr === 'string') {
+          // Attempt to parse 'd MMM yyyy HH:mm:ss' like '1 Mar 2026 03:19:37'
+          const parts = timestampStr.split(' ');
+          if (parts.length >= 4) {
+              const day = parts[0];
+              const month = parts[1];
+              const year = parts[2];
+              const time = parts[3];
+              rowDate = new Date(`${month} ${day}, ${year} ${time}`);
+          }
+      }
+
+      if (!isNaN(rowDate.getTime())) {
+        if (rowDate < thirtyDaysAgo) {
+          sheet.deleteRow(i + 1); // 1-indexed row number
+        }
+      }
+    }
   }
 }
