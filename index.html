@@ -4219,10 +4219,20 @@
 
             <!-- Action Buttons -->
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
-                <a id="btn-download" href="#" target="_blank"
-                    style="display: flex; align-items: center; justify-content: center; padding: 10px; background: #fff; border-radius: 8px; color: #000; text-decoration: none; font-size: 11px; font-weight: 700;">
-                    <span style="margin-right: 6px;">📥</span> Download Latest Project Files
-                </a>
+                <div style="display: flex; gap: 8px; align-items: stretch;">
+                    <button id="btn-book-zoom" onclick="openZoomBookingModal()" type="button"
+                        style="flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 10px 12px; background: linear-gradient(135deg, #2D8CFF, #1A6FD8); border: none; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; gap: 5px; transition: all 0.2s ease;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path
+                                d="M4 4h11v8H4V4zm0 9h11v1H4v-1zm14-9l-2 2v4l2 2V4zm-2 14H4v-1h12v1zm0 2H4v-1h12v1z" />
+                        </svg>
+                        Book Online Meeting
+                    </button>
+                    <a id="btn-download" href="#" target="_blank"
+                        style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px; background: #fff; border-radius: 8px; color: #000; text-decoration: none; font-size: 11px; font-weight: 700;">
+                        <span style="margin-right: 6px;">📥</span> Download Latest Project Files
+                    </a>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button id="btn-print"
                         style="background: rgba(255,255,255,0.1); border: none; padding: 10px; border-radius: 8px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
@@ -6071,7 +6081,353 @@
         <p class="copyright-sub">Powered by <strong>Aman Ullah</strong> | Unauthorized reproduction prohibited.</p>
     </footer>
 
+    <!-- ===== ZOOM MEETING BOOKING MODAL ===== -->
+    <div id="zoom-booking-overlay" aria-modal="true" role="dialog" aria-labelledby="zoom-modal-title"
+        style="display:none; position:fixed; inset:0; z-index:2147483647; background:rgba(0,0,0,0.82); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+        <div id="zoom-booking-modal"
+            style="background:linear-gradient(145deg,#0f172a,#1e293b); border:1px solid rgba(45,140,255,0.3); border-radius:20px; max-width:480px; width:100%; max-height:90vh; overflow-y:auto; padding:32px; position:relative; box-shadow:0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(45,140,255,0.1); scrollbar-width:thin; scrollbar-color:#2D8CFF transparent;">
+
+            <!-- Header -->
+            <button id="zoom-modal-close" onclick="closeZoomBookingModal()" type="button" aria-label="Close"
+                style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.08); border:none; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; color:rgba(255,255,255,0.7);">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+                <div
+                    style="width:44px; height:44px; background:linear-gradient(135deg,#2D8CFF,#1A6FD8); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white">
+                        <path d="M4 4h11v8H4V4zm0 9h11v1H4v-1zm14-9l-2 2v4l2 2V4zm-2 14H4v-1h12v1zm0 2H4v-1h12v1z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 id="zoom-modal-title"
+                        style="margin:0; font-size:18px; font-weight:700; color:#fff; font-family:'Raleway',sans-serif;">
+                        Book Meeting with Aman</h2>
+                    <p style="margin:0; font-size:12px; color:rgba(45,140,255,0.8);">Schedule a call with Aman</p>
+                </div>
+            </div>
+
+            <form id="zoom-booking-form" onsubmit="submitZoomBooking(event)" novalidate>
+
+                <!-- 2.1 Meeting Date -->
+                <div class="zoom-field-group">
+                    <label class="zoom-label" for="zoom-meeting-date">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
+                            fill="none">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        Meeting Date <span style="color:#ff6b6b;">*</span>
+                    </label>
+                    <input type="date" id="zoom-meeting-date" name="meetingDate" required autocomplete="off"
+                        class="zoom-input" onchange="updateZoomTimeSummary()"
+                        style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; cursor:pointer; transition:border-color 0.2s; appearance: auto; color-scheme: dark;">
+                    <div id="zoom-date-error" class="zoom-error-msg" style="display:none;">Please select a meeting date.
+                    </div>
+                </div>
+
+                <!-- 2.2 Time Slot -->
+                <div class="zoom-field-group" style="margin-top:20px;">
+                    <label class="zoom-label">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
+                            fill="none">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Time Slot <span style="color:#ff6b6b;">*</span>
+                    </label>
+
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+                        <!-- Morning -->
+                        <label class="zoom-radio-card" for="slot-morning">
+                            <input type="radio" id="slot-morning" name="timeSlot" value="morning"
+                                onchange="updateZoomTimeSummary()" style="display:none;">
+                            <div class="zoom-radio-inner">
+                                <span class="zoom-radio-dot"></span>
+                                <div>
+                                    <div class="zoom-radio-title">🌅 Morning</div>
+                                    <div class="zoom-radio-sub">7:30 AM – 11:30 AM (Pakistan Time)</div>
+                                </div>
+                            </div>
+                        </label>
+                        <!-- Afternoon -->
+                        <label class="zoom-radio-card" for="slot-afternoon">
+                            <input type="radio" id="slot-afternoon" name="timeSlot" value="afternoon"
+                                onchange="updateZoomTimeSummary()" style="display:none;">
+                            <div class="zoom-radio-inner">
+                                <span class="zoom-radio-dot"></span>
+                                <div>
+                                    <div class="zoom-radio-title">☀️ Afternoon</div>
+                                    <div class="zoom-radio-sub">2:00 PM – 4:00 PM (Pakistan Time)</div>
+                                </div>
+                            </div>
+                        </label>
+                        <!-- Night -->
+                        <label class="zoom-radio-card" for="slot-night">
+                            <input type="radio" id="slot-night" name="timeSlot" value="night"
+                                onchange="updateZoomTimeSummary()" style="display:none;">
+                            <div class="zoom-radio-inner">
+                                <span class="zoom-radio-dot"></span>
+                                <div>
+                                    <div class="zoom-radio-title">🌙 Night</div>
+                                    <div class="zoom-radio-sub">9:00 PM – 11:00 PM (Pakistan Time)</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <p
+                        style="margin:10px 0 0; font-size:11px; color:rgba(255,255,255,0.45); line-height:1.5; font-style:italic;">
+                        All meeting times are based on Pakistan time and will automatically adjust to the client's local
+                        time.
+                    </p>
+                    <div id="zoom-slot-error" class="zoom-error-msg" style="display:none;">Please select a time slot.
+                    </div>
+                </div>
+
+                <!-- Time Zone Summary Card -->
+                <div id="zoom-timezone-summary"
+                    style="display:none; margin-top:16px; background:rgba(45,140,255,0.07); border:1px solid rgba(45,140,255,0.2); border-radius:12px; padding:14px;">
+                    <div
+                        style="font-size:11px; font-weight:600; color:#2D8CFF; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+                        📅 Your Meeting Time</div>
+                    <div style="display:grid; gap:8px;">
+                        <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <span style="font-size:16px; flex-shrink:0;">🇵🇰</span>
+                            <div>
+                                <div style="font-size:10px; color:rgba(255,255,255,0.5);">Pakistan Time</div>
+                                <div id="zoom-pk-time" style="font-size:13px; color:#fff; font-weight:600;"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <span style="font-size:16px; flex-shrink:0;">🌍</span>
+                            <div>
+                                <div style="font-size:10px; color:rgba(255,255,255,0.5);">Your Local Time (<span
+                                        id="zoom-local-tz-label"></span>)</div>
+                                <div id="zoom-local-time" style="font-size:13px; color:#fff; font-weight:600;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2.3 Zoom Link -->
+                <div class="zoom-field-group" style="margin-top:20px;">
+                    <label class="zoom-label" for="zoom-meeting-link">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
+                            fill="none">
+                            <path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3">
+                            </path>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        Copy Meeting Link <span style="color:#ff6b6b;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <input type="text" id="zoom-meeting-link" name="zoomLink" required autocomplete="off"
+                            class="zoom-input" readonly
+                            style="width:100%; padding:12px 14px; padding-right:45px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#fff; font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; transition:border-color 0.2s;">
+                        <button type="button" id="btn-copy-meet-link" onclick="copyMeetLink()"
+                            style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 8px; border-radius: 6px; display: none;"
+                            title="Copy Link">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
+                                fill="none">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="zoom-link-error" class="zoom-error-msg" style="display:none;">Please select a date and time
+                        slot to generate the meeting link.</div>
+                </div>
+
+                <!-- 2.4 Confirm Button -->
+                <button type="submit" id="zoom-confirm-btn"
+                    style="width:100%; margin-top:24px; padding:14px; background:linear-gradient(135deg,#2D8CFF,#1A6FD8); border:none; border-radius:12px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; font-family:inherit; letter-spacing:0.3px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5"
+                        fill="none">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Confirm Meeting
+                </button>
+
+            </form>
+
+            <!-- Success State -->
+            <div id="zoom-success-state" style="display:none; text-align:center; padding:20px 0;">
+                <div style="font-size:52px; margin-bottom:16px; animation: zoom-pop 0.4s ease;">✅</div>
+                <h3 style="color:#2D8CFF; font-size:18px; margin:0 0 8px; font-family:'Raleway',sans-serif;">Meeting
+                    Booked!</h3>
+                <p style="color:rgba(255,255,255,0.65); font-size:13px; margin:0 0 20px; line-height:1.6;">Your meeting
+                    has been confirmed. A notification has been sent to Aman. You'll hear back shortly.</p>
+                <button onclick="closeZoomBookingModal()"
+                    style="padding:10px 28px; background:rgba(45,140,255,0.15); border:1px solid rgba(45,140,255,0.4); border-radius:10px; color:#2D8CFF; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* ===== ZOOM MODAL STYLES ===== */
+        #zoom-booking-overlay.zm-visible {
+            display: flex !important;
+        }
+
+        .zoom-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .zoom-input:focus {
+            border-color: rgba(45, 140, 255, 0.6) !important;
+            background: rgba(45, 140, 255, 0.05) !important;
+            box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.12);
+        }
+
+        .zoom-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .zoom-radio-card {
+            display: block;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .zoom-radio-card:hover {
+            border-color: rgba(45, 140, 255, 0.4);
+            background: rgba(45, 140, 255, 0.06);
+        }
+
+        .zoom-radio-card.zm-selected {
+            border-color: rgba(45, 140, 255, 0.7) !important;
+            background: rgba(45, 140, 255, 0.12) !important;
+            box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.2);
+        }
+
+        .zoom-radio-inner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+        }
+
+        .zoom-radio-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .zoom-radio-card.zm-selected .zoom-radio-dot {
+            border-color: #2D8CFF;
+            background: #2D8CFF;
+            box-shadow: inset 0 0 0 3px #1e293b;
+        }
+
+        .zoom-radio-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .zoom-radio-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .zoom-error-msg {
+            color: #ff6b6b;
+            font-size: 11px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #zoom-confirm-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(45, 140, 255, 0.35);
+        }
+
+        #zoom-confirm-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #zoom-booking-modal::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #zoom-booking-modal::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #zoom-booking-modal::-webkit-scrollbar-thumb {
+            background: rgba(45, 140, 255, 0.4);
+            border-radius: 3px;
+        }
+
+        @keyframes zoom-pop {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoom-modal-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .zm-visible #zoom-booking-modal {
+            animation: zoom-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 520px) {
+            #zoom-booking-modal {
+                padding: 22px 18px !important;
+            }
+        }
+    </style>
+
     <!-- 360 View Full-Screen Popup -->
+
     <div class="popup-360-overlay" id="popup360Overlay">
         <button class="popup-360-close" id="close360Popup">
             <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2.5" fill="none"

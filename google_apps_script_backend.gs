@@ -75,6 +75,11 @@ function doGet(e) {
     return json({ status: "success", data: results.reverse() });
   }
 
+  // Two-way sync: get a specific Zoom meeting booking by Booking ID
+  if (params.action === 'getZoomMeeting' && params.bookingId) {
+    return json(getZoomMeetingById(params.bookingId));
+  }
+
   return json({ status: "error", message: "Invalid request" });
 }
 
@@ -104,6 +109,7 @@ function doPost(e) {
     if (action === 'submitBrief') return json(handleBrief(data.brief));
     if (action === 'submitPayment') return json(handlePayment(data));
     if (action === 'logDownload') return json(handleDownloadLog(data));
+    if (action === 'submitZoomMeeting') return json(handleZoomMeeting(data));
     
     if (action === 'adminLogin') {
       const isValid = checkAdminAuth(data.user, data.pass);
@@ -616,4 +622,185 @@ function seedHistoricalData() {
     sheet.getRange(sheet.getLastRow() + 1, 1, allRows.length, allRows[0].length).setValues(allRows);
   }
   return "Successfully added " + allRows.length + " historical records!";
+}
+
+/* ============================= */
+/* ===== ZOOM MEETING SYNC ===== */
+/* ============================= */
+
+/**
+ * ZOOM_MEETINGS sheet column map (1-indexed):
+ *  1  - Booking ID
+ *  2  - Client Name
+ *  3  - Client Email
+ *  4  - Client Time Zone
+ *  5  - Meeting Date
+ *  6  - Selected Time Slot
+ *  7  - Client Local Time
+ *  8  - Pakistan Time
+ *  9  - Zoom Meeting Link
+ *  10 - Booking Status
+ *  11 - Created At
+ *  12 - Last Updated
+ */
+function getZoomSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ZOOM_SHEET_NAME = 'Zoom Meetings';
+  let sheet = ss.getSheetByName(ZOOM_SHEET_NAME);
+
+  const headers = [
+    "Booking ID", "Client Name", "Client Email", "Client Time Zone",
+    "Meeting Date", "Selected Time Slot", "Client Local Time", "Pakistan Time",
+    "Zoom Meeting Link", "Booking Status", "Created At", "Last Updated"
+  ];
+
+  if (!sheet) {
+    sheet = ss.insertSheet(ZOOM_SHEET_NAME);
+    sheet.appendRow(headers);
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight("bold").setBackground("#1a6fd8").setFontColor("white");
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 130);
+    sheet.setColumnWidth(9, 260);
+    sheet.setColumnWidth(11, 150);
+    sheet.setColumnWidth(12, 150);
+  } else {
+    // Ensure header row exists
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#1a6fd8").setFontColor("white");
+      sheet.setFrozenRows(1);
+    }
+  }
+
+  return sheet;
+}
+
+function handleZoomMeeting(data) {
+  try {
+    const sheet = getZoomSheet();
+    const now = new Date();
+    const nowFormatted = Utilities.formatDate(now, "GMT+5", "d MMM yyyy HH:mm:ss");
+
+    // --- Upsert: check if Booking ID already exists ---
+    const rows = sheet.getDataRange().getValues();
+    let existingRowIdx = -1;
+    const bookingId = (data.bookingId || '').toString().trim().toUpperCase();
+
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0].toString().trim().toUpperCase() === bookingId) {
+        existingRowIdx = i + 1; // 1-indexed sheet row
+        break;
+      }
+    }
+
+    const rowData = [
+      data.bookingId     || '',
+      data.clientName    || '',
+      data.clientEmail   || '',
+      data.clientTimeZone|| '',
+      data.meetingDate   || '',
+      data.selectedSlot  || '',
+      data.clientLocalTime || '',
+      data.pakistanTime  || '',
+      data.zoomLink      || '',
+      data.bookingStatus || 'Confirmed',
+      existingRowIdx === -1 ? nowFormatted : rows[existingRowIdx - 1][10], // Keep original createdAt
+      nowFormatted  // Last Updated always refreshed
+    ];
+
+    if (existingRowIdx !== -1) {
+      // Update existing row (keep Created At in col 11, update Last Updated in col 12)
+      sheet.getRange(existingRowIdx, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+
+    // --- Email Notification ---
+    try {
+      const zoomLinkHtml = data.zoomLink ? `<a href="${data.zoomLink}" style="color:#2D8CFF;">${data.zoomLink}</a>` : 'Not provided';
+      const emailBody = `📅 NEW ZOOM MEETING BOOKED\n\n` +
+        `Client: ${data.clientName || 'N/A'}\n` +
+        `Meeting Date: ${data.meetingDate || 'N/A'}\n` +
+        `Selected Slot: ${data.selectedSlot || 'N/A'}\n` +
+        `Pakistan Time: ${data.pakistanTime || 'N/A'}\n` +
+        `Client Local Time: ${data.clientLocalTime || 'N/A'}\n` +
+        `Client Time Zone: ${data.clientTimeZone || 'N/A'}\n` +
+        `Zoom Link: ${data.zoomLink || 'N/A'}\n` +
+        `Booking ID: ${data.bookingId || 'N/A'}`;
+
+      const htmlBody = `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#0f172a;color:#fff;border-radius:12px;overflow:hidden;">
+          <div style="background:linear-gradient(135deg,#2D8CFF,#1A6FD8);padding:20px 24px;">
+            <h2 style="margin:0;font-size:20px;color:#fff;">📅 New Zoom Meeting Booked</h2>
+          </div>
+          <div style="padding:24px;line-height:1.8;">
+            <table style="width:100%;border-collapse:collapse;">
+              <tr><td style="padding:6px 0;color:#94a3b8;width:40%">Client Name</td><td style="padding:6px 0;font-weight:600;">${data.clientName || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Meeting Date</td><td style="padding:6px 0;font-weight:600;">${data.meetingDate || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Selected Slot</td><td style="padding:6px 0;font-weight:600;">${data.selectedSlot || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">🇵🇰 Pakistan Time</td><td style="padding:6px 0;font-weight:600;">${data.pakistanTime || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">🌍 Client Local Time</td><td style="padding:6px 0;font-weight:600;">${data.clientLocalTime || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Client Time Zone</td><td style="padding:6px 0;">${data.clientTimeZone || 'N/A'}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Zoom Link</td><td style="padding:6px 0;">${zoomLinkHtml}</td></tr>
+              <tr><td style="padding:6px 0;color:#94a3b8;">Booking ID</td><td style="padding:6px 0;font-family:monospace;">${data.bookingId || 'N/A'}</td></tr>
+            </table>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.1);padding:16px 24px;font-size:12px;color:#64748b;">
+            Sent automatically by Antigravity Tracker.
+          </div>
+        </div>`;
+
+      GmailApp.sendEmail(
+        'amandesignpartner@gmail.com',
+        'New Zoom Meeting Booked – ' + (data.clientName || 'Client'),
+        emailBody,
+        { htmlBody: htmlBody }
+      );
+    } catch (mailErr) {
+      // Non-fatal: log but don't fail
+      console.error('Zoom email failed:', mailErr.toString());
+    }
+
+    return { status: "success", message: existingRowIdx !== -1 ? "Zoom meeting updated" : "Zoom meeting booked" };
+
+  } catch (err) {
+    return { status: "error", message: "Zoom booking error: " + err.toString() };
+  }
+}
+
+/**
+ * Returns Zoom meeting data for a given Booking ID (for two-way sync from Sheet back to site).
+ */
+function getZoomMeetingById(bookingId) {
+  try {
+    const sheet = getZoomSheet();
+    const rows  = sheet.getDataRange().getValues();
+    const bid   = bookingId.toString().trim().toUpperCase();
+
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0].toString().trim().toUpperCase() === bid) {
+        return {
+          status: "success",
+          meeting: {
+            bookingId:       rows[i][0],
+            clientName:      rows[i][1],
+            clientEmail:     rows[i][2],
+            clientTimeZone:  rows[i][3],
+            meetingDate:     rows[i][4],
+            selectedSlot:    rows[i][5],
+            clientLocalTime: rows[i][6],
+            pakistanTime:    rows[i][7],
+            zoomLink:        rows[i][8],
+            bookingStatus:   rows[i][9],
+            createdAt:       rows[i][10],
+            lastUpdated:     rows[i][11]
+          }
+        };
+      }
+    }
+    return { status: "error", message: "No Zoom meeting found for Booking ID: " + bookingId };
+  } catch (err) {
+    return { status: "error", message: "Error fetching Zoom meeting: " + err.toString() };
+  }
 }

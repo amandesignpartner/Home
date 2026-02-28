@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7pxmo47rUeiddgCta8bN3BKfOUGsQWRyx32xgikx8PVcbQ6dvrfMnwWUd7GgL64ZD/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbx7pxmo47rUeiddgCta8bN3BKfOUGsQWRyx32xgikx8PVcbQ6dvrfMnwWUd7GgL64ZD/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaBC95g7xgA4f8ide2lhBKAK_Nk16zkM2SCmiErRBMGu2Gmo1BvttpKNqMQvHMMXk7lQ/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzaBC95g7xgA4f8ide2lhBKAK_Nk16zkM2SCmiErRBMGu2Gmo1BvttpKNqMQvHMMXk7lQ/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -4586,4 +4586,299 @@ async function adminAuthFetch(action, data) {
         body: JSON.stringify({ action: action, ...data })
     });
     return await response.json();
+}
+
+/* =====================================================
+   ZOOM MEETING BOOKING MODULE
+   ===================================================== */
+
+// Pakistan timezone offset: UTC+5
+const PKT_OFFSET_HOURS = 5;
+
+// Time slot definitions (Pakistan time, 24-hour)
+const ZOOM_TIME_SLOTS = {
+    morning: { label: 'Morning', pkStart: '07:30', pkEnd: '11:30', period: 'AM' },
+    afternoon: { label: 'Afternoon', pkStart: '14:00', pkEnd: '16:00', period: 'PM' },
+    night: { label: 'Night', pkStart: '21:00', pkEnd: '23:00', period: 'Night' }
+};
+
+/**
+ * Opens the Zoom booking modal.
+ * Grabs project context from the currently loaded tracker popup.
+ */
+function openZoomBookingModal() {
+    const overlay = document.getElementById('zoom-booking-overlay');
+    if (!overlay) return;
+
+    // Move to end of <body> so it paints above everything in the DOM stacking order
+    document.body.appendChild(overlay);
+
+    // Force maximum z-index as a safety net (in case any parent has a stacking context)
+    overlay.style.zIndex = '2147483647';
+
+    // Reset form state
+    resetZoomModal();
+
+    // Set today as min date (disable past dates)
+    const dateInput = document.getElementById('zoom-meeting-date');
+    if (dateInput) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        dateInput.min = todayStr;
+        dateInput.value = '';
+    }
+
+    // Pre-populate local timezone label
+    const tzLabel = document.getElementById('zoom-local-tz-label');
+    if (tzLabel) {
+        tzLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local Time';
+    }
+
+    overlay.classList.add('zm-visible');
+    document.body.style.overflow = 'hidden';
+
+    // Close on overlay background click
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeZoomBookingModal();
+    };
+}
+
+function closeZoomBookingModal() {
+    const overlay = document.getElementById('zoom-booking-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('zm-visible');
+    document.body.style.overflow = '';
+    resetZoomModal();
+}
+
+function resetZoomModal() {
+    const form = document.getElementById('zoom-booking-form');
+    const successState = document.getElementById('zoom-success-state');
+    if (form) form.style.display = 'block';
+    if (successState) successState.style.display = 'none';
+
+    // Clear radio selections
+    document.querySelectorAll('.zoom-radio-card').forEach(c => c.classList.remove('zm-selected'));
+    document.querySelectorAll('input[name="timeSlot"]').forEach(r => { r.checked = false; });
+
+    // Hide errors
+    ['zoom-date-error', 'zoom-slot-error', 'zoom-link-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Hide timezone summary
+    const summary = document.getElementById('zoom-timezone-summary');
+    if (summary) summary.style.display = 'none';
+
+    // Reset link input border and hide copy button
+    const linkInput = document.getElementById('zoom-meeting-link');
+    const copyBtn = document.getElementById('btn-copy-meet-link');
+    if (linkInput) { linkInput.value = ''; linkInput.style.borderColor = 'rgba(255,255,255,0.12)'; }
+    if (copyBtn) { copyBtn.style.display = 'none'; copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>'; }
+
+    // Re-enable confirm button
+    const btn = document.getElementById('zoom-confirm-btn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> Confirm Meeting';
+    }
+}
+
+// Radio card visual selection via change event
+document.addEventListener('change', (e) => {
+    const radio = e.target;
+    if (radio.name !== 'timeSlot') return;
+    document.querySelectorAll('.zoom-radio-card').forEach(card => {
+        const inp = card.querySelector('input[type="radio"]');
+        card.classList.toggle('zm-selected', !!(inp && inp.checked));
+    });
+});
+
+/**
+ * Converts a Pakistan Time date+slot to local time string.
+ */
+function convertPKTtoLocal(dateStr, slotKey) {
+    const slot = ZOOM_TIME_SLOTS[slotKey];
+    if (!slot || !dateStr) return null;
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [startH, startM] = slot.pkStart.split(':').map(Number);
+    const [endH, endM] = slot.pkEnd.split(':').map(Number);
+
+    // PKT = UTC+5, subtract 5h for UTC
+    const startUtc = Date.UTC(year, month - 1, day, startH - PKT_OFFSET_HOURS, startM);
+    const endUtc = Date.UTC(year, month - 1, day, endH - PKT_OFFSET_HOURS, endM);
+
+    const fmtLocal = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const fmtPKT = (h, m) => {
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+    };
+
+    const pkDayLabel = new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Karachi' });
+    const localDayLabel = new Date(startUtc).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+
+    return {
+        pkTime: `${fmtPKT(startH, startM)} – ${fmtPKT(endH, endM)} PKT`,
+        pkDate: pkDayLabel,
+        localTime: `${fmtLocal(startUtc)} – ${fmtLocal(endUtc)}`,
+        localDate: localDayLabel
+    };
+}
+
+/**
+ * Updates the timezone summary card when date or slot changes.
+ */
+function updateZoomTimeSummary() {
+    const dateVal = document.getElementById('zoom-meeting-date') ? document.getElementById('zoom-meeting-date').value : '';
+    const slotEl = document.querySelector('input[name="timeSlot"]:checked');
+    const summary = document.getElementById('zoom-timezone-summary');
+    const pkEl = document.getElementById('zoom-pk-time');
+    const localEl = document.getElementById('zoom-local-time');
+    const linkInput = document.getElementById('zoom-meeting-link');
+    const copyBtn = document.getElementById('btn-copy-meet-link');
+    const linkErr = document.getElementById('zoom-link-error');
+
+    if (!dateVal || !slotEl) {
+        if (summary) summary.style.display = 'none';
+        if (linkInput) { linkInput.value = ''; linkInput.style.borderColor = 'rgba(255,255,255,0.12)'; }
+        if (copyBtn) copyBtn.style.display = 'none';
+        return;
+    }
+
+    const times = convertPKTtoLocal(dateVal, slotEl.value);
+    if (!times) {
+        if (summary) summary.style.display = 'none';
+        if (linkInput) { linkInput.value = ''; linkInput.style.borderColor = 'rgba(255,255,255,0.12)'; }
+        if (copyBtn) copyBtn.style.display = 'none';
+        return;
+    }
+
+    if (pkEl) pkEl.textContent = times.pkDate + ' \u2022 ' + times.pkTime;
+    if (localEl) localEl.textContent = times.localDate + ' \u2022 ' + times.localTime;
+    if (summary) summary.style.display = 'block';
+
+    // Auto-populate Google Meet link when both are selected
+    if (linkInput) {
+        linkInput.value = 'https://meet.google.com/ixr-bmjm-cmh';
+        linkInput.style.borderColor = 'rgba(45,140,255,0.5)';
+    }
+    if (copyBtn) copyBtn.style.display = 'block';
+    if (linkErr) linkErr.style.display = 'none';
+}
+
+/**
+ * Handle copy meeting link
+ */
+function copyMeetLink() {
+    const linkInput = document.getElementById('zoom-meeting-link');
+    const btn = document.getElementById('btn-copy-meet-link');
+    if (!linkInput || !linkInput.value) return;
+
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="#4ade80" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }).catch(err => console.log('Copy failed:', err));
+}
+
+/**
+ * Handles form submission for Zoom booking.
+ */
+async function submitZoomBooking(e) {
+    e.preventDefault();
+
+    const dateVal = document.getElementById('zoom-meeting-date') ? document.getElementById('zoom-meeting-date').value : '';
+    const slotEl = document.querySelector('input[name="timeSlot"]:checked');
+    const linkInput = document.getElementById('zoom-meeting-link');
+    const linkVal = linkInput ? linkInput.value.trim() : '';
+    const confirmBtn = document.getElementById('zoom-confirm-btn');
+
+    let hasError = false;
+
+    // Validate date
+    const dateErr = document.getElementById('zoom-date-error');
+    if (!dateVal) { if (dateErr) dateErr.style.display = 'flex'; hasError = true; }
+    else { if (dateErr) dateErr.style.display = 'none'; }
+
+    // Validate slot
+    const slotErr = document.getElementById('zoom-slot-error');
+    if (!slotEl) { if (slotErr) slotErr.style.display = 'flex'; hasError = true; }
+    else { if (slotErr) slotErr.style.display = 'none'; }
+
+    // Validate Meeting link
+    const linkErr = document.getElementById('zoom-link-error');
+    const validLink = linkVal.includes('meet.google.com');
+    if (!linkVal || !validLink) {
+        if (linkErr) linkErr.style.display = 'flex';
+        if (linkInput) linkInput.style.borderColor = 'rgba(255,107,107,0.6)';
+        hasError = true;
+    } else {
+        if (linkErr) linkErr.style.display = 'none';
+        if (linkInput) linkInput.style.borderColor = 'rgba(45,140,255,0.5)';
+    }
+
+    if (hasError) return;
+
+    // Gather project context
+    const project = window.lastTrackedProject || {};
+    const projectId = project.id || 'N/A';
+    const clientName = project.client || 'Client';
+
+    const slotKey = slotEl.value;
+    const slot = ZOOM_TIME_SLOTS[slotKey];
+    const times = convertPKTtoLocal(dateVal, slotKey);
+    const localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+
+    const [yr, mo, dy] = dateVal.split('-').map(Number);
+    const displayDate = new Date(yr, mo - 1, dy).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    // Loading state
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="anim-dot">.</span><span class="anim-dot dot-2">.</span><span class="anim-dot dot-3">.</span>';
+    }
+
+    const payload = {
+        action: 'submitZoomMeeting',
+        bookingId: projectId,
+        clientName: clientName,
+        clientEmail: project.email || '',
+        clientTimeZone: localTZ,
+        meetingDate: displayDate,
+        selectedSlot: slot ? slot.label : slotKey,
+        clientLocalTime: times ? (times.localTime + ' on ' + times.localDate) : 'N/A',
+        pakistanTime: times ? (times.pkTime + ' on ' + times.pkDate) : (slot ? (slot.pkStart + ' \u2013 ' + slot.pkEnd + ' PKT') : 'N/A'),
+        zoomLink: linkVal,
+        bookingStatus: 'Confirmed',
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+    };
+
+    try {
+        await fetch(TRACKER_SYNC_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+
+        // Show success
+        const form = document.getElementById('zoom-booking-form');
+        const successState = document.getElementById('zoom-success-state');
+        if (form) form.style.display = 'none';
+        if (successState) successState.style.display = 'block';
+
+    } catch (err) {
+        console.error('Zoom booking submission failed:', err);
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg> Confirm Meeting';
+        }
+        showToast('\u274C Booking failed. Please try again.');
+    }
 }

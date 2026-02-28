@@ -2114,6 +2114,7 @@ body {
         padding: 0;
         z-index: 100;
         animation: none;
+        transform: none !important;
     }
 
     .logo-name {
@@ -2146,7 +2147,8 @@ body {
     }
 
     body.notes-visible {
-        padding: 20px 0 100px;
+        padding: 20px 0 160px;
+        /* Increased bottom padding to prevent overlap with footer and tracker */
     }
 
     .sketchy-main {
@@ -2317,6 +2319,15 @@ body {
     #tracker-results-container a.btn-submit {
         padding: 10px !important;
         font-size: 13px !important;
+    }
+
+    .copyright-footer {
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: 20px;
+        padding-bottom: 30px !important;
+        background: transparent !important;
+        display: block !important;
     }
 }
 
