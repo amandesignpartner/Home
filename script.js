@@ -4896,102 +4896,125 @@ async function submitZoomBooking(e) {
 /* ========================================= */
 
 function initVisitorTracking() {
-    // Only log the visitor once every hour to avoid spam on reloads, but catch returning visitors
-    const now = Date.now();
-    const lastSessionStr = localStorage.getItem('visitor_last_logged_time');
+    const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
 
-    if (lastSessionStr) {
-        const lastSession = parseInt(lastSessionStr, 10);
-        const oneHour = 60 * 60 * 1000; // 1 hour elapsed time check
+    const triggerLog = (isReturning = false) => {
 
-        if (now - lastSession < oneHour) {
-            setupSessionDurationTracking();
-            return;
-        }
-    }
+        // Gather basic client data immediately
+        const gatherBasicData = () => {
+            let browser = 'Unknown';
+            let os = 'Unknown';
+            let device = 'Desktop';
 
-    // Set the flag immediately to prevent double-firing
-    localStorage.setItem('visitor_last_logged_time', now.toString());
-    sessionStorage.setItem('session_start_time', now.toString());
+            if (typeof window.UAParser !== 'undefined') {
+                const parser = new window.UAParser();
+                const result = parser.getResult();
+                browser = `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim();
+                os = `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim();
+                device = result.device.type === 'mobile' ? 'Mobile' : (result.device.type === 'tablet' ? 'Tablet' : 'Desktop');
+            } else {
+                // Robust Native Fallback
+                const ua = navigator.userAgent;
 
-    // Gather basic client data immediately
-    const gatherBasicData = () => {
-        let browser = 'Unknown';
-        let os = 'Unknown';
-        let device = 'Desktop';
+                if (ua.includes("Firefox")) browser = "Firefox";
+                else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
+                else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
+                else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
+                else if (ua.includes("Chrome")) browser = "Chrome";
+                else if (ua.includes("Safari")) browser = "Safari";
+                else browser = ua.substring(0, 50) + '...';
 
-        if (typeof window.UAParser !== 'undefined') {
-            const parser = new window.UAParser();
-            const result = parser.getResult();
-            browser = `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim();
-            os = `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim();
-            device = result.device.type === 'mobile' ? 'Mobile' : (result.device.type === 'tablet' ? 'Tablet' : 'Desktop');
-        } else {
-            // Robust Native Fallback
-            const ua = navigator.userAgent;
+                if (ua.includes("Win")) os = "Windows";
+                else if (ua.includes("Mac")) os = "MacOS";
+                else if (ua.includes("Linux")) os = "Linux";
+                else if (ua.includes("Android")) os = "Android";
+                else if (ua.includes("like Mac")) os = "iOS";
 
-            if (ua.includes("Firefox")) browser = "Firefox";
-            else if (ua.includes("SamsungBrowser")) browser = "Samsung Internet";
-            else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
-            else if (ua.includes("Edge") || ua.includes("Edg")) browser = "Edge";
-            else if (ua.includes("Chrome")) browser = "Chrome";
-            else if (ua.includes("Safari")) browser = "Safari";
-            else browser = ua.substring(0, 50) + '...';
+                if (/Mobi|Android|iPhone|iPad/i.test(ua)) device = 'Mobile';
+            }
 
-            if (ua.includes("Win")) os = "Windows";
-            else if (ua.includes("Mac")) os = "MacOS";
-            else if (ua.includes("Linux")) os = "Linux";
-            else if (ua.includes("Android")) os = "Android";
-            else if (ua.includes("like Mac")) os = "iOS";
-
-            if (/Mobi|Android|iPhone|iPad/i.test(ua)) device = 'Mobile';
-        }
-
-        return {
-            browser: browser,
-            os: os,
-            device: device,
-            pageUrl: window.location.href,
-            referrer: document.referrer || 'Direct / None',
-            screenResolution: `${window.screen.width}x${window.screen.height}`,
-            language: navigator.language || navigator.userLanguage || 'Unknown'
+            return {
+                browser: browser,
+                os: os,
+                device: device,
+                pageUrl: window.location.href,
+                referrer: document.referrer || 'Direct / None',
+                screenResolution: `${window.screen.width}x${window.screen.height}`,
+                language: navigator.language || navigator.userLanguage || 'Unknown'
+            };
         };
+
+        const visitorData = gatherBasicData();
+
+        if (isReturning) {
+            visitorData.sessionDuration = 'Repeated Visitor (Returned after inactivity)';
+        }
+
+        fetch('https://get.geojs.io/v1/ip/geo.json')
+            .then(response => response.json())
+            .then(data => {
+                visitorData.ip = data.ip || 'Unknown';
+                visitorData.location = `${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country || 'Unknown'}`;
+                sendVisitorLogToSheet(visitorData);
+            })
+            .catch(err => {
+                console.warn("GeoJS fetch failed. Trying fallback...", err);
+                fetch('https://api.ipify.org?format=json')
+                    .then(r => r.json())
+                    .then(d => {
+                        visitorData.ip = d.ip || 'Unavailable';
+                        visitorData.location = 'Unavailable';
+                        sendVisitorLogToSheet(visitorData);
+                    }).catch(() => {
+                        visitorData.ip = 'Unavailable';
+                        visitorData.location = 'Unavailable';
+                        sendVisitorLogToSheet(visitorData);
+                    });
+            });
     };
 
-    const visitorData = gatherBasicData();
+    const recordActivity = () => {
+        const now = Date.now();
+        const lastActiveStr = localStorage.getItem('visitor_last_active_time');
 
-    // Fetch IP and Geo Location using a free public API (geojs is reliable and has no strict CORS blocks)
-    fetch('https://get.geojs.io/v1/ip/geo.json')
-        .then(response => response.json())
-        .then(data => {
-            visitorData.ip = data.ip || 'Unknown';
-            visitorData.location = `${data.city || 'Unknown'}, ${data.region || 'Unknown'}, ${data.country || 'Unknown'}`;
-            sendVisitorLogToSheet(visitorData);
-        })
-        .catch(err => {
-            console.warn("GeoJS fetch failed. Trying fallback...", err);
-            // Fallback to simple ipify if geo breaks
-            fetch('https://api.ipify.org?format=json')
-                .then(r => r.json())
-                .then(d => {
-                    visitorData.ip = d.ip || 'Unavailable';
-                    visitorData.location = 'Unavailable';
-                    sendVisitorLogToSheet(visitorData);
-                }).catch(() => {
-                    visitorData.ip = 'Unavailable';
-                    visitorData.location = 'Unavailable';
-                    sendVisitorLogToSheet(visitorData);
-                });
-        });
+        if (!lastActiveStr) {
+            // First time ever
+            triggerLog(false);
+        } else {
+            const lastActive = parseInt(lastActiveStr, 10);
+            if (now - lastActive > INACTIVITY_LIMIT_MS) {
+                // Inactive for > 5 minutes, now active again (or reloaded)
+                triggerLog(true);
+            }
+        }
 
-    setupSessionDurationTracking();
+        // Immediately update last active time
+        localStorage.setItem('visitor_last_active_time', now.toString());
+    };
+
+    // Run right away to process initial flags
+    recordActivity();
+
+    // Track activity without spamming localStorage
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    let throttleTimer = null;
+
+    const activityHandler = () => {
+        if (throttleTimer) return;
+        throttleTimer = setTimeout(() => {
+            recordActivity();
+            throttleTimer = null;
+        }, 5000); // Only process activity at most once every 5 seconds
+    };
+
+    events.forEach(e => document.addEventListener(e, activityHandler, { passive: true }));
 }
 
 function sendVisitorLogToSheet(visitorData) {
     const payload = {
         action: 'logVisitor',
         ...visitorData,
-        sessionDuration: 'Active/Ongoing' // Will technically only be this unless we do complex heartbeats
+        sessionDuration: visitorData.sessionDuration || 'Active/New'
     };
 
     fetch(TRACKER_SYNC_URL, {
@@ -5000,16 +5023,4 @@ function sendVisitorLogToSheet(visitorData) {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
     }).catch(err => console.error("Could not sync visitor log to Google Sheet", err));
-}
-
-function setupSessionDurationTracking() {
-    // We could capture session duration on 'beforeunload' and send an update, 
-    // but without a strict tracking ID logic on the Sheet side, it's complex to 'edit' an existing row.
-    // Given the constraints, the best, lightweight approach is an initial timestamp and a purely informational baseline.
-    // For advanced tracking, a dedicated tool like Google Analytics is historically recommended.
-
-    // For now we just record start time, you can view the 'last active' in local storage if needed.
-    if (!sessionStorage.getItem('session_start_time')) {
-        sessionStorage.setItem('session_start_time', Date.now().toString());
-    }
 }
