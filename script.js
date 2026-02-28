@@ -1,5 +1,5 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaBC95g7xgA4f8ide2lhBKAK_Nk16zkM2SCmiErRBMGu2Gmo1BvttpKNqMQvHMMXk7lQ/exec';
-const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbzaBC95g7xgA4f8ide2lhBKAK_Nk16zkM2SCmiErRBMGu2Gmo1BvttpKNqMQvHMMXk7lQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIC_yfrrty2zHoeQ-kCL6MfkJA1b_ofJsNb3T-w1JNvn3kVpipHpp30S0LsVdi6vVICg/exec';
+const TRACKER_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwIC_yfrrty2zHoeQ-kCL6MfkJA1b_ofJsNb3T-w1JNvn3kVpipHpp30S0LsVdi6vVICg/exec';
 
 // Helper to convert File object to Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -4636,10 +4636,7 @@ function openZoomBookingModal() {
     overlay.classList.add('zm-visible');
     document.body.style.overflow = 'hidden';
 
-    // Close on overlay background click
-    overlay.onclick = (e) => {
-        if (e.target === overlay) closeZoomBookingModal();
-    };
+
 }
 
 function closeZoomBookingModal() {
@@ -4810,16 +4807,11 @@ async function submitZoomBooking(e) {
     if (!slotEl) { if (slotErr) slotErr.style.display = 'flex'; hasError = true; }
     else { if (slotErr) slotErr.style.display = 'none'; }
 
-    // Validate Meeting link
-    const linkErr = document.getElementById('zoom-link-error');
-    const validLink = linkVal.includes('meet.google.com');
-    if (!linkVal || !validLink) {
-        if (linkErr) linkErr.style.display = 'flex';
-        if (linkInput) linkInput.style.borderColor = 'rgba(255,107,107,0.6)';
-        hasError = true;
-    } else {
-        if (linkErr) linkErr.style.display = 'none';
-        if (linkInput) linkInput.style.borderColor = 'rgba(45,140,255,0.5)';
+    // Generate the meet link implicitly
+    let finalLinkVal = linkVal;
+    if (linkInput && !finalLinkVal) {
+        linkInput.value = 'https://meet.google.com/ixr-bmjm-cmh';
+        finalLinkVal = 'https://meet.google.com/ixr-bmjm-cmh';
     }
 
     if (hasError) return;
@@ -4853,7 +4845,7 @@ async function submitZoomBooking(e) {
         selectedSlot: slot ? slot.label : slotKey,
         clientLocalTime: times ? (times.localTime + ' on ' + times.localDate) : 'N/A',
         pakistanTime: times ? (times.pkTime + ' on ' + times.pkDate) : (slot ? (slot.pkStart + ' \u2013 ' + slot.pkEnd + ' PKT') : 'N/A'),
-        zoomLink: linkVal,
+        zoomLink: finalLinkVal,
         bookingStatus: 'Confirmed',
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString()
@@ -4872,6 +4864,21 @@ async function submitZoomBooking(e) {
         const successState = document.getElementById('zoom-success-state');
         if (form) form.style.display = 'none';
         if (successState) successState.style.display = 'block';
+
+        // Show zoom link container only after success
+        const zoomLinkContainer = document.getElementById('zoom-link-container');
+        if (zoomLinkContainer) {
+            zoomLinkContainer.style.display = 'block';
+            zoomLinkContainer.style.marginTop = '20px';
+            zoomLinkContainer.style.marginBottom = '20px';
+            zoomLinkContainer.style.textAlign = 'left';
+            const closeBtn = successState.querySelector('button');
+            if (closeBtn) {
+                successState.insertBefore(zoomLinkContainer, closeBtn);
+            } else {
+                successState.appendChild(zoomLinkContainer); // Fallback
+            }
+        }
 
     } catch (err) {
         console.error('Zoom booking submission failed:', err);

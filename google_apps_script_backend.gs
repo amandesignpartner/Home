@@ -747,7 +747,7 @@ function handleZoomMeeting(data) {
             </table>
           </div>
           <div style="border-top:1px solid rgba(255,255,255,0.1);padding:16px 24px;font-size:12px;color:#64748b;">
-            Sent automatically by Antigravity Tracker.
+            Sent automatically by Aman.
           </div>
         </div>`;
 
